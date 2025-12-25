@@ -4,6 +4,8 @@
 import { renderServerList } from './views/server-list.js';
 import { renderServerForm } from './views/server-form.js';
 import { renderServerDetail } from './views/server-detail.js';
+import { renderSettings } from './views/settings.js';
+import { renderGroupForm } from './views/group-form.js';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -116,6 +118,14 @@ function renderCurrentView() {
             renderServerDetail(mainContent, state.viewData);
             break;
 
+        case 'settings':
+            renderSettings(mainContent);
+            break;
+
+        case 'group-form':
+            renderGroupForm(mainContent, state.viewData);
+            break;
+
         default:
             mainContent.innerHTML = `
         <div class="empty-state">
@@ -144,5 +154,14 @@ window.app = {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup initialized');
+
+    // Settings button event listener
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            navigateTo('settings');
+        });
+    }
+
     renderCurrentView();
 });

@@ -986,3 +986,220 @@ p {
     background-color: #ff0000;
     box-shadow: 0 0 4px #ff0000;
 }
+
+/* ============================================================================
+   SETTINGS VIEW
+   ============================================================================ */
+
+.settings-section {
+    margin-bottom: var(--space-6);
+}
+
+.settings-section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.settings-section-description {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0 0 var(--space-4) 0;
+    line-height: var(--line-height-relaxed);
+}
+
+/* ============================================================================
+   GROUP FORM
+   ============================================================================ */
+
+.server-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+}
+
+.checkbox-label:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+}
+
+.checkbox-label span {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+}
+
+/* Rules Preview */
+.rules-preview {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-bg-secondary);
+    padding: var(--space-2);
+}
+
+.rules-preview::-webkit-scrollbar {
+    width: 8px;
+}
+
+.rules-preview::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+}
+
+.rules-preview::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+}
+
+.rules-preview::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+}
+
+.group-item {
+    cursor: default;
+}
+
+.group-item .list-item-content {
+    flex: 1;
+}
+
+/* Server Counts - Colored Pill Badges */
+.server-counts {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    align-items: center;
+}
+
+.count-item {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: #fff;
+}
+
+.count-allow {
+    background-color: var(--color-accent);
+}
+
+.count-block {
+    background-color: var(--color-danger);
+}
+
+.count-disabled {
+    background-color: var(--color-warning);
+}
+
+.badge-xs {
+    font-size: 9px;
+    padding: 1px 4px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Preview Empty Badge */
+.preview-empty-badge {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-1);
+}
+
+/* Ultra-compact form for group form */
+.view-body .form-group {
+    margin-bottom: 6px;
+}
+
+.view-body .form-group .form-label {
+    margin-bottom: 3px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.view-body .form-input {
+    padding: 6px 8px;
+    font-size: 12px;
+    height: 30px;
+}
+
+/* Ultra-compact server checkboxes - dynamic height */
+.server-checkboxes {
+    max-height: none;
+    padding: 6px;
+    gap: 3px;
+}
+
+.checkbox-label {
+    padding: 3px 6px;
+    font-size: 12px;
+    gap: 6px;
+}
+
+.checkbox-label span {
+    font-size: 12px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+}
+
+/* Expanded rules preview - more space */
+.rules-preview {
+    max-height: 200px;
+    padding: 4px;
+}
+
+.rule-counts-card {
+    padding: 5px;
+    margin-bottom: 6px;
+    gap: 5px;
+}
+
+/* Smaller rule items */
+.rule-item {
+    padding: 3px 6px;
+    font-size: 11px;
+}
+
+.rule-indicator {
+    width: 6px;
+    height: 6px;
+}
+
+/* Compact buttons */
+.view-body .btn {
+    padding: 7px 12px;
+    font-size: 12px;
+}
+
+/* Warning banner compact */
+.warning-banner {
+    padding: 5px 8px;
+    font-size: 11px;
+    margin-bottom: 6px;
+}
