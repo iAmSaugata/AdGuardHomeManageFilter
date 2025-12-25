@@ -131,15 +131,16 @@ export function generateAllowRule(domain) {
 
 /**
  * Classify rule type
- * Returns: 'comment' | 'allow' | 'block' | 'unknown'
+ * Returns: 'disabled' | 'allow' | 'block' | 'unknown'
  */
 export function classifyRule(rule) {
     if (typeof rule !== 'string') return 'unknown';
 
     const trimmed = rule.trim();
 
-    if (!trimmed) return 'unknown';
-    if (trimmed.startsWith('!')) return 'comment';
+    if (!trimmed) return 'disabled'; // Empty lines are disabled
+    if (trimmed.startsWith('!')) return 'disabled'; // Comments with ! are disabled
+    if (trimmed.startsWith('# ')) return 'disabled'; // Comments with # and space are disabled
     if (trimmed.startsWith('@@')) return 'allow';
     if (trimmed.startsWith('||') || trimmed.startsWith('|')) return 'block';
 
@@ -147,6 +148,51 @@ export function classifyRule(rule) {
     if (trimmed.match(/^[a-zA-Z0-9.-]+$/)) return 'block';
 
     return 'block'; // Default assumption
+}
+
+/**
+ * Classify all rules into categories
+ * Returns: { allow: Rule[], block: Rule[], disabled: Rule[] }
+ */
+export function classifyRules(rules) {
+    if (!Array.isArray(rules)) {
+        return { allow: [], block: [], disabled: [] };
+    }
+
+    const classified = {
+        allow: [],
+        block: [],
+        disabled: []
+    };
+
+    for (const rule of rules) {
+        const type = classifyRule(rule);
+        if (type === 'allow') {
+            classified.allow.push(rule);
+        } else if (type === 'disabled') {
+            classified.disabled.push(rule);
+        } else {
+            // 'block' or 'unknown' (treat unknown as block)
+            classified.block.push(rule);
+        }
+    }
+
+    return classified;
+}
+
+/**
+ * Get rule counts by type
+ * Returns: { allow: number, block: number, disabled: number, total: number }
+ */
+export function getRuleCounts(rules) {
+    const classified = classifyRules(rules);
+
+    return {
+        allow: classified.allow.length,
+        block: classified.block.length,
+        disabled: classified.disabled.length,
+        total: rules ? rules.length : 0
+    };
 }
 
 // ============================================================================

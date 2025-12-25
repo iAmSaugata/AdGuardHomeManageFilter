@@ -1,0 +1,359 @@
+// Server Detail View
+// Displays server rules with search and color coding
+
+export async function renderServerDetail(container, data = {}) {
+    const { serverId } = data;
+
+    if (!serverId) {
+        container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-title">Invalid Server</div>
+        <div class="empty-state-text">No server ID provided.</div>
+        <button class="btn btn-primary" onclick="window.app.navigateTo('server-list')">
+          Back to Servers
+        </button>
+      </div>
+    `;
+        return;
+    }
+
+    // Show loading state
+    container.innerHTML = `
+    <div class="view-header">
+      <button class="btn btn-ghost btn-sm" id="back-btn">
+        ← Back
+      </button>
+      <div class="flex-1"></div>
+    </div>
+    <div class="view-body">
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text"></div>
+    </div>
+  `;
+
+    // Set up back button immediately
+    document.getElementById('back-btn').addEventListener('click', () => {
+        window.app.navigateTo('server-list');
+    });
+
+    try {
+        // Fetch server info and rules
+        const server = await window.app.sendMessage('getServer', { id: serverId });
+
+        if (!server) {
+            throw new Error('Server not found');
+        }
+
+        // Fetch server info (version) and rules in parallel
+        let serverInfo = null;
+        let rulesResult = null;
+        let fromCache = false;
+        let warning = null;
+
+        try {
+            [serverInfo, rulesResult] = await Promise.all([
+                window.app.sendMessage('getServerInfo', { serverId }).catch(() => null),
+                window.app.sendMessage('getServerRules', { serverId })
+            ]);
+
+            fromCache = rulesResult.fromCache || false;
+            warning = rulesResult.warning || null;
+        } catch (error) {
+            // If fetch fails, try cache
+            console.error('Failed to fetch rules:', error);
+            const cached = await window.app.sendMessage('getCache', { serverId });
+
+            if (cached && cached.rules) {
+                rulesResult = { success: true, data: cached };
+                fromCache = true;
+                warning = `Network fetch failed: ${error.message}`;
+            } else {
+                throw new Error('Failed to load rules and no cache available');
+            }
+        }
+
+        const rules = rulesResult.data?.rules || [];
+        const version = serverInfo?.version || 'Unknown';
+
+        // Render the view
+        renderServerDetailView(container, server, version, rules, fromCache, warning, serverId);
+
+    } catch (error) {
+        console.error('Failed to load server detail:', error);
+        window.app.showToast('Failed to load server: ' + error.message, 'error');
+
+        container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-title">Error Loading Server</div>
+        <div class="empty-state-text">${error.message}</div>
+        <button class="btn btn-primary" onclick="window.app.navigateTo('server-list')">
+          Back to Servers
+        </button>
+      </div>
+    `;
+    }
+}
+
+function renderServerDetailView(container, server, version, rules, fromCache, warning, serverId) {
+    // Calculate rule counts
+    const counts = getRuleCounts(rules);
+
+    container.innerHTML = `
+    <div class="view-container">
+      <div class="view-header">
+        <button class="btn btn-ghost btn-sm" id="back-btn">
+          ← Back
+        </button>
+        <div class="flex-1 text-center">
+          <div class="view-title">${escapeHtml(server.name)}</div>
+          <div class="text-xs text-tertiary">v${escapeHtml(version)}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-ghost btn-sm" id="refresh-btn" title="Refresh rules">
+            ↻
+          </button>
+          <button class="btn btn-danger btn-sm" id="delete-server-btn" title="Delete server">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="view-body">
+        ${warning ? `
+          <div class="warning-banner">
+            ⚠️ ${escapeHtml(warning)}
+          </div>
+        ` : ''}
+
+        <div class="rule-counts-card">
+          <span class="badge badge-success">${counts.allow} Allow</span>
+          <span class="badge badge-danger">${counts.block} Block</span>
+          <span class="badge badge-warning">${counts.disabled} Disabled</span>
+          <span class="badge badge-info">${counts.total} Total</span>
+        </div>
+
+        <div class="search-card">
+          <input
+            type="text"
+            id="rule-search"
+            class="form-input"
+            placeholder="🔍 Search rules..."
+          />
+        </div>
+
+        <div id="rules-list" class="rules-list">
+          ${renderRulesList(rules)}
+        </div>
+      </div>
+    </div>
+  `;
+
+    // Event listeners
+    document.getElementById('back-btn').addEventListener('click', () => {
+        window.app.navigateTo('server-list');
+    });
+
+    let allRules = rules;
+
+    document.getElementById('refresh-btn').addEventListener('click', async () => {
+        const updatedRules = await handleRefresh(serverId);
+        if (updatedRules) {
+            allRules = updatedRules;
+        }
+    });
+
+    document.getElementById('delete-server-btn').addEventListener('click', async () => {
+        await handleDeleteServer(serverId);
+    });
+
+    // Search functionality
+    document.getElementById('rule-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allRules.filter(rule =>
+            rule.toLowerCase().includes(searchTerm)
+        );
+        document.getElementById('rules-list').innerHTML = renderRulesList(filtered);
+    });
+}
+
+function renderRulesList(rules) {
+    if (!rules || rules.length === 0) {
+        return `
+      <div class="empty-state">
+        <div class="empty-state-text">No rules configured</div>
+      </div>
+    `;
+    }
+
+    return rules.map(rule => {
+        const type = classifyRule(rule);
+        const colorClass = type === 'allow' ? 'rule-allow' :
+            type === 'disabled' ? 'rule-disabled' :
+                'rule-block';
+
+        return `
+      <div class="rule-item ${colorClass}">
+        <span class="rule-indicator"></span>
+        <span class="rule-text">${escapeHtml(rule)}</span>
+      </div>
+    `;
+    }).join('');
+}
+
+async function handleRefresh(serverId) {
+    try {
+        window.app.showLoading();
+
+        // Force refresh (ignore cache)
+        const rulesResult = await window.app.sendMessage('refreshServerRules', { serverId, force: true });
+
+        const rules = rulesResult.data?.rules || [];
+        const counts = getRuleCounts(rules);
+
+        // Update rule counts
+        document.querySelector('.badge-success').textContent = `${counts.allow} Allow`;
+        document.querySelector('.badge-danger').textContent = `${counts.block} Block`;
+        document.querySelector('.badge-warning').textContent = `${counts.disabled} Disabled`;
+        document.querySelector('.badge-info').textContent = `${counts.total} Total`;
+
+        // Update rules list
+        document.getElementById('rules-list').innerHTML = renderRulesList(rules);
+
+        // Clear search if any
+        const searchInput = document.getElementById('rule-search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        window.app.hideLoading();
+        window.app.showToast('Rules refreshed successfully', 'success');
+
+        return rules;
+
+    } catch (error) {
+        window.app.hideLoading();
+        window.app.showToast('Refresh failed: ' + error.message, 'error');
+        return null;
+    }
+}
+
+async function handleDeleteServer(serverId) {
+    // Get server info for confirmation
+    const server = await window.app.sendMessage('getServer', { id: serverId });
+
+    if (!server) {
+        window.app.showToast('Server not found', 'error');
+        return;
+    }
+
+    // Confirm deletion
+    const confirmed = await showConfirmDialog(
+        'Delete Server',
+        `Are you sure you want to delete "${server.name}"?`,
+        'This action cannot be undone.'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        window.app.showLoading();
+
+        // Delete the server
+        await window.app.sendMessage('deleteServer', { id: serverId });
+
+        window.app.hideLoading();
+        window.app.showToast('Server deleted successfully', 'success');
+
+        // Navigate back to server list
+        window.app.navigateTo('server-list');
+
+    } catch (error) {
+        window.app.hideLoading();
+        window.app.showToast('Delete failed: ' + error.message, 'error');
+    }
+}
+
+// Custom confirmation dialog
+function showConfirmDialog(title, message, subtitle = '') {
+    return new Promise((resolve) => {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+
+        // Create dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+        dialog.innerHTML = `
+            <div class="confirm-header">
+                <h3 class="confirm-title">${escapeHtml(title)}</h3>
+            </div>
+            <div class="confirm-body">
+                <p class="confirm-message">${escapeHtml(message)}</p>
+                ${subtitle ? `<p class="confirm-subtitle">${escapeHtml(subtitle)}</p>` : ''}
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary btn-block" id="confirm-cancel">Cancel</button>
+                <button class="btn btn-danger btn-block" id="confirm-ok">Delete</button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Event listeners
+        document.getElementById('confirm-cancel').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(false);
+        });
+
+        document.getElementById('confirm-ok').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(false);
+            }
+        });
+    });
+}
+
+// Helper functions
+function classifyRule(rule) {
+    if (typeof rule !== 'string') return 'unknown';
+    const trimmed = rule.trim();
+    if (!trimmed) return 'disabled';
+    if (trimmed.startsWith('!')) return 'disabled';
+    if (trimmed.startsWith('# ')) return 'disabled';
+    if (trimmed.startsWith('@@')) return 'allow';
+    return 'block';
+}
+
+function getRuleCounts(rules) {
+    if (!Array.isArray(rules)) {
+        return { allow: 0, block: 0, disabled: 0, total: 0 };
+    }
+
+    let allow = 0, block = 0, disabled = 0;
+
+    for (const rule of rules) {
+        const type = classifyRule(rule);
+        if (type === 'allow') allow++;
+        else if (type === 'disabled') disabled++;
+        else block++;
+    }
+
+    return { allow, block, disabled, total: rules.length };
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

@@ -91,6 +91,20 @@ export async function renderServerForm(container, data = {}) {
           ${isEdit ? '<div class="text-xs text-tertiary mt-1">Leave blank to keep existing password</div>' : ''}
         </div>
         
+        <div class="form-group">
+          <label class="form-label toggle-label">
+            <input
+              type="checkbox"
+              id="bypass-ssl"
+              class="toggle-input"
+              ${server && server.bypassSSL ? 'checked' : ''}
+            />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Bypass SSL Validation</span>
+          </label>
+          <div class="text-xs text-tertiary mt-1">Enable for self-signed certificates</div>
+        </div>
+        
         <div id="form-errors" class="form-error hidden"></div>
         
         <div class="flex gap-2 mt-6">
@@ -163,6 +177,7 @@ async function handleSaveServer(isEdit, serverId) {
     const host = document.getElementById('server-host').value.trim();
     const username = document.getElementById('server-username').value.trim();
     const password = document.getElementById('server-password').value;
+    const bypassSSL = document.getElementById('bypass-ssl').checked;
 
     // Clear previous errors
     const errorsDiv = document.getElementById('form-errors');
@@ -173,7 +188,8 @@ async function handleSaveServer(isEdit, serverId) {
     const server = {
         name,
         host,
-        username
+        username,
+        bypassSSL
     };
 
     if (isEdit) {

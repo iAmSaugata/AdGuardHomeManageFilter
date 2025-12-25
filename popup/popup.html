@@ -1,27 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AdGuard Home Manager</title>
-  <link rel="stylesheet" href="popup.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdGuard Home Manager</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
-  <div id="app" class="app-container">
-    <!-- Toast/Snackbar Container -->
-    <div id="toast-container" class="toast-container"></div>
-    
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay hidden">
-      <div class="spinner"></div>
+    <div id="app" class="app-container">
+        <!-- Toast/Snackbar Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <img src="../icons/icon48.png" alt="AdGuard Home" class="app-icon">
+            <h1 class="app-title">AdGuard Home Rules Manager</h1>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content" class="main-content">
+            <!-- Views will be dynamically rendered here -->
+        </div>
     </div>
-    
-    <!-- Main Content Area -->
-    <div id="main-content" class="main-content">
-      <!-- Views will be dynamically rendered here -->
-    </div>
-  </div>
-  
-  <script type="module" src="popup.js"></script>
+
+    <script type="module" src="popup.js"></script>
 </body>
+
 </html>

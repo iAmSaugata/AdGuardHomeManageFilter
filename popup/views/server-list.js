@@ -69,38 +69,39 @@ function renderEmptyState(container) {
     });
 }
 
-function renderServersList(container, servers) {
-    const serverItems = servers.map(server => `
-    <div class="list-item" data-server-id="${server.id}">
-      <div class="list-item-content">
-        <div class="list-item-title">${escapeHtml(server.name)}</div>
-        <div class="list-item-subtitle">${escapeHtml(server.host)}</div>
+async function renderServersList(container, servers) {
+    // Render server cards immediately with "Refreshing..." status
+    const initialServerItems = servers.map(server => `
+      <div class="list-item server-item" data-server-id="${server.id}" id="server-${server.id}">
+        <div class="list-item-content">
+          <div class="list-item-title">${escapeHtml(server.name)}</div>
+        </div>
+        <div class="flex gap-2 items-center">
+          <span class="badge badge-info">Refreshing...</span>
+          <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
+            ⚙️
+          </button>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}">
-          Edit
-        </button>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
 
     container.innerHTML = `
-    <div class="view-header">
-      <h1 class="view-title">Servers</h1>
-      <button class="btn btn-primary btn-sm" id="add-server-btn">
-        Add Server
-      </button>
-    </div>
-    <div class="view-body">
-      <div class="list">
-        ${serverItems}
+      <div class="view-header">
+        <h1 class="view-title">Servers</h1>
+        <button class="btn btn-primary btn-sm" id="add-server-btn">
+          Add Server
+        </button>
       </div>
-    </div>
-  `;
+      <div class="view-body">
+        <div class="list">
+          ${initialServerItems}
+        </div>
+      </div>
+    `;
 
     // Event listeners
     document.getElementById('add-server-btn').addEventListener('click', () => {
-        navigateTo('server-form', { mode: 'add' });
+        window.app.navigateTo('server-form', { mode: 'add' });
     });
 
     // Edit buttons
@@ -112,13 +113,121 @@ function renderServersList(container, servers) {
         });
     });
 
-    // Click on list item (future: navigate to server details)
-    document.querySelectorAll('.list-item').forEach(item => {
+    // Click on server item to view details
+    document.querySelectorAll('.server-item').forEach(item => {
         item.addEventListener('click', () => {
             const serverId = item.dataset.serverId;
-            window.app.showToast('Server details view coming in future phases', 'info');
+            window.app.navigateTo('server-detail', { serverId });
         });
     });
+
+    // Fetch data for each server progressively
+    servers.forEach(async (server) => {
+        try {
+            // Fetch server info and rules in parallel
+            const [serverInfo, rulesResult] = await Promise.all([
+                window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
+                window.app.sendMessage('getServerRules', { serverId: server.id })
+            ]);
+
+            const rules = rulesResult.data?.rules || [];
+            const counts = getRuleCounts(rules);
+            const version = serverInfo?.version || 'Unknown';
+            const isOnline = serverInfo !== null;
+
+            // Update the server card
+            const serverCard = document.getElementById(`server-${server.id}`);
+            if (serverCard) {
+                const statusHtml = `
+                  <div class="list-item-content">
+                    <div class="list-item-title">${escapeHtml(server.name)}</div>
+                    <div class="server-version">
+                      <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
+                      <span class="badge badge-secondary">${escapeHtml(version)}</span>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 items-center">
+                    <span class="badge badge-success">${counts.allow}</span>
+                    <span class="badge badge-danger">${counts.block}</span>
+                    <span class="badge badge-warning">${counts.disabled}</span>
+                    <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
+                      ⚙️
+                    </button>
+                  </div>
+                `;
+                serverCard.innerHTML = statusHtml;
+
+                // Re-attach event listeners
+                const editBtn = serverCard.querySelector('.edit-server-btn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`Failed to fetch data for ${server.name}:`, error);
+
+            // Update with offline status
+            const serverCard = document.getElementById(`server-${server.id}`);
+            if (serverCard) {
+                const errorHtml = `
+                  <div class="list-item-content">
+                    <div class="list-item-title">${escapeHtml(server.name)}</div>
+                    <div class="server-version">
+                      <span class="status-indicator status-offline"></span>
+                      <span class="text-xs text-tertiary">Offline</span>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 items-center">
+                    <span class="badge badge-danger">Error</span>
+                    <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
+                      ⚙️
+                    </button>
+                  </div>
+                `;
+                serverCard.innerHTML = errorHtml;
+
+                // Re-attach event listeners
+                const editBtn = serverCard.querySelector('.edit-server-btn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+                    });
+                }
+            }
+        }
+    });
+}
+
+// Helper functions
+function getRuleCounts(rules) {
+    if (!Array.isArray(rules)) {
+        return { allow: 0, block: 0, disabled: 0, total: 0 };
+    }
+
+    let allow = 0, block = 0, disabled = 0;
+
+    for (const rule of rules) {
+        const type = classifyRule(rule);
+        if (type === 'allow') allow++;
+        else if (type === 'disabled') disabled++;
+        else block++;
+    }
+
+    return { allow, block, disabled, total: rules.length };
+}
+
+function classifyRule(rule) {
+    if (typeof rule !== 'string') return 'unknown';
+    const trimmed = rule.trim();
+    if (!trimmed) return 'disabled';
+    if (trimmed.startsWith('!')) return 'disabled';
+    if (trimmed.startsWith('# ')) return 'disabled';
+    if (trimmed.startsWith('@@')) return 'allow';
+    return 'block';
 }
 
 function escapeHtml(text) {

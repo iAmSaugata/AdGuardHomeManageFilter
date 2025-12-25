@@ -110,6 +110,30 @@ export async function getFilteringStatus(server) {
 }
 
 /**
+ * Get server information including version
+ * GET /control/status
+ * Returns: { version: string, ... }
+ */
+export async function getServerInfo(server) {
+    const url = `${server.host}/control/status`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Fetching server info for:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data;
+}
+
+/**
  * Set user-defined filtering rules
  * POST /control/filtering/set_rules
  * @param {Object} server - Server configuration

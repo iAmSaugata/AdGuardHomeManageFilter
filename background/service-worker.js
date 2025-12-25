@@ -104,6 +104,14 @@ const messageHandlers = {
         return await apiClient.getUserRules(server);
     },
 
+    async getServerInfo({ serverId }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.getServerInfo(server);
+    },
+
     // Sync operations
     async refreshServerRules({ serverId, force = false }) {
         return await syncEngine.refreshServerRules(serverId, { force });

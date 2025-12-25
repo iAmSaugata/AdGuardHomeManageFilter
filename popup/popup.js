@@ -3,6 +3,7 @@
 
 import { renderServerList } from './views/server-list.js';
 import { renderServerForm } from './views/server-form.js';
+import { renderServerDetail } from './views/server-detail.js';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -109,6 +110,10 @@ function renderCurrentView() {
 
         case 'server-form':
             renderServerForm(mainContent, state.viewData);
+            break;
+
+        case 'server-detail':
+            renderServerDetail(mainContent, state.viewData);
             break;
 
         default:
