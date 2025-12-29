@@ -90,6 +90,15 @@
     background-color: #ef4444;
 }
 
+/* Importance toggle - different colors */
+#importance-toggle {
+    background-color: #6b7280;
+}
+
+#importance-toggle:checked {
+    background-color: #22c55e;
+}
+
 .toggle-wrapper input[type="checkbox"]::before {
     content: '';
     position: absolute;
