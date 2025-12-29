@@ -96,10 +96,10 @@ export function hideLoading() {
 // VIEW ROUTER
 // ============================================================================
 
-export async function navigateTo(view, data = null) {
+export function navigateTo(view, data = null) {
     state.currentView = view;
     state.viewData = data;
-    await renderCurrentView();
+    renderCurrentView();
 }
 
 function renderCurrentView() {
@@ -107,33 +107,34 @@ function renderCurrentView() {
 
     switch (state.currentView) {
         case 'server-list':
-            await renderServerList(mainContent);
+            renderServerList(mainContent);
 
-            // Inject Add Rule section into the view-body to flow with content
-            const viewBody = mainContent.querySelector('.view-body');
-            if (viewBody) {
-                const ruleContainer = document.createElement('div');
-                ruleContainer.id = 'add-rule-container';
-                viewBody.appendChild(ruleContainer);
-
-                const { renderAddRuleSection } = await import('./views/add-rule.js');
-                await renderAddRuleSection(ruleContainer);
-            }
+            // Render Add Rule section (1px gap)
+            setTimeout(() => {
+                const addRuleContainer = document.getElementById('add-rule-container');
+                if (addRuleContainer) {
+                    renderAddRuleSection(addRuleContainer);
+                }
+            }, 100);
             break;
 
         case 'server-form':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderServerForm(mainContent, state.viewData);
             break;
 
         case 'server-detail':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderServerDetail(mainContent, state.viewData);
             break;
 
         case 'settings':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderSettings(mainContent);
             break;
 
         case 'group-form':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderGroupForm(mainContent, state.viewData);
             break;
 

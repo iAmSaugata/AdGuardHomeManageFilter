@@ -1,41 +1,29 @@
 /**
  * Add Rule Service
- * Handles adding rules to servers with group-aware logic
- * Uses existing getUserRules/setRules API patterns
+ * Uses existing API patterns - no new logic
  */
 
-/**
- * Add rule to target (group or server)
- * @param {string} targetValue - Format: "group:id" or "server:id"
- * @param {string} rule - AdGuard rule syntax
- * @returns {Promise<Object>} Summary { success, duplicate, failed, total }
- */
 export async function addRuleToTarget(targetValue, rule) {
     if (!targetValue || !rule) {
-        throw new Error('Target and rule are required');
+        throw new Error('Target and rule required');
     }
 
     const [type, id] = targetValue.split(':');
     let serverIds = [];
 
     if (type === 'group') {
-        // Get all servers in the group
         serverIds = await getServerIdsForGroup(id);
     } else if (type === 'server') {
-        // Check if server is in a group
         const groupId = await getGroupForServer(id);
         if (groupId) {
-            // Server is in a group - add to all servers in that group
             serverIds = await getServerIdsForGroup(groupId);
         } else {
-            // Server not in a group - add only to this server
             serverIds = [id];
         }
     } else {
-        throw new Error('Invalid target type');
+        throw new Error('Invalid target');
     }
 
-    // Add rule to each server
     const results = {
         success: 0,
         duplicate: 0,
@@ -45,19 +33,14 @@ export async function addRuleToTarget(targetValue, rule) {
 
     for (const serverId of serverIds) {
         try {
-            // Get current rules using existing API pattern
             const currentRules = await window.app.sendMessage('getUserRules', { serverId });
 
-            // Check if rule already exists
             if (currentRules.includes(rule)) {
                 results.duplicate++;
                 continue;
             }
 
-            // Add new rule
             const updatedRules = [...currentRules, rule];
-
-            // Set rules using existing API pattern
             await window.app.sendMessage('setRules', { serverId, rules: updatedRules });
             results.success++;
         } catch (error) {
@@ -69,11 +52,6 @@ export async function addRuleToTarget(targetValue, rule) {
     return results;
 }
 
-/**
- * Get all server IDs for a group
- * @param {string} groupId - Group ID
- * @returns {Promise<string[]>} Array of server IDs
- */
 async function getServerIdsForGroup(groupId) {
     const groups = await window.app.sendMessage('getGroups');
     const group = groups.find(g => g.id === groupId);
@@ -85,11 +63,6 @@ async function getServerIdsForGroup(groupId) {
     return group.serverIds || [];
 }
 
-/**
- * Get group ID for a server (if server is in a group)
- * @param {string} serverId - Server ID
- * @returns {Promise<string|null>} Group ID or null if not in a group
- */
 async function getGroupForServer(serverId) {
     const groups = await window.app.sendMessage('getGroups');
 

@@ -1,57 +1,32 @@
 /**
- * Add Rule View Component
- * Uses EXACT same card structure as server-list.js
+ * Add Rule Component
+ * Matches screenshot pixel-perfect, uses existing CSS patterns
  */
 
 import { parseInput } from '../utils/rule-parser.js';
 import { generateRule } from '../utils/rule-generator.js';
 import { addRuleToTarget } from '../services/add-rule-service.js';
-import { escapeHtml } from '../utils.js';
 
-export async function renderAddRule(container) {
+export async function renderAddRuleSection(container) {
     const servers = await window.app.sendMessage('getServers');
     const groups = await window.app.sendMessage('getGroups');
 
-    // Use EXACT same structure as server cards
+    // Use view-body with 1px margin-top for exact spacing
     container.innerHTML = `
-        <div class="server-card">
-            <div class="card-header">
-                <h3 class="card-title">ADD RULE</h3>
-            </div>
-            <div class="card-content">
-                <div class="form-group">
+        <div class="view-body" style="margin-top: 1px;">
+            <div class="add-rule-card">
+                <div class="add-rule-header">
+                    <h2>ADD RULE</h2>
+                </div>
+                <div class="add-rule-body">
                     <input 
                         type="text" 
                         id="rule-input" 
-                        class="form-input" 
+                        class="add-rule-input" 
                         placeholder="example.com or ||example.com^"
                     />
-                </div>
-                
-                <div class="form-row">
-                    <label class="form-label">Block / Allow</label>
-                    <label class="toggle-switch block-toggle">
-                        <input type="checkbox" id="block-toggle" checked>
-                        <span class="slider"></span>
-                        <span id="block-label" class="toggle-label">BLOCK</span>
-                    </label>
-                </div>
-                
-                <div class="form-row">
-                    <label class="form-label">Important</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="important-toggle">
-                        <span class="slider"></span>
-                        <span id="important-label" class="toggle-label">OFF</span>
-                    </label>
-                </div>
-                
-                <div id="rule-preview" class="rule-preview empty">
-                    Enter a domain to see preview
-                </div>
-                
-                <div class="form-row">
-                    <select id="rule-target" class="form-select">
+                    
+                    <select id="rule-target" class="add-rule-select">
                         <option value="">No Groups</option>
                         ${groups && groups.length > 0 ? `
                             <optgroup label="Groups">
@@ -65,33 +40,49 @@ export async function renderAddRule(container) {
                         ` : ''}
                     </select>
                     
-                    <button id="add-sync-btn" class="btn btn-primary">
-                        ADD & SYNC
-                    </button>
+                    <div class="add-rule-toggles">
+                        <label class="toggle-wrapper">
+                            <input type="checkbox" id="block-toggle" checked>
+                            <span class="toggle-slider"></span>
+                            <span id="block-label" class="toggle-text block">BLOCK</span>
+                        </label>
+                        
+                        <label class="toggle-wrapper">
+                            <input type="checkbox" id="importance-toggle">
+                            <span class="toggle-slider"></span>
+                            <span id="importance-label" class="toggle-text">IMPORTANCE</span>
+                        </label>
+                    </div>
+                    
+                    <div id="rule-preview" class="rule-preview">||example.com^</div>
+                    
+                    <button id="add-sync-btn" class="btn btn-primary">ADD & SYNC</button>
                 </div>
             </div>
         </div>
     `;
 
-    // Event listeners
+    setupEventListeners();
+}
+
+function setupEventListeners() {
     const input = document.getElementById('rule-input');
+    const target = document.getElementById('rule-target');
     const blockToggle = document.getElementById('block-toggle');
     const blockLabel = document.getElementById('block-label');
-    const importantToggle = document.getElementById('important-toggle');
-    const importantLabel = document.getElementById('important-label');
+    const importanceToggle = document.getElementById('importance-toggle');
+    const importanceLabel = document.getElementById('importance-label');
     const preview = document.getElementById('rule-preview');
-    const target = document.getElementById('rule-target');
     const btn = document.getElementById('add-sync-btn');
 
-    // Update preview function
     function updatePreview() {
         const inputValue = input.value.trim();
         const isBlock = blockToggle.checked;
-        const isImportant = importantToggle.checked;
+        const isImportant = importanceToggle.checked;
 
         if (!inputValue) {
-            preview.textContent = 'Enter a domain to see preview';
-            preview.className = 'rule-preview empty';
+            preview.textContent = '||example.com^';
+            preview.className = 'rule-preview';
             return;
         }
 
@@ -107,37 +98,26 @@ export async function renderAddRule(container) {
         preview.className = isBlock ? 'rule-preview block' : 'rule-preview allow';
     }
 
-    // Block toggle handler
     blockToggle.addEventListener('change', () => {
         const isBlock = blockToggle.checked;
         blockLabel.textContent = isBlock ? 'BLOCK' : 'ALLOW';
-        const toggleContainer = blockToggle.closest('.toggle-switch');
-        if (isBlock) {
-            toggleContainer.classList.add('block-toggle');
-            toggleContainer.classList.remove('allow-toggle');
-        } else {
-            toggleContainer.classList.remove('block-toggle');
-            toggleContainer.classList.add('allow-toggle');
-        }
+        blockLabel.className = isBlock ? 'toggle-text block' : 'toggle-text allow';
         updatePreview();
     });
 
-    // Important toggle handler
-    importantToggle.addEventListener('change', () => {
-        const isImportant = importantToggle.checked;
-        importantLabel.textContent = isImportant ? 'ON' : 'OFF';
+    importanceToggle.addEventListener('change', () => {
+        const isImportant = importanceToggle.checked;
+        importanceLabel.className = isImportant ? 'toggle-text important' : 'toggle-text';
         updatePreview();
     });
 
-    // Input change handler
     input.addEventListener('input', updatePreview);
 
-    // Add button handler
     btn.addEventListener('click', async () => {
         const inputValue = input.value.trim();
         const targetValue = target.value;
         const isBlock = blockToggle.checked;
-        const isImportant = importantToggle.checked;
+        const isImportant = importanceToggle.checked;
 
         if (!inputValue) {
             window.app.showToast('Please enter a domain or URL', 'error');
@@ -149,24 +129,20 @@ export async function renderAddRule(container) {
             return;
         }
 
-        // Parse input
         const { hostname, error } = parseInput(inputValue);
         if (error) {
             window.app.showToast(error, 'error');
             return;
         }
 
-        // Generate rule
         const rule = generateRule(hostname, isBlock, isImportant);
 
-        // Disable button
         btn.disabled = true;
         btn.textContent = 'Adding...';
 
         try {
             const summary = await addRuleToTarget(targetValue, rule);
 
-            // Show results
             if (summary.success > 0) {
                 const ruleType = isBlock ? 'Block' : 'Allow';
                 window.app.showToast(`${ruleType} rule added to ${summary.success}/${summary.total} server(s)`, 'success');
@@ -175,7 +151,7 @@ export async function renderAddRule(container) {
             }
 
             if (summary.duplicate > 0) {
-                window.app.showToast(`Rule already exists on ${summary.duplicate} server(s)`, 'info');
+                window.app.showToast(`Rule exists on ${summary.duplicate} server(s)`, 'info');
             }
 
             if (summary.failed > 0) {
@@ -189,4 +165,10 @@ export async function renderAddRule(container) {
             btn.textContent = 'ADD & SYNC';
         }
     });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
