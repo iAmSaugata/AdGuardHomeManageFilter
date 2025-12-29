@@ -43,18 +43,18 @@ export async function renderAddRuleSection(container) {
                     <div class="add-rule-toggles">
                         <label class="toggle-wrapper">
                             <input type="checkbox" id="block-toggle" checked>
-                            <span class="toggle-slider"></span>
                             <span id="block-label" class="toggle-text block">BLOCK</span>
                         </label>
                         
                         <label class="toggle-wrapper">
                             <input type="checkbox" id="importance-toggle">
-                            <span class="toggle-slider"></span>
                             <span id="importance-label" class="toggle-text">IMPORTANCE</span>
                         </label>
                     </div>
                     
-                    <button id="add-sync-btn" class="btn btn-primary btn-block">ADD & SYNC</button>
+                    <div id="rule-preview" class="rule-preview">||example.com^</div>
+                    
+                    <button id="add-sync-btn" class="btn btn-primary">ADD & SYNC</button>
                 </div>
             </div>
         </div>
