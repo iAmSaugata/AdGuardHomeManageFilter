@@ -1,6 +1,6 @@
 /**
  * Add Rule View Component
- * Matches screenshot exactly with 1px gap from server list
+ * Uses EXACT same card structure as server-list.js
  */
 
 import { parseInput } from '../utils/rule-parser.js';
@@ -12,60 +12,63 @@ export async function renderAddRule(container) {
     const servers = await window.app.sendMessage('getServers');
     const groups = await window.app.sendMessage('getGroups');
 
+    // Use EXACT same structure as server cards
     container.innerHTML = `
-        <div class="view-header">
-            <h2 class="view-subtitle">ADD RULE</h2>
-        </div>
-        <div class="view-body">
-            <div class="form-group">
-                <input 
-                    type="text" 
-                    id="rule-input" 
-                    class="form-input" 
-                    placeholder="example.com or ||example.com^"
-                />
+        <div class="server-card">
+            <div class="card-header">
+                <h3 class="card-title">ADD RULE</h3>
             </div>
-            
-            <div class="form-row">
-                <label class="form-label">Block / Allow</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="block-toggle" checked>
-                    <span class="toggle-slider"></span>
-                    <span id="block-label" class="toggle-text">BLOCK</span>
-                </label>
-            </div>
-            
-            <div class="form-row">
-                <label class="form-label">Important</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="important-toggle">
-                    <span class="toggle-slider"></span>
-                    <span id="important-label" class="toggle-text">OFF</span>
-                </label>
-            </div>
-            
-            <div id="rule-preview" class="rule-preview empty">
-                Enter a domain to see preview
-            </div>
-            
-            <div class="form-row">
-                <select id="rule-target" class="form-select">
-                    <option value="">No Groups</option>
-                    ${groups && groups.length > 0 ? `
-                        <optgroup label="Groups">
-                            ${groups.map(g => `<option value="group:${g.id}">${escapeHtml(g.name)}</option>`).join('')}
-                        </optgroup>
-                    ` : ''}
-                    ${servers && servers.length > 0 ? `
-                        <optgroup label="Servers">
-                            ${servers.map(s => `<option value="server:${s.id}">${escapeHtml(s.name)}</option>`).join('')}
-                        </optgroup>
-                    ` : ''}
-                </select>
+            <div class="card-content">
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        id="rule-input" 
+                        class="form-input" 
+                        placeholder="example.com or ||example.com^"
+                    />
+                </div>
                 
-                <button id="add-sync-btn" class="btn btn-primary">
-                    ADD & SYNC
-                </button>
+                <div class="form-row">
+                    <label class="form-label">Block / Allow</label>
+                    <label class="toggle-switch block-toggle">
+                        <input type="checkbox" id="block-toggle" checked>
+                        <span class="slider"></span>
+                        <span id="block-label" class="toggle-label">BLOCK</span>
+                    </label>
+                </div>
+                
+                <div class="form-row">
+                    <label class="form-label">Important</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="important-toggle">
+                        <span class="slider"></span>
+                        <span id="important-label" class="toggle-label">OFF</span>
+                    </label>
+                </div>
+                
+                <div id="rule-preview" class="rule-preview empty">
+                    Enter a domain to see preview
+                </div>
+                
+                <div class="form-row">
+                    <select id="rule-target" class="form-select">
+                        <option value="">No Groups</option>
+                        ${groups && groups.length > 0 ? `
+                            <optgroup label="Groups">
+                                ${groups.map(g => `<option value="group:${g.id}">${escapeHtml(g.name)}</option>`).join('')}
+                            </optgroup>
+                        ` : ''}
+                        ${servers && servers.length > 0 ? `
+                            <optgroup label="Servers">
+                                ${servers.map(s => `<option value="server:${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                            </optgroup>
+                        ` : ''}
+                    </select>
+                    
+                    <button id="add-sync-btn" class="btn btn-primary">
+                        ADD & SYNC
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -108,7 +111,14 @@ export async function renderAddRule(container) {
     blockToggle.addEventListener('change', () => {
         const isBlock = blockToggle.checked;
         blockLabel.textContent = isBlock ? 'BLOCK' : 'ALLOW';
-        blockToggle.parentElement.className = isBlock ? 'toggle-switch block' : 'toggle-switch allow';
+        const toggleContainer = blockToggle.closest('.toggle-switch');
+        if (isBlock) {
+            toggleContainer.classList.add('block-toggle');
+            toggleContainer.classList.remove('allow-toggle');
+        } else {
+            toggleContainer.classList.remove('block-toggle');
+            toggleContainer.classList.add('allow-toggle');
+        }
         updatePreview();
     });
 
@@ -179,7 +189,4 @@ export async function renderAddRule(container) {
             btn.textContent = 'ADD & SYNC';
         }
     });
-
-    // Initialize toggle state
-    blockToggle.parentElement.className = 'toggle-switch block';
 }

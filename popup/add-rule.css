@@ -1,18 +1,19 @@
 /* Add Rule Component Styles */
 
-/* Container uses 1px margin-top for gap */
+/* Container - 1px margin for gap */
 #add-rule-container {
     margin-top: 1px;
 }
 
-/* Reuse .view-header and .view-body from popup.css */
+/* Uses .server-card from popup.css - no need to redefine */
 
-/* Toggle Switch */
+/* Toggle Switch - Fixed to show only ONE slider */
 .toggle-switch {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
+    position: relative;
 }
 
 .toggle-switch input[type="checkbox"] {
@@ -21,50 +22,59 @@
     height: 24px;
     -webkit-appearance: none;
     appearance: none;
-    background-color: #22c55e;
+    background-color: #666;
     outline: none;
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
-.toggle-switch.block input[type="checkbox"] {
+/* Block toggle - RED when checked */
+.toggle-switch.block-toggle input[type="checkbox"]:checked {
     background-color: #ef4444;
 }
 
-.toggle-switch.allow input[type="checkbox"] {
+/* Allow toggle - GREEN when NOT checked */
+.toggle-switch.allow-toggle input[type="checkbox"]:not(:checked) {
     background-color: #22c55e;
 }
 
-.toggle-switch input[type="checkbox"]::before {
-    content: '';
+/* Important toggle - GREEN when checked */
+.toggle-switch input[type="checkbox"]:checked {
+    background-color: #22c55e;
+}
+
+/* Slider circle - SINGLE slider only */
+.toggle-switch .slider {
     position: absolute;
     width: 20px;
     height: 20px;
     border-radius: 50%;
+    background-color: white;
     top: 2px;
     left: 2px;
-    background-color: white;
     transition: transform 0.3s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
 }
 
-.toggle-switch input[type="checkbox"]:checked::before {
+.toggle-switch input[type="checkbox"]:checked+.slider {
     transform: translateX(20px);
 }
 
-.toggle-text {
+/* Toggle Label */
+.toggle-label {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
     user-select: none;
 }
 
-.toggle-switch.block .toggle-text {
+.toggle-switch.block-toggle .toggle-label {
     color: #ef4444;
 }
 
-.toggle-switch.allow .toggle-text {
+.toggle-switch.allow-toggle .toggle-label {
     color: #22c55e;
 }
 
