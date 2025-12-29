@@ -1416,4 +1416,19 @@ p {
          f o n t - s i z e :   1 1 p x ;  
          m i n - w i d t h :   5 0 p x ;  
  }  
+ / *   R u l e   a c t i o n   b u t t o n s   ( e d i t / d e l e t e   i c o n s )   -   T r a n s p a r e n t   b a c k g r o u n d   f o r   d a r k   t h e m e   * /  
+ . r u l e - a c t i o n - b t n   {  
+         b a c k g r o u n d :   t r a n s p a r e n t ;  
+         b o r d e r :   n o n e ;  
+         c u r s o r :   p o i n t e r ;  
+         p a d d i n g :   4 p x ;  
+         f o n t - s i z e :   1 4 p x ;  
+         l i n e - h e i g h t :   1 ;  
+         o p a c i t y :   0 . 6 ;  
+         t r a n s i t i o n :   o p a c i t y   0 . 2 s   e a s e ;  
+ }  
+  
+ . r u l e - a c t i o n - b t n : h o v e r   {  
+         o p a c i t y :   1 ;  
+ }  
  
