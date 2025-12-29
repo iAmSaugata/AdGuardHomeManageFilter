@@ -109,22 +109,24 @@ export async function renderServerForm(container, data = {}) {
         
         <div id="form-errors" class="form-error hidden"></div>
         
-        <div class="flex gap-2 mt-6">
-          <button type="button" class="btn btn-secondary" id="test-connection-btn">
-            Test Connection
-          </button>
-          <button type="submit" class="btn btn-primary flex-1">
-            ${isEdit ? 'Save Changes' : 'Add Server'}
-          </button>
-        </div>
-        
-        ${isEdit ? `
-          <div class="mt-4">
-            <button type="button" class="btn btn-danger btn-block" id="delete-server-btn">
-              Delete Server
+        <div>
+          <div class="flex gap-2">
+            <button type="button" class="btn btn-secondary flex-1" id="test-connection-btn">
+              Test Connection
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">
+              ${isEdit ? 'Save Changes' : 'Add Server'}
             </button>
           </div>
-        ` : ''}
+          
+          ${isEdit ? `
+            <div class="mt-3">
+              <button type="button" class="btn btn-danger btn-block" id="delete-server-btn">
+                Delete Server
+              </button>
+            </div>
+          ` : ''}
+        </div>
       </form>
     </div>
   `;

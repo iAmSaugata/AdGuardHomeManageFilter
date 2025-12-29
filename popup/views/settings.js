@@ -18,8 +18,7 @@ export async function renderSettings(container) {
                 <div class="settings-section">
                     <h2 class="settings-section-title">Groups</h2>
                     <p class="settings-section-description">
-                        Groups allow you to merge rules from multiple servers. 
-                        Rules are automatically deduplicated and normalized.
+                        Merge rules from multiple servers with auto-deduplication.
                     </p>
                     
                     <button class="btn btn-primary btn-block" id="create-group-btn">

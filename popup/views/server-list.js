@@ -25,14 +25,17 @@ export async function renderServerList(container) {
   });
 
   try {
-    // Fetch servers
-    const servers = await window.app.sendMessage('getServers');
+    // Fetch servers and groups
+    const [servers, groups] = await Promise.all([
+      window.app.sendMessage('getServers'),
+      window.app.sendMessage('getGroups')
+    ]);
 
     // Render servers
     if (servers.length === 0) {
       renderEmptyState(container);
     } else {
-      renderServersList(container, servers);
+      renderServersList(container, servers, groups);
     }
   } catch (error) {
     console.error('Failed to load servers:', error);
@@ -66,7 +69,7 @@ function renderEmptyState(container) {
   });
 }
 
-async function renderServersList(container, servers) {
+async function renderServersList(container, servers, groups) {
   // Render server cards immediately with "Refreshing..." status
   const initialServerItems = servers.map(server => `
       <div class="list-item server-item" data-server-id="${server.id}" id="server-${server.id}">
@@ -132,6 +135,18 @@ async function renderServersList(container, servers) {
       const version = serverInfo?.version || 'Unknown';
       const isOnline = serverInfo !== null;
 
+      // Find groups this server belongs to
+      const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
+      const groupBadgesHtml = serverGroups.length > 0 ? `
+        <div class="server-groups">
+          ${serverGroups.map(group => `
+            <span class="group-badge" data-group-id="${group.id}" title="Click to edit group">
+              📁 ${escapeHtml(group.name)}
+            </span>
+          `).join('')}
+        </div>
+      ` : '';
+
       // Update the server card
       const serverCard = document.getElementById(`server-${server.id}`);
       if (serverCard) {
@@ -142,6 +157,7 @@ async function renderServersList(container, servers) {
                       <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
                       <span class="badge badge-secondary">${escapeHtml(version)}</span>
                     </div>
+                    ${groupBadgesHtml}
                   </div>
                   <div class="flex gap-2 items-center">
                     <span class="badge badge-success">${counts.allow}</span>
@@ -162,6 +178,15 @@ async function renderServersList(container, servers) {
             window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
           });
         }
+
+        // Add group badge click handlers
+        serverCard.querySelectorAll('.group-badge').forEach(badge => {
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const groupId = badge.dataset.groupId;
+            window.app.navigateTo('group-form', { mode: 'edit', groupId });
+          });
+        });
       }
     } catch (error) {
       console.error(`Failed to fetch data for ${server.name}:`, error);

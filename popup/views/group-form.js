@@ -7,24 +7,43 @@ export async function renderGroupForm(container, data = {}) {
     const { mode = 'add', groupId } = data;
     const isEdit = mode === 'edit';
 
+    // Fetch servers and all groups
+    const [servers, allGroups] = await Promise.all([
+        window.app.sendMessage('getServers'),
+        window.app.sendMessage('getGroups')
+    ]);
+
     let group = null;
     if (isEdit && groupId) {
         group = await window.app.sendMessage('getGroup', { id: groupId });
         if (!group) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-title">Group Not Found</div>
-                    <button class="btn btn-primary" onclick="window.app.navigateTo('settings')">
-                        Back to Settings
-                    </button>
-                </div>
-            `;
+            window.app.showToast('Group not found', 'error');
+            window.app.navigateTo('settings');
             return;
         }
     }
 
-    // Fetch all servers
-    const servers = await window.app.sendMessage('getServers');
+    // Filter available servers (exclude servers in other groups)
+    const otherGroups = isEdit ? allGroups.filter(g => g.id !== groupId) : allGroups;
+    const usedServerIds = new Set();
+    otherGroups.forEach(g => {
+        if (g.serverIds) {
+            g.serverIds.forEach(id => usedServerIds.add(id));
+        }
+    });
+
+    // Separate available and unavailable servers
+    const availableServers = servers.filter(s => !usedServerIds.has(s.id));
+    const unavailableServers = servers.filter(s => usedServerIds.has(s.id));
+
+    // Get group info for unavailable servers
+    const unavailableServerInfo = unavailableServers.map(server => {
+        const serverGroup = otherGroups.find(g => g.serverIds && g.serverIds.includes(server.id));
+        return {
+            server,
+            groupName: serverGroup ? serverGroup.name : 'Unknown Group'
+        };
+    });
 
     container.innerHTML = `
         <div class="view-container">
@@ -33,9 +52,12 @@ export async function renderGroupForm(container, data = {}) {
                     ← Back
                 </button>
                 <h1 class="view-title">${isEdit ? 'Edit' : 'Create'} Group</h1>
-                <div class="flex-1"></div>
+                ${isEdit ? `
+                    <button class="btn btn-ghost btn-sm" id="delete-group-btn" title="Delete Group">
+                        🗑️
+                    </button>
+                ` : '<div style="width: 40px;"></div>'}
             </div>
-
             <div class="view-body">
                 <div class="form-group">
                     <label class="form-label" for="group-name">Group Name</label>
@@ -43,7 +65,7 @@ export async function renderGroupForm(container, data = {}) {
                         type="text"
                         id="group-name"
                         class="form-input"
-                        placeholder="Enter group name"
+                        placeholder="e.g., Home Servers"
                         value="${group ? escapeHtml(group.name) : ''}"
                         required
                     />
@@ -51,9 +73,19 @@ export async function renderGroupForm(container, data = {}) {
 
                 <div class="form-group">
                     <label class="form-label">Select Servers</label>
-                    <div class="server-checkboxes" id="server-checkboxes">
-                        ${servers.map(server => `
-                            <label class="checkbox-label">
+                    ${availableServers.length > 0 ? `
+                        <div class="server-availability">
+                            ℹ️ ${availableServers.length} of ${servers.length} servers available
+                            ${unavailableServers.length > 0 ? `(${unavailableServers.length} already in groups)` : ''}
+                        </div>
+                    ` : `
+                        <div class="server-availability" style="border-left-color: var(--color-warning);">
+                            ⚠️ All servers are already in other groups
+                        </div>
+                    `}
+                    <div class="server-checkboxes">
+                        ${availableServers.map(server => `
+                            <label class="toggle-label">
                                 <input
                                     type="checkbox"
                                     class="server-checkbox"
@@ -63,6 +95,24 @@ export async function renderGroupForm(container, data = {}) {
                                 <span>${escapeHtml(server.name)}</span>
                             </label>
                         `).join('')}
+                        ${unavailableServers.length > 0 ? `
+                            <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                <div class="text-xs text-tertiary" style="margin-bottom: var(--space-2);">
+                                    Unavailable (already in groups):
+                                </div>
+                                ${unavailableServerInfo.map(({ server, groupName }) => `
+                                    <label class="toggle-label server-unavailable">
+                                        <input
+                                            type="checkbox"
+                                            class="server-checkbox"
+                                            value="${server.id}"
+                                            disabled
+                                        />
+                                        <span>${escapeHtml(server.name)} <span class="text-xs">(in "${escapeHtml(groupName)}")</span></span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
 
@@ -78,11 +128,13 @@ export async function renderGroupForm(container, data = {}) {
                     </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <button class="btn btn-secondary flex-1" id="cancel-btn">Cancel</button>
-                    <button class="btn btn-primary flex-1" id="save-btn">
-                        ${isEdit ? 'Update' : 'Create'} Group
-                    </button>
+                <div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-secondary flex-1" id="cancel-btn">Cancel</button>
+                        <button class="btn btn-primary flex-1" id="save-btn">
+                            ${isEdit ? 'Update' : 'Create'} Group
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -100,6 +152,13 @@ export async function renderGroupForm(container, data = {}) {
     document.getElementById('save-btn').addEventListener('click', () => {
         handleSaveGroup(isEdit, groupId);
     });
+
+    // Delete group button (only in edit mode)
+    if (isEdit) {
+        document.getElementById('delete-group-btn').addEventListener('click', async () => {
+            await handleDeleteGroup(groupId);
+        });
+    }
 
     // Server checkbox change handler
     document.querySelectorAll('.server-checkbox').forEach(checkbox => {
@@ -164,7 +223,9 @@ async function updatePreview() {
 
         // Update server labels with counts
         document.querySelectorAll('.server-checkbox').forEach(cb => {
-            const label = cb.closest('.checkbox-label');
+            const label = cb.closest('.toggle-label');
+            if (!label) return; // Skip if label not found (e.g., disabled servers)
+
             const existingCounts = label.querySelector('.server-counts');
             if (existingCounts) {
                 existingCounts.remove();
@@ -322,13 +383,18 @@ async function handleSaveGroup(isEdit, groupId) {
         // Show appropriate message
         if (failCount === 0) {
             window.app.showToast(
-                `Group ${isEdit ? 'updated' : 'created'} and rules applied to ${successCount} server(s)`,
+                `Group ${isEdit ? 'updated' : 'created'}: Rules applied to ${successCount}/${selectedServerIds.length} servers`,
                 'success'
+            );
+        } else if (successCount > 0) {
+            window.app.showToast(
+                `Group saved: Rules applied to ${successCount}/${selectedServerIds.length} servers`,
+                'warning'
             );
         } else {
             window.app.showToast(
-                `Group saved. Rules applied to ${successCount}/${selectedServerIds.length} servers`,
-                'warning'
+                `Group saved but failed to apply rules to all servers (0/${selectedServerIds.length})`,
+                'error'
             );
         }
 
@@ -352,6 +418,33 @@ function normalizeRule(rule) {
 
 function dedupRules(rules) {
     return [...new Set(rules)];
+}
+
+async function handleDeleteGroup(groupId) {
+    const group = await window.app.sendMessage('getGroup', { id: groupId });
+
+    if (!group) {
+        window.app.showToast('Group not found', 'error');
+        return;
+    }
+
+    const confirmed = await showConfirmDialog(
+        'Delete Group',
+        `Are you sure you want to delete "${group.name}"?`,
+        'This will not affect the rules on your servers.'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await window.app.sendMessage('deleteGroup', { id: groupId });
+        window.app.showToast('Group deleted successfully', 'success');
+        window.app.navigateTo('settings');
+    } catch (error) {
+        window.app.showToast('Failed to delete group: ' + error.message, 'error');
+    }
 }
 
 // Shared helper functions (classifyRule, getRuleCounts, escapeHtml) imported from utils.js

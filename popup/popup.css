@@ -290,12 +290,14 @@ p {
    ============================================================================ */
 
 .form-group {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
+    /* Reduced from var(--space-4) to save vertical space */
 }
 
 .form-label {
     display: block;
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
+    /* Reduced from var(--space-2) */
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
@@ -336,6 +338,17 @@ p {
     margin-top: var(--space-1);
     font-size: var(--font-size-sm);
     color: var(--color-danger);
+}
+
+/* Make server form fill height and push buttons to bottom */
+#server-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#server-form>div:last-child {
+    margin-top: auto;
 }
 
 /* Toggle Switch */
@@ -742,7 +755,8 @@ p {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: var(--space-4);
+    padding: var(--space-2);
+    /* Reduced from var(--space-4) to save vertical space */
     overflow: hidden;
     /* Prevent view-body from scrolling */
 }
@@ -880,6 +894,68 @@ p {
     color: var(--color-accent);
 }
 
+.rule-block .rule-indic.status-offline {
+    background-color: var(--color-danger);
+}
+
+/* ============================================================================
+   GROUP BADGES & SERVER AVAILABILITY
+   ============================================================================ */
+
+/* Group badges in server list */
+.server-groups {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    margin-top: 2px;
+    /* Reduced from var(--space-1) to save space */
+}
+
+.group-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    /* Compact padding */
+    font-size: 9px;
+    /* Small font size */
+    font-weight: var(--font-weight-medium);
+    background-color: var(--color-accent-light);
+    color: var(--color-accent);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
+}
+
+.group-badge:hover {
+    background-color: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+}
+
+/* Server availability info in group form */
+.server-availability {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--space-2);
+    padding: var(--space-1);
+    /* Reduced from var(--space-2) */
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-info);
+}
+
+.server-unavailable {
+    color: var(--color-text-tertiary);
+    font-style: italic;
+    opacity: 0.6;
+}
+
+.server-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 .rule-block .rule-indicator {
     background-color: var(--color-danger);
 }
@@ -1015,7 +1091,8 @@ p {
    ============================================================================ */
 
 .settings-section {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-3);
+    /* Reduced from var(--space-6) to save space */
 }
 
 .settings-section-title {
@@ -1028,7 +1105,8 @@ p {
 .settings-section-description {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
-    margin: 0 0 var(--space-4) 0;
+    margin: 0 0 var(--space-3) 0;
+    /* Reduced from var(--space-4) */
     line-height: var(--line-height-relaxed);
 }
 
@@ -1076,7 +1154,8 @@ p {
 
 /* Rules Preview */
 .rules-preview {
-    max-height: 150px;
+    max-height: 50px;
+    /* Minimum height to ensure buttons are fully visible */
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
