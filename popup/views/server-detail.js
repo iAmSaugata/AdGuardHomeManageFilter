@@ -218,7 +218,7 @@ function renderRulesList(rules) {
         <span class="rule-text">${escapeHtml(rule)}</span>
         <div class="rule-actions">
           <button class="rule-action-btn" data-action="edit" title="Edit rule">✏️</button>
-          <button class="rule-action-btn" data-action="delete" title="Delete rule">🗑️</button>
+          <button class="rule-action-btn" data-action="delete" title="Delete rule">⛔</button>
         </div>
       </div>
     `;

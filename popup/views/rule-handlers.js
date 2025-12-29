@@ -90,7 +90,7 @@ function cancelEdit(ruleItem, originalRule) {
     actionsDiv.className = 'rule-actions';
     actionsDiv.innerHTML = `
     <button class="rule-action-btn" data-action="edit" title="Edit rule">✏️</button>
-    <button class="rule-action-btn" data-action="delete" title="Delete rule">🗑️</button>
+    <button class="rule-action-btn" data-action="delete" title="Delete rule">⛔</button>
   `;
 
     input.replaceWith(ruleTextSpan);
@@ -142,7 +142,7 @@ async function saveRuleEdit(ruleItem, serverId, allRules, ruleIndex, newRule) {
             actionsDiv.className = 'rule-actions';
             actionsDiv.innerHTML = `
         <button class="rule-action-btn" data-action="edit" title="Edit rule">✏️</button>
-        <button class="rule-action-btn" data-action="delete" title="Delete rule">🗑️</button>
+        <button class="rule-action-btn" data-action="delete" title="Delete rule">⛔</button>
       `;
 
             const input = ruleItem.querySelector('.rule-edit-input');
