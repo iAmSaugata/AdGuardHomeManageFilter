@@ -108,21 +108,34 @@ function renderCurrentView() {
     switch (state.currentView) {
         case 'server-list':
             renderServerList(mainContent);
+
+            // Render Add Rule section
+            setTimeout(async () => {
+                const addRuleContainer = document.getElementById('add-rule-container');
+                if (addRuleContainer) {
+                    const { renderAddRule } = await import('./views/add-rule.js');
+                    await renderAddRule(addRuleContainer);
+                }
+            }, 100);
             break;
 
         case 'server-form':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderServerForm(mainContent, state.viewData);
             break;
 
         case 'server-detail':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderServerDetail(mainContent, state.viewData);
             break;
 
         case 'settings':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderSettings(mainContent);
             break;
 
         case 'group-form':
+            document.getElementById('add-rule-container').innerHTML = '';
             renderGroupForm(mainContent, state.viewData);
             break;
 
