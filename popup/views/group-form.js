@@ -191,6 +191,8 @@ async function updatePreview() {
         // Clear all server counts
         document.querySelectorAll('.server-checkbox').forEach(cb => {
             const label = cb.closest('.checkbox-label');
+            if (!label) return; // Skip if label not found
+
             const existingCounts = label.querySelector('.server-counts');
             if (existingCounts) {
                 existingCounts.remove();
