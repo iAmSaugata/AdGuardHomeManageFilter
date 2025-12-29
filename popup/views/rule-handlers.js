@@ -28,7 +28,7 @@ export function handleEditRule(ruleItem, serverId, allRules, ruleIndex) {
     const editActions = document.createElement('span');
     editActions.className = 'rule-edit-actions';
     editActions.style.cssText = 'display:inline;float:right;white-space:nowrap;';
-    editActions.innerHTML = `<button class="btn btn-sm btn-primary" data-action="save" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 2px;">Save</button><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Cancel</button>`;
+    editActions.innerHTML = `<button class="btn btn-sm btn-primary" data-action="save" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 4px 0 0;">Save</button><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Cancel</button>`;
 
     // Replace elements
     ruleTextSpan.replaceWith(input);
@@ -188,7 +188,7 @@ export function handleDeleteRule(ruleItem, serverId, allRules, ruleIndex) {
     const confirmDiv = document.createElement('span');
     confirmDiv.className = 'inline-confirm';
     confirmDiv.style.cssText = 'display:inline;float:right;white-space:nowrap;';
-    confirmDiv.innerHTML = `<span style="font-size:9px;color:#8c8c8c;margin-right:4px;background:rgba(28,31,38,0.95);padding:2px 4px;border-radius:3px;">Delete?</span><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 2px;">Cancel</button><button class="btn btn-sm btn-danger" data-action="confirm" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Delete</button>`;
+    confirmDiv.innerHTML = `<span style="font-size:9px;color:#8c8c8c;margin-right:4px;background:rgba(28,31,38,0.95);padding:2px 4px;border-radius:3px;">Delete?</span><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 4px 0 0;">Cancel</button><button class="btn btn-sm btn-danger" data-action="confirm" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Delete</button>`;
 
     ruleItem.appendChild(confirmDiv);
 
