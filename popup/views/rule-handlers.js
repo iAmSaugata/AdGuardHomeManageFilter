@@ -22,11 +22,12 @@ export function handleEditRule(ruleItem, serverId, allRules, ruleIndex) {
     input.type = 'text';
     input.className = 'rule-edit-input';
     input.value = originalRule;
+    input.style.cssText = 'flex:1;font-family:monospace;font-size:12px;padding:2px 4px;background:rgba(0,0,0,0.3);border:1px solid #4caf50;border-radius:3px;color:#fff;outline:none;height:18px;line-height:14px;margin-right:4px;';
 
     // Create edit actions as inline buttons
     const editActions = document.createElement('span');
     editActions.className = 'rule-edit-actions';
-    editActions.style.cssText = 'display:inline;margin-left:4px;white-space:nowrap;';
+    editActions.style.cssText = 'display:inline;float:right;white-space:nowrap;';
     editActions.innerHTML = `<button class="btn btn-sm btn-primary" data-action="save" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 2px;">Save</button><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Cancel</button>`;
 
     // Replace elements
