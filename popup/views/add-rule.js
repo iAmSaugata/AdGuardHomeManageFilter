@@ -54,7 +54,7 @@ export async function renderAddRuleSection(container) {
                     
                     <div id="rule-preview" class="rule-preview">||example.com^</div>
                     
-                    <button id="add-sync-btn" class="btn btn-primary">ADD & SYNC</button>
+                    <button id="add-sync-btn" class="btn btn-primary">ADD TO RULE</button>
                 </div>
             </div>
         </div>
