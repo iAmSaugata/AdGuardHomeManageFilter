@@ -69,8 +69,7 @@
 }
 
 .toggle-wrapper.toggle-right {
-    /* Reverse order: text then checkbox */
-    flex-direction: row-reverse;
+    /* Text before checkbox - natural HTML order */
 }
 
 .toggle-wrapper input[type="checkbox"] {
