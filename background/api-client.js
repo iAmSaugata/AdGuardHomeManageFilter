@@ -38,8 +38,22 @@ async function apiRequest(url, options = {}) {
             throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
-        // Parse JSON response
-        const data = await response.json();
+        // Parse JSON response only if there's content
+        const contentLength = response.headers.get('content-length');
+        const contentType = response.headers.get('content-type');
+
+        // If response is empty or not JSON, return success
+        if (contentLength === '0' || !contentType || !contentType.includes('application/json')) {
+            return { success: true };
+        }
+
+        // Try to parse JSON
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+            return { success: true };
+        }
+
+        const data = JSON.parse(text);
         return data;
     } catch (error) {
         // Enhance error message

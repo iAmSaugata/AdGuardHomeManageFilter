@@ -393,7 +393,7 @@ async function handleSaveGroup(isEdit, groupId) {
             );
         } else {
             window.app.showToast(
-                `Group saved but failed to apply rules to all servers (0/${selectedServerIds.length})`,
+                `Group saved but failed to apply rules to all servers (${successCount}/${selectedServerIds.length})`,
                 'error'
             );
         }
