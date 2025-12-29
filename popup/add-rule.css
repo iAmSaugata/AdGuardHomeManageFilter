@@ -31,12 +31,12 @@
 .add-rule-input,
 .add-rule-select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 8px 10px;
     background-color: var(--color-bg-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
-    font-size: var(--font-size-base);
+    font-size: 13px;
     outline: none;
 }
 
@@ -51,26 +51,26 @@
 
 .add-rule-toggles {
     display: flex;
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .toggle-wrapper {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     cursor: pointer;
     user-select: none;
 }
 
 .toggle-wrapper input[type="checkbox"] {
     position: relative;
-    width: 42px;
-    height: 22px;
+    width: 38px;
+    height: 20px;
     -webkit-appearance: none;
     appearance: none;
     background-color: #6b7280;
     outline: none;
-    border-radius: 11px;
+    border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
@@ -82,8 +82,8 @@
 .toggle-wrapper input[type="checkbox"]::before {
     content: '';
     position: absolute;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     top: 2px;
     left: 2px;
@@ -93,11 +93,11 @@
 }
 
 .toggle-wrapper input[type="checkbox"]:checked::before {
-    transform: translateX(20px);
+    transform: translateX(18px);
 }
 
 .toggle-text {
-    font-size: var(--font-size-xs);
+    font-size: 10px;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-secondary);
     letter-spacing: 0.05em;
