@@ -6,6 +6,7 @@ import { renderServerForm } from './views/server-form.js';
 import { renderServerDetail } from './views/server-detail.js';
 import { renderSettings } from './views/settings.js';
 import { renderGroupForm } from './views/group-form.js';
+import { renderAddRuleSection } from './views/add-rule.js';
 
 // ============================================================================
 // STATE MANAGEMENT
