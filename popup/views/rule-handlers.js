@@ -187,8 +187,8 @@ export function handleDeleteRule(ruleItem, serverId, allRules, ruleIndex) {
     // Create inline confirmation as span
     const confirmDiv = document.createElement('span');
     confirmDiv.className = 'inline-confirm';
-    confirmDiv.style.cssText = 'display:inline;margin-left:8px;white-space:nowrap;background:rgba(28,31,38,0.95);padding:2px 6px;border-radius:3px;';
-    confirmDiv.innerHTML = `<span style="font-size:9px;color:#8c8c8c;margin-right:4px;">Delete?</span><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:16px;line-height:12px;margin-right:2px;">Cancel</button><button class="btn btn-sm btn-danger" data-action="confirm" style="padding:2px 6px;font-size:9px;height:16px;line-height:12px;">Delete</button>`;
+    confirmDiv.style.cssText = 'display:inline;float:right;white-space:nowrap;';
+    confirmDiv.innerHTML = `<span style="font-size:9px;color:#8c8c8c;margin-right:4px;background:rgba(28,31,38,0.95);padding:2px 4px;border-radius:3px;">Delete?</span><button class="btn btn-sm btn-secondary" data-action="cancel" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0 2px;">Cancel</button><button class="btn btn-sm btn-danger" data-action="confirm" style="padding:2px 6px;font-size:9px;height:18px;line-height:14px;margin:0;">Delete</button>`;
 
     ruleItem.appendChild(confirmDiv);
 
