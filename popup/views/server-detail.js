@@ -2,6 +2,7 @@
 // Displays server rules with search and color coding
 
 import { escapeHtml, classifyRule, getRuleCounts, showConfirmDialog } from '../utils.js';
+import { handleEditRule, handleDeleteRule } from './rule-handlers.js';
 
 export async function renderServerDetail(container, data = {}) {
   const { serverId } = data;
@@ -177,6 +178,23 @@ function renderServerDetailView(container, server, version, rules, fromCache, wa
     );
     document.getElementById('rules-list').innerHTML = renderRulesList(filtered);
   });
+
+  // Rule edit/delete event delegation
+  const rulesList = document.getElementById('rules-list');
+  rulesList.addEventListener('click', async (e) => {
+    const actionBtn = e.target.closest('.rule-action-btn');
+    if (!actionBtn) return;
+
+    const ruleItem = actionBtn.closest('.rule-item');
+    const ruleIndex = parseInt(ruleItem.dataset.ruleIndex);
+    const action = actionBtn.dataset.action;
+
+    if (action === 'edit') {
+      handleEditRule(ruleItem, serverId, allRules, ruleIndex);
+    } else if (action === 'delete') {
+      handleDeleteRule(ruleItem, serverId, allRules, ruleIndex);
+    }
+  });
 }
 
 function renderRulesList(rules) {
@@ -188,16 +206,20 @@ function renderRulesList(rules) {
     `;
   }
 
-  return rules.map(rule => {
+  return rules.map((rule, index) => {
     const type = classifyRule(rule);
     const colorClass = type === 'allow' ? 'rule-allow' :
       type === 'disabled' ? 'rule-disabled' :
         'rule-block';
 
     return `
-      <div class="rule-item ${colorClass}">
+      <div class="rule-item ${colorClass}" data-rule-index="${index}" style="position: relative;">
         <span class="rule-indicator"></span>
         <span class="rule-text">${escapeHtml(rule)}</span>
+        <div class="rule-actions">
+          <button class="rule-action-btn" data-action="edit" title="Edit rule">✏️</button>
+          <button class="rule-action-btn" data-action="delete" title="Delete rule">🗑️</button>
+        </div>
       </div>
     `;
   }).join('');
