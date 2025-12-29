@@ -27,15 +27,15 @@ export async function renderAddRuleSection(container) {
                     />
                     
                     <select id="rule-target" class="add-rule-select">
-                        <option value="">No Groups</option>
+                        <option value="">None</option>
                         ${groups && groups.length > 0 ? `
                             <optgroup label="Groups">
-                                ${groups.map(g => `<option value="group:${g.id}">${escapeHtml(g.name)}</option>`).join('')}
+                                ${groups.map(g => `<option value="group:${g.id}">📁 ${escapeHtml(g.name)}</option>`).join('')}
                             </optgroup>
                         ` : ''}
                         ${servers && servers.length > 0 ? `
                             <optgroup label="Servers">
-                                ${servers.map(s => `<option value="server:${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                                ${servers.map(s => `<option value="server:${s.id}">🖥️ ${escapeHtml(s.name)}</option>`).join('')}
                             </optgroup>
                         ` : ''}
                     </select>

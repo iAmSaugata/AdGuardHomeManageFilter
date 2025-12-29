@@ -1,6 +1,6 @@
 /**
  * Rule Generator - AdGuard DNS Filtering Syntax
- * Official syntax - no custom formats
+ * Official syntax with $important modifier
  */
 
 export function generateRule(hostname, isBlock = true, isImportant = false) {
@@ -11,16 +11,16 @@ export function generateRule(hostname, isBlock = true, isImportant = false) {
     const clean = hostname.trim().toLowerCase();
     let rule = '';
 
-    // Importance prefix
-    if (isImportant) {
-        rule += '!#';
-    }
-
     // Block or allow
     if (isBlock) {
-        rule += `||${clean}^`;
+        rule = `||${clean}^`;
     } else {
-        rule += `@@||${clean}^`;
+        rule = `@@||${clean}^`;
+    }
+
+    // Add importance modifier
+    if (isImportant) {
+        rule += '$important';
     }
 
     return rule;
