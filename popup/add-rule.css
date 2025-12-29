@@ -1,0 +1,140 @@
+/* Add Rule Component Styles */
+
+/* Container uses 1px margin-top for gap */
+#add-rule-container {
+    margin-top: 1px;
+}
+
+/* Reuse .view-header and .view-body from popup.css */
+
+/* Toggle Switch */
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.toggle-switch input[type="checkbox"] {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #22c55e;
+    outline: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-switch.block input[type="checkbox"] {
+    background-color: #ef4444;
+}
+
+.toggle-switch.allow input[type="checkbox"] {
+    background-color: #22c55e;
+}
+
+.toggle-switch input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background-color: white;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input[type="checkbox"]:checked::before {
+    transform: translateX(20px);
+}
+
+.toggle-text {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    user-select: none;
+}
+
+.toggle-switch.block .toggle-text {
+    color: #ef4444;
+}
+
+.toggle-switch.allow .toggle-text {
+    color: #22c55e;
+}
+
+/* Rule Preview */
+.rule-preview {
+    padding: 12px;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    margin: 12px 0;
+}
+
+.rule-preview.empty {
+    color: var(--color-text-tertiary);
+    font-style: italic;
+    font-family: inherit;
+}
+
+.rule-preview.error {
+    color: #ef4444;
+    font-family: inherit;
+}
+
+.rule-preview.block {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.rule-preview.allow {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+/* Form Row */
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+/* Form Select */
+.form-select {
+    flex: 1;
+    padding: 10px 12px;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.form-select:focus {
+    border-color: var(--color-accent);
+}
