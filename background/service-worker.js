@@ -125,23 +125,6 @@ const messageHandlers = {
         return await syncEngine.getServerRules(serverId);
     },
 
-    // Group operations
-    async getGroups() {
-        return await storage.getGroups();
-    },
-
-    async getGroup({ id }) {
-        return await storage.getGroup(id);
-    },
-
-    async saveGroup({ group }) {
-        return await storage.saveGroup(group);
-    },
-
-    async deleteGroup({ id }) {
-        return await storage.deleteGroup(id);
-    },
-
     // Cache operations
     async getCache({ serverId }) {
         return await storage.getCache(serverId);

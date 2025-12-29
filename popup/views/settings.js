@@ -1,6 +1,8 @@
 // Settings View
 // Shows group management and settings options
 
+import { escapeHtml, showConfirmDialog } from '../utils.js';
+
 export async function renderSettings(container) {
     container.innerHTML = `
         <div class="view-container">
@@ -114,7 +116,11 @@ async function handleDeleteGroup(groupId) {
         return;
     }
 
-    const confirmed = confirm(`Are you sure you want to delete "${group.name}"?\n\nThis action cannot be undone.`);
+    const confirmed = await showConfirmDialog(
+        'Delete Group',
+        `Are you sure you want to delete "${group.name}"?`,
+        'This action cannot be undone.'
+    );
 
     if (!confirmed) {
         return;
@@ -129,8 +135,4 @@ async function handleDeleteGroup(groupId) {
     }
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// escapeHtml removed - now imported from utils.js

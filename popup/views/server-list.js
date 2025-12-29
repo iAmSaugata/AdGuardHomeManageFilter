@@ -1,9 +1,11 @@
 // Server List View
 // Displays list of configured servers
 
+import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
+
 export async function renderServerList(container) {
-    // Show loading skeleton
-    container.innerHTML = `
+  // Show loading skeleton
+  container.innerHTML = `
     <div class="view-header">
       <h1 class="view-title">Servers</h1>
       <button class="btn btn-primary btn-sm" id="add-server-btn">
@@ -17,30 +19,30 @@ export async function renderServerList(container) {
     </div>
   `;
 
-    // Set up event listeners
-    document.getElementById('add-server-btn').addEventListener('click', () => {
-        window.app.navigateTo('server-form', { mode: 'add' });
-    });
+  // Set up event listeners
+  document.getElementById('add-server-btn').addEventListener('click', () => {
+    window.app.navigateTo('server-form', { mode: 'add' });
+  });
 
-    try {
-        // Fetch servers
-        const servers = await window.app.sendMessage('getServers');
+  try {
+    // Fetch servers
+    const servers = await window.app.sendMessage('getServers');
 
-        // Render servers
-        if (servers.length === 0) {
-            renderEmptyState(container);
-        } else {
-            renderServersList(container, servers);
-        }
-    } catch (error) {
-        console.error('Failed to load servers:', error);
-        window.app.showToast('Failed to load servers: ' + error.message, 'error');
-        renderEmptyState(container);
+    // Render servers
+    if (servers.length === 0) {
+      renderEmptyState(container);
+    } else {
+      renderServersList(container, servers);
     }
+  } catch (error) {
+    console.error('Failed to load servers:', error);
+    window.app.showToast('Failed to load servers: ' + error.message, 'error');
+    renderEmptyState(container);
+  }
 }
 
 function renderEmptyState(container) {
-    container.innerHTML = `
+  container.innerHTML = `
     <div class="view-header">
       <h1 class="view-title">Servers</h1>
       <button class="btn btn-primary btn-sm" id="add-server-btn">
@@ -59,19 +61,14 @@ function renderEmptyState(container) {
     </div>
   `;
 
-    // Event listeners
-    document.getElementById('add-server-btn').addEventListener('click', () => {
-        navigateTo('server-form', { mode: 'add' });
-    });
-
-    document.getElementById('add-first-server-btn').addEventListener('click', () => {
-        window.app.navigateTo('server-form', { mode: 'add' });
-    });
+  document.getElementById('add-first-server-btn').addEventListener('click', () => {
+    window.app.navigateTo('server-form', { mode: 'add' });
+  });
 }
 
 async function renderServersList(container, servers) {
-    // Render server cards immediately with "Refreshing..." status
-    const initialServerItems = servers.map(server => `
+  // Render server cards immediately with "Refreshing..." status
+  const initialServerItems = servers.map(server => `
       <div class="list-item server-item" data-server-id="${server.id}" id="server-${server.id}">
         <div class="list-item-content">
           <div class="list-item-title">${escapeHtml(server.name)}</div>
@@ -85,7 +82,7 @@ async function renderServersList(container, servers) {
       </div>
     `).join('');
 
-    container.innerHTML = `
+  container.innerHTML = `
       <div class="view-header">
         <h1 class="view-title">Servers</h1>
         <button class="btn btn-primary btn-sm" id="add-server-btn">
@@ -99,46 +96,46 @@ async function renderServersList(container, servers) {
       </div>
     `;
 
-    // Event listeners
-    document.getElementById('add-server-btn').addEventListener('click', () => {
-        window.app.navigateTo('server-form', { mode: 'add' });
+  // Event listeners
+  document.getElementById('add-server-btn').addEventListener('click', () => {
+    window.app.navigateTo('server-form', { mode: 'add' });
+  });
+
+  // Edit buttons
+  document.querySelectorAll('.edit-server-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const serverId = btn.dataset.serverId;
+      window.app.navigateTo('server-form', { mode: 'edit', serverId });
     });
+  });
 
-    // Edit buttons
-    document.querySelectorAll('.edit-server-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const serverId = btn.dataset.serverId;
-            window.app.navigateTo('server-form', { mode: 'edit', serverId });
-        });
+  // Click on server item to view details
+  document.querySelectorAll('.server-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const serverId = item.dataset.serverId;
+      window.app.navigateTo('server-detail', { serverId });
     });
+  });
 
-    // Click on server item to view details
-    document.querySelectorAll('.server-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const serverId = item.dataset.serverId;
-            window.app.navigateTo('server-detail', { serverId });
-        });
-    });
+  // Fetch data for each server progressively
+  servers.forEach(async (server) => {
+    try {
+      // Fetch server info and rules in parallel
+      const [serverInfo, rulesResult] = await Promise.all([
+        window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
+        window.app.sendMessage('getServerRules', { serverId: server.id })
+      ]);
 
-    // Fetch data for each server progressively
-    servers.forEach(async (server) => {
-        try {
-            // Fetch server info and rules in parallel
-            const [serverInfo, rulesResult] = await Promise.all([
-                window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
-                window.app.sendMessage('getServerRules', { serverId: server.id })
-            ]);
+      const rules = rulesResult.data?.rules || [];
+      const counts = getRuleCounts(rules);
+      const version = serverInfo?.version || 'Unknown';
+      const isOnline = serverInfo !== null;
 
-            const rules = rulesResult.data?.rules || [];
-            const counts = getRuleCounts(rules);
-            const version = serverInfo?.version || 'Unknown';
-            const isOnline = serverInfo !== null;
-
-            // Update the server card
-            const serverCard = document.getElementById(`server-${server.id}`);
-            if (serverCard) {
-                const statusHtml = `
+      // Update the server card
+      const serverCard = document.getElementById(`server-${server.id}`);
+      if (serverCard) {
+        const statusHtml = `
                   <div class="list-item-content">
                     <div class="list-item-title">${escapeHtml(server.name)}</div>
                     <div class="server-version">
@@ -155,24 +152,24 @@ async function renderServersList(container, servers) {
                     </button>
                   </div>
                 `;
-                serverCard.innerHTML = statusHtml;
+        serverCard.innerHTML = statusHtml;
 
-                // Re-attach event listeners
-                const editBtn = serverCard.querySelector('.edit-server-btn');
-                if (editBtn) {
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
-                    });
-                }
-            }
-        } catch (error) {
-            console.error(`Failed to fetch data for ${server.name}:`, error);
+        // Re-attach event listeners
+        const editBtn = serverCard.querySelector('.edit-server-btn');
+        if (editBtn) {
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch data for ${server.name}:`, error);
 
-            // Update with offline status
-            const serverCard = document.getElementById(`server-${server.id}`);
-            if (serverCard) {
-                const errorHtml = `
+      // Update with offline status
+      const serverCard = document.getElementById(`server-${server.id}`);
+      if (serverCard) {
+        const errorHtml = `
                   <div class="list-item-content">
                     <div class="list-item-title">${escapeHtml(server.name)}</div>
                     <div class="server-version">
@@ -187,51 +184,17 @@ async function renderServersList(container, servers) {
                     </button>
                   </div>
                 `;
-                serverCard.innerHTML = errorHtml;
+        serverCard.innerHTML = errorHtml;
 
-                // Re-attach event listeners
-                const editBtn = serverCard.querySelector('.edit-server-btn');
-                if (editBtn) {
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
-                    });
-                }
-            }
+        // Re-attach event listeners
+        const editBtn = serverCard.querySelector('.edit-server-btn');
+        if (editBtn) {
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+          });
         }
-    });
-}
-
-// Helper functions
-function getRuleCounts(rules) {
-    if (!Array.isArray(rules)) {
-        return { allow: 0, block: 0, disabled: 0, total: 0 };
+      }
     }
-
-    let allow = 0, block = 0, disabled = 0;
-
-    for (const rule of rules) {
-        const type = classifyRule(rule);
-        if (type === 'allow') allow++;
-        else if (type === 'disabled') disabled++;
-        else block++;
-    }
-
-    return { allow, block, disabled, total: rules.length };
-}
-
-function classifyRule(rule) {
-    if (typeof rule !== 'string') return 'unknown';
-    const trimmed = rule.trim();
-    if (!trimmed) return 'disabled';
-    if (trimmed.startsWith('!')) return 'disabled';
-    if (trimmed.startsWith('# ')) return 'disabled';
-    if (trimmed.startsWith('@@')) return 'allow';
-    return 'block';
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  });
 }

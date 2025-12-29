@@ -140,7 +140,7 @@ export function classifyRule(rule) {
 
     if (!trimmed) return 'disabled'; // Empty lines are disabled
     if (trimmed.startsWith('!')) return 'disabled'; // Comments with ! are disabled
-    if (trimmed.startsWith('# ')) return 'disabled'; // Comments with # and space are disabled
+    if (trimmed.startsWith('#')) return 'disabled'; // Comments with # are disabled
     if (trimmed.startsWith('@@')) return 'allow';
     if (trimmed.startsWith('||') || trimmed.startsWith('|')) return 'block';
 

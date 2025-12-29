@@ -1,6 +1,8 @@
 // Group Form View
 // Create/Edit groups with merged rule preview
 
+import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
+
 export async function renderGroupForm(container, data = {}) {
     const { mode = 'add', groupId } = data;
     const isEdit = mode === 'edit';
@@ -298,8 +300,38 @@ async function handleSaveGroup(isEdit, groupId) {
         // Save group
         await window.app.sendMessage('saveGroup', { group });
 
+        // Apply merged rules to all servers in the group
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const serverId of selectedServerIds) {
+            try {
+                await window.app.sendMessage('setRules', {
+                    serverId,
+                    rules: result.rules
+                });
+                successCount++;
+            } catch (error) {
+                console.error(`Failed to apply rules to server ${serverId}:`, error);
+                failCount++;
+            }
+        }
+
         window.app.hideLoading();
-        window.app.showToast(`Group ${isEdit ? 'updated' : 'created'} successfully`, 'success');
+
+        // Show appropriate message
+        if (failCount === 0) {
+            window.app.showToast(
+                `Group ${isEdit ? 'updated' : 'created'} and rules applied to ${successCount} server(s)`,
+                'success'
+            );
+        } else {
+            window.app.showToast(
+                `Group saved. Rules applied to ${successCount}/${selectedServerIds.length} servers`,
+                'warning'
+            );
+        }
+
         window.app.navigateTo('settings');
 
     } catch (error) {
@@ -308,7 +340,7 @@ async function handleSaveGroup(isEdit, groupId) {
     }
 }
 
-// Helper functions
+// Group-specific helper functions
 function generateId() {
     return 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
@@ -322,35 +354,5 @@ function dedupRules(rules) {
     return [...new Set(rules)];
 }
 
-function classifyRule(rule) {
-    if (typeof rule !== 'string') return 'unknown';
-    const trimmed = rule.trim();
-    if (!trimmed) return 'disabled';
-    if (trimmed.startsWith('!')) return 'disabled';
-    if (trimmed.startsWith('# ')) return 'disabled';
-    if (trimmed.startsWith('@@')) return 'allow';
-    return 'block';
-}
+// Shared helper functions (classifyRule, getRuleCounts, escapeHtml) imported from utils.js
 
-function getRuleCounts(rules) {
-    if (!Array.isArray(rules)) {
-        return { allow: 0, block: 0, disabled: 0, total: 0 };
-    }
-
-    let allow = 0, block = 0, disabled = 0;
-
-    for (const rule of rules) {
-        const type = classifyRule(rule);
-        if (type === 'allow') allow++;
-        else if (type === 'disabled') disabled++;
-        else block++;
-    }
-
-    return { allow, block, disabled, total: rules.length };
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
