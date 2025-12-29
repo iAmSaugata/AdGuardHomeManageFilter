@@ -41,14 +41,14 @@ export async function renderAddRuleSection(container) {
                     </select>
                     
                     <div class="add-rule-toggles">
-                        <label class="toggle-wrapper">
+                        <label class="toggle-wrapper toggle-left">
                             <input type="checkbox" id="block-toggle" checked>
                             <span id="block-label" class="toggle-text block">BLOCK</span>
                         </label>
                         
-                        <label class="toggle-wrapper">
-                            <input type="checkbox" id="importance-toggle">
+                        <label class="toggle-wrapper toggle-right">
                             <span id="importance-label" class="toggle-text">IMPORTANCE</span>
+                            <input type="checkbox" id="importance-toggle">
                         </label>
                     </div>
                     

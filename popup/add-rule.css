@@ -52,6 +52,8 @@
 .add-rule-toggles {
     display: flex;
     gap: 12px;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .toggle-wrapper {
@@ -60,6 +62,15 @@
     gap: 6px;
     cursor: pointer;
     user-select: none;
+}
+
+.toggle-wrapper.toggle-left {
+    /* Default order: checkbox then text */
+}
+
+.toggle-wrapper.toggle-right {
+    /* Reverse order: text then checkbox */
+    flex-direction: row-reverse;
 }
 
 .toggle-wrapper input[type="checkbox"] {
