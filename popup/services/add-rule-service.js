@@ -5,6 +5,83 @@
 
 import { checkDomainExists, getRuleType } from '../utils/rule-domain-validator.js';
 
+/**
+ * Show custom styled confirmation dialog for replace operation
+ */
+async function showReplaceConfirmDialog(domain, existingRule, newRule, serverCount) {
+    return new Promise((resolve) => {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+
+        // Create dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+
+        const existingType = getRuleType(existingRule);
+        const newType = getRuleType(newRule);
+
+        dialog.innerHTML = `
+            <div class="confirm-header">
+                <h3 class="confirm-title">Domain Conflict Detected</h3>
+            </div>
+            <div class="confirm-body">
+                <p class="confirm-message">Domain "${escapeHtml(domain)}" already exists on ${serverCount} server(s):</p>
+                <div style="margin: 12px 0; padding: 12px; background: var(--color-bg-tertiary); border-radius: var(--radius-md);">
+                    <div style="margin-bottom: 8px;">
+                        <strong>Existing:</strong> <span class="badge badge-${existingType === 'allow' ? 'success' : 'danger'}" style="margin-left: 8px;">${existingType.toUpperCase()}</span>
+                        <div style="margin-top: 4px; font-family: monospace; color: var(--color-text-secondary);">${escapeHtml(existingRule)}</div>
+                    </div>
+                    <div>
+                        <strong>New:</strong> <span class="badge badge-${newType === 'allow' ? 'success' : 'danger'}" style="margin-left: 8px;">${newType.toUpperCase()}</span>
+                        <div style="margin-top: 4px; font-family: monospace; color: var(--color-text-secondary);">${escapeHtml(newRule)}</div>
+                    </div>
+                </div>
+                <p class="confirm-subtitle">Replace existing rule on all ${serverCount} server(s)?</p>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary btn-block" id="confirm-cancel">Cancel</button>
+                <button class="btn btn-primary btn-block" id="confirm-replace">Replace All</button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+
+        // Append to app container
+        const appContainer = document.getElementById('app') || document.body;
+        appContainer.appendChild(overlay);
+
+        // Event listeners
+        const cancelBtn = overlay.querySelector('#confirm-cancel');
+        const replaceBtn = overlay.querySelector('#confirm-replace');
+
+        cancelBtn.addEventListener('click', () => {
+            overlay.remove();
+            resolve(false);
+        });
+
+        replaceBtn.addEventListener('click', () => {
+            overlay.remove();
+            resolve(true);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+                resolve(false);
+            }
+        });
+    });
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 export async function addRuleToTarget(targetValue, rule) {
     if (!targetValue || !rule) {
         throw new Error('Target and rule required');
@@ -36,6 +113,9 @@ export async function addRuleToTarget(targetValue, rule) {
         affectedServers: []
     };
 
+    // First pass: detect all conflicts across all servers
+    const conflictMap = new Map(); // domain -> { domain, existingRule, newRule, servers: [{ serverId, currentRules }] }
+
     for (const serverId of serverIds) {
         try {
             const currentRules = await window.app.sendMessage('getUserRules', { serverId });
@@ -50,21 +130,60 @@ export async function addRuleToTarget(targetValue, rule) {
             const domainCheck = checkDomainExists(rule, currentRules);
 
             if (domainCheck.exists) {
-                results.domainConflicts.push({
+                if (!conflictMap.has(domainCheck.domain)) {
+                    conflictMap.set(domainCheck.domain, {
+                        domain: domainCheck.domain,
+                        existingRule: domainCheck.conflictingRule,
+                        newRule: rule,
+                        servers: []
+                    });
+                }
+                conflictMap.get(domainCheck.domain).servers.push({
                     serverId,
-                    domain: domainCheck.domain,
-                    existingRule: domainCheck.conflictingRule,
-                    newRule: rule
+                    currentRules
                 });
+            }
+        } catch (error) {
+            console.error(`Failed to check rules for server ${serverId}:`, error);
+        }
+    }
 
-                // Ask user if they want to replace
-                const shouldReplace = await confirmReplaceRule(
-                    domainCheck.domain,
-                    domainCheck.conflictingRule,
-                    rule
-                );
+    // If there are conflicts, show ONE confirmation for all
+    let userDecision = null; // null = not asked, true = replace, false = cancel
 
-                if (!shouldReplace) {
+    if (conflictMap.size > 0) {
+        // Show single confirmation dialog
+        // For simplicity, we'll assume one type of conflict (same domain, same new rule)
+        // and take the first conflict found to construct the message.
+        const conflict = Array.from(conflictMap.values())[0];
+        const serverCount = conflict.servers.length;
+
+        const message = `Domain "${conflict.domain}" already exists on ${serverCount} server(s):\n\n` +
+            `Existing: ${conflict.existingRule}\n` +
+            `(Type: ${getRuleType(conflict.existingRule)})\n\n` +
+            `New: ${conflict.newRule}\n` +
+            `(Type: ${getRuleType(conflict.newRule)})\n\n` +
+            `Replace on all ${serverCount} server(s)?`;
+
+        userDecision = await showReplaceConfirmDialog(conflict.domain, conflict.existingRule, conflict.newRule, serverCount);
+    }
+
+    // Second pass: apply rules based on conflicts and user decision
+    for (const serverId of serverIds) {
+        try {
+            const currentRules = await window.app.sendMessage('getUserRules', { serverId });
+
+            // Check for exact duplicate (skip if already counted)
+            if (currentRules.includes(rule)) {
+                continue; // Already counted in first pass
+            }
+
+            // Check for domain duplicate
+            const domainCheck = checkDomainExists(rule, currentRules);
+
+            if (domainCheck.exists) {
+                // User already decided for all servers
+                if (userDecision === false) {
                     results.failed++;
                     continue;
                 }
@@ -116,6 +235,7 @@ export async function addRuleToTarget(targetValue, rule) {
 
 /**
  * Show confirmation dialog for replacing existing rule
+ * @deprecated - Now using inline confirmation in addRuleToTarget
  */
 async function confirmReplaceRule(domain, existingRule, newRule) {
     const existingType = getRuleType(existingRule);
@@ -153,3 +273,4 @@ async function getGroupForServer(serverId) {
 
     return null;
 }
+
