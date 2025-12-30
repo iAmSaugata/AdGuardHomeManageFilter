@@ -21,6 +21,14 @@ function createAuthHeader(username, password) {
 }
 
 /**
+ * Normalize host URL by removing trailing slash
+ * Prevents double-slash in API endpoints
+ */
+function normalizeHost(host) {
+    return host.endsWith('/') ? host.slice(0, -1) : host;
+}
+
+/**
  * Make API request with timeout and error handling
  */
 async function apiRequest(url, options = {}) {
@@ -78,7 +86,12 @@ async function apiRequest(url, options = {}) {
  */
 export async function testConnection(host, username, password) {
     try {
-        const url = `${host}/control/filtering/status`;
+        // Note: With optional_host_permissions, Chrome will automatically
+        // prompt the user for permission when we try to access the host.
+        // We don't need to manually request permission here.
+
+        const normalizedHost = normalizeHost(host);
+        const url = `${normalizedHost}/control/filtering/status`;
         const authHeader = createAuthHeader(username, password);
 
         await apiRequest(url, {
@@ -105,7 +118,8 @@ export async function testConnection(host, username, password) {
  * Returns: FilterStatus object from API
  */
 export async function getFilteringStatus(server) {
-    const url = `${server.host}/control/filtering/status`;
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/filtering/status`;
     const authHeader = createAuthHeader(server.username, server.password);
 
     console.log('Fetching filtering status for:', sanitizeServerForLog(server));
@@ -129,7 +143,8 @@ export async function getFilteringStatus(server) {
  * Returns: { version: string, ... }
  */
 export async function getServerInfo(server) {
-    const url = `${server.host}/control/status`;
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/status`;
     const authHeader = createAuthHeader(server.username, server.password);
 
     console.log('Fetching server info for:', sanitizeServerForLog(server));
@@ -155,7 +170,8 @@ export async function getServerInfo(server) {
  * Returns: void (success) or throws error
  */
 export async function setRules(server, rules) {
-    const url = `${server.host}/control/filtering/set_rules`;
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/filtering/set_rules`;
     const authHeader = createAuthHeader(server.username, server.password);
 
     console.log('Setting rules for:', sanitizeServerForLog(server), `(${rules.length} rules)`);

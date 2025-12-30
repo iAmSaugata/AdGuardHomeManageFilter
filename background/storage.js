@@ -1,6 +1,8 @@
 // Storage Layer - chrome.storage.local wrapper with schema
 // Provides type-safe access to extension storage
 
+import { encrypt, decrypt, isEncrypted, migratePassword } from './crypto.js';
+
 const STORAGE_KEYS = {
   SERVERS: 'servers',
   GROUPS: 'groups',
@@ -26,31 +28,82 @@ export async function getServers() {
 
 export async function getServer(id) {
   const servers = await getServers();
-  return servers.find(s => s.id === id) || null;
+  const server = servers.find(s => s.id === id) || null;
+
+  if (!server) return null;
+
+  // Handle password decryption and migration
+  if (server.password) {
+    if (isEncrypted(server.password)) {
+      // Already encrypted, decrypt for use
+      try {
+        server.password = await decrypt(server.password);
+      } catch (error) {
+        console.error(`Failed to decrypt password for server ${id}:`, error);
+        // Return server without password if decryption fails
+        delete server.password;
+      }
+    } else {
+      // Plaintext password - migrate to encrypted format
+      console.log(`Migrating password for server ${id} to encrypted format`);
+      try {
+        const encrypted = await encrypt(server.password);
+        const plainPassword = server.password; // Keep for return
+
+        // Update storage with encrypted password
+        const allServers = await getServers();
+        const index = allServers.findIndex(s => s.id === id);
+        if (index >= 0) {
+          allServers[index].password = encrypted;
+          await chrome.storage.local.set({ [STORAGE_KEYS.SERVERS]: allServers });
+        }
+
+        server.password = plainPassword; // Return decrypted password
+      } catch (error) {
+        console.error(`Failed to migrate password for server ${id}:`, error);
+        // Keep plaintext password if migration fails
+      }
+    }
+  }
+
+  return server;
 }
 
 export async function saveServer(server) {
   const servers = await getServers();
   const now = new Date().toISOString();
 
-  const existingIndex = servers.findIndex(s => s.id === server.id);
+  // Encrypt password before saving
+  let serverToSave = { ...server };
+  if (serverToSave.password && !isEncrypted(serverToSave.password)) {
+    try {
+      serverToSave.password = await encrypt(serverToSave.password);
+    } catch (error) {
+      console.error('Failed to encrypt password:', error);
+      throw new Error('Failed to encrypt password. Server not saved.');
+    }
+  }
+
+  const existingIndex = servers.findIndex(s => s.id === serverToSave.id);
 
   if (existingIndex >= 0) {
     // Update existing
     servers[existingIndex] = {
-      ...server,
+      ...serverToSave,
       updatedAt: now
     };
   } else {
     // Add new
     servers.push({
-      ...server,
+      ...serverToSave,
       createdAt: now,
       updatedAt: now
     });
   }
 
   await chrome.storage.local.set({ [STORAGE_KEYS.SERVERS]: servers });
+
+  // Return server with plaintext password for immediate use
   return server;
 }
 

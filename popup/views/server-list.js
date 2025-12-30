@@ -4,7 +4,7 @@
 import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
 
 export async function renderServerList(container) {
-  // Show loading skeleton
+  // Show loading skeleton FIRST
   container.innerHTML = `
     <div class="view-header">
       <h1 class="view-title">Servers</h1>
@@ -18,11 +18,6 @@ export async function renderServerList(container) {
       <div class="skeleton skeleton-text"></div>
     </div>
   `;
-
-  // Set up event listeners
-  document.getElementById('add-server-btn').addEventListener('click', () => {
-    window.app.navigateTo('server-form', { mode: 'add' });
-  });
 
   try {
     // Fetch servers and groups
@@ -64,9 +59,20 @@ function renderEmptyState(container) {
     </div>
   `;
 
-  document.getElementById('add-first-server-btn').addEventListener('click', () => {
-    window.app.navigateTo('server-form', { mode: 'add' });
-  });
+  // Attach event listeners AFTER rendering
+  const addServerBtn = document.getElementById('add-server-btn');
+  if (addServerBtn) {
+    addServerBtn.addEventListener('click', () => {
+      window.app.navigateTo('server-form', { mode: 'add' });
+    });
+  }
+
+  const addFirstServerBtn = document.getElementById('add-first-server-btn');
+  if (addFirstServerBtn) {
+    addFirstServerBtn.addEventListener('click', () => {
+      window.app.navigateTo('server-form', { mode: 'add' });
+    });
+  }
 }
 
 async function renderServersList(container, servers, groups) {

@@ -6,12 +6,62 @@
 import { parseInput } from '../utils/rule-parser.js';
 import { generateRule } from '../utils/rule-generator.js';
 import { addRuleToTarget } from '../services/add-rule-service.js';
+import { escapeHtml } from '../utils.js';
+
 
 export async function renderAddRuleSection(container) {
     const servers = await window.app.sendMessage('getServers');
     const groups = await window.app.sendMessage('getGroups');
 
-    // Use view-body with 1px margin-top for exact spacing
+    // Check if there are any servers or groups
+    const hasServers = servers && servers.length > 0;
+    const hasGroups = groups && groups.length > 0;
+    const hasAnyTarget = hasServers || hasGroups;
+
+    // If no servers at all, render disabled state
+    if (!hasServers) {
+        container.innerHTML = `
+            <div class="view-body" style="margin-top: 1px;">
+                <div class="add-rule-card" style="opacity: 0.5; pointer-events: none;">
+                    <div class="add-rule-header">
+                        <h2>ADD RULE</h2>
+                    </div>
+                    <div class="add-rule-body">
+                        <input 
+                            type="text" 
+                            id="rule-input" 
+                            class="add-rule-input" 
+                            placeholder="example.com or ||example.com^"
+                            disabled
+                        />
+                        
+                        <select id="rule-target" class="add-rule-select" disabled>
+                            <option value="">No servers available</option>
+                        </select>
+                        
+                        <div class="add-rule-toggles">
+                            <label class="toggle-wrapper toggle-left">
+                                <input type="checkbox" id="block-toggle" checked disabled>
+                                <span id="block-label" class="toggle-text block">BLOCK</span>
+                            </label>
+                            
+                            <label class="toggle-wrapper toggle-right">
+                                <span id="importance-label" class="toggle-text">IMPORTANCE</span>
+                                <input type="checkbox" id="importance-toggle" disabled>
+                            </label>
+                        </div>
+                        
+                        <div id="rule-preview" class="rule-preview">Add a server first</div>
+                        
+                        <button id="add-sync-btn" class="btn btn-primary" disabled>ADD TO RULE</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        return; // Exit early
+    }
+
+    // Normal rendering when servers exist
     container.innerHTML = `
         <div class="view-body" style="margin-top: 1px;">
             <div class="add-rule-card">
@@ -28,12 +78,12 @@ export async function renderAddRuleSection(container) {
                     
                     <select id="rule-target" class="add-rule-select">
                         <option value="">None</option>
-                        ${groups && groups.length > 0 ? `
+                        ${hasGroups ? `
                             <optgroup label="Groups">
                                 ${groups.map(g => `<option value="group:${g.id}">📁 ${escapeHtml(g.name)}</option>`).join('')}
                             </optgroup>
                         ` : ''}
-                        ${servers && servers.length > 0 ? `
+                        ${hasServers ? `
                             <optgroup label="Servers">
                                 ${servers.map(s => `<option value="server:${s.id}">🖥️ ${escapeHtml(s.name)}</option>`).join('')}
                             </optgroup>
@@ -160,13 +210,7 @@ function setupEventListeners() {
             window.app.showToast(`Error: ${error.message}`, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'ADD & SYNC';
+            btn.textContent = 'ADD TO RULE';
         }
     });
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }

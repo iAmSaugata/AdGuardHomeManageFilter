@@ -2,13 +2,26 @@
 
 A Chrome extension for centrally managing AdGuard Home servers and filtering rules.
 
-## Features (Phase 0)
+## Features
 
+### Core Features
 - **Server Management**: Add, edit, and delete AdGuard Home servers
+- **Group Management**: Organize servers into groups with merged rule lists
+- **Rule Management**: Add, edit, and classify filtering rules (block/allow)
 - **Connection Testing**: Validate server credentials before saving
-- **Secure Storage**: Credentials stored securely in Chrome's local storage
-- **Modern UI**: Bitwarden-like dark theme with 350×600px popup
-- **Production-Ready**: MV3 architecture with proper error handling and retry logic
+- **Live Rule Preview**: Real-time preview of generated AdGuard rules
+
+### Security Features (v0.2.0)
+- **🔐 Encrypted Credentials**: Passwords encrypted using AES-GCM (256-bit)
+- **🛡️ XSS Protection**: Comprehensive HTML escaping across all views
+- **🔒 Privacy-First Permissions**: Optional host permissions requested on-demand
+- **🔄 Automatic Migration**: Seamless upgrade from plaintext to encrypted passwords
+
+### UI/UX
+- **Modern Dark Theme**: Premium Bitwarden-like design system
+- **Responsive Layout**: Optimized 350×600px popup interface
+- **Toast Notifications**: User-friendly feedback system
+- **Smart Caching**: TTL-based caching with network fallback
 
 ## Installation (Development)
 
@@ -71,10 +84,31 @@ Based on AdGuard Home OpenAPI specification:
 
 ## Security
 
-- Passwords are stored in Chrome's local storage (not encrypted at rest by Chrome)
-- No secrets are logged to console
-- Basic Auth credentials are never exposed in URLs
-- All API calls use HTTPS (recommended)
+### Credential Protection (v0.2.0+)
+- **AES-GCM Encryption**: All passwords encrypted using 256-bit AES-GCM before storage
+- **PBKDF2 Key Derivation**: Encryption key derived from Chrome runtime ID (100,000 iterations)
+- **Automatic Migration**: Existing plaintext passwords automatically encrypted on first access
+- **No Plaintext Storage**: Zero plaintext passwords stored in chrome.storage.local
+
+### Privacy
+- **Optional Permissions**: Extension only requests access to specific server hosts
+- **User Control**: Explicit permission prompts before accessing any server
+- **No Tracking**: Zero analytics, telemetry, or external requests
+
+### Best Practices
+- **Secure Logging**: No secrets ever logged to console (sanitized logging only)
+- **URL Safety**: Basic Auth credentials never exposed in URLs
+- **HTTPS Recommended**: Use HTTPS for all AdGuard Home servers
+- **XSS Protection**: All user input properly escaped in UI
+
+### Encryption Details
+```
+Algorithm: AES-GCM
+Key Length: 256-bit
+IV Length: 96-bit (12 bytes, randomly generated per encryption)
+Key Derivation: PBKDF2 with SHA-256 (100,000 iterations)
+Base Material: chrome.runtime.id (unique per extension install)
+```
 
 ## Future Phases
 

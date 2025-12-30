@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AdGuard Home Central Manager",
-  "version": "0.1.1",
-  "description": "Centrally manage AdGuard Home servers and filtering rules",
+  "version": "0.2.0",
+  "description": "Securely manage AdGuard Home servers and filtering rules with encrypted credential storage",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

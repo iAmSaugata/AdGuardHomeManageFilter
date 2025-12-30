@@ -145,6 +145,12 @@
     min-height: 32px;
     display: flex;
     align-items: center;
+
+    /* Prevent text overflow - allow wrapping */
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .rule-preview.block {

@@ -1,7 +1,7 @@
 // Group Form View
 // Create/Edit groups with merged rule preview
 
-import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
+import { escapeHtml, classifyRule, getRuleCounts, showConfirmDialog } from '../utils.js';
 
 export async function renderGroupForm(container, data = {}) {
     const { mode = 'add', groupId } = data;
@@ -363,7 +363,8 @@ async function handleSaveGroup(isEdit, groupId) {
         // Save group
         await window.app.sendMessage('saveGroup', { group });
 
-        // Apply merged rules to all servers in the group
+        // Apply merged rules to all servers SEQUENTIALLY (not parallel)
+        // This prevents AdGuard Home from rejecting simultaneous POST requests
         let successCount = 0;
         let failCount = 0;
 
@@ -374,6 +375,11 @@ async function handleSaveGroup(isEdit, groupId) {
                     rules: result.rules
                 });
                 successCount++;
+
+                // Small delay between servers to prevent API overload
+                if (successCount < selectedServerIds.length) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             } catch (error) {
                 console.error(`Failed to apply rules to server ${serverId}:`, error);
                 failCount++;
