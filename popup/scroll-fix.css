@@ -1,32 +1,38 @@
-/* Server List Scrolling */
-.list {
+/* Server List & Rule List Scrolling - Consistent Styling */
+.list,
+[data-scrollable] {
     max-height: 240px !important;
-    /* Fits exactly 2 servers without scrollbar */
+    /* Fits exactly 2 servers or multiple rules without scrollbar */
     overflow-y: auto !important;
     overflow-x: hidden !important;
 }
 
-/* Custom Scrollbar - Dark Theme */
-.list::-webkit-scrollbar {
+/* Custom Scrollbar - Dark Theme - Applied to all scrollable areas */
+.list::-webkit-scrollbar,
+[data-scrollable]::-webkit-scrollbar {
     width: 6px;
 }
 
-.list::-webkit-scrollbar-track {
+.list::-webkit-scrollbar-track,
+[data-scrollable]::-webkit-scrollbar-track {
     background: #1c1f26;
     border-radius: 3px;
 }
 
-.list::-webkit-scrollbar-thumb {
+.list::-webkit-scrollbar-thumb,
+[data-scrollable]::-webkit-scrollbar-thumb {
     background: #3a3d45;
     border-radius: 3px;
 }
 
-.list::-webkit-scrollbar-thumb:hover {
+.list::-webkit-scrollbar-thumb:hover,
+[data-scrollable]::-webkit-scrollbar-thumb:hover {
     background: #4a4d55;
 }
 
 /* Firefox scrollbar */
-.list {
+.list,
+[data-scrollable] {
     scrollbar-width: thin;
     scrollbar-color: #3a3d45 #1c1f26;
 }

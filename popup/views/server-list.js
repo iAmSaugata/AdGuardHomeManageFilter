@@ -80,7 +80,10 @@ async function renderServersList(container, servers, groups) {
   const initialServerItems = servers.map(server => `
       <div class="list-item server-item" data-server-id="${server.id}" id="server-${server.id}">
         <div class="list-item-content">
-          <div class="list-item-title">${escapeHtml(server.name)}</div>
+          <div class="list-item-title">
+            <span class="server-icon">🖥️</span>
+            ${escapeHtml(server.name)}
+          </div>
         </div>
         <div class="flex gap-2 items-center">
           <span class="badge badge-info">Refreshing...</span>
@@ -158,7 +161,10 @@ async function renderServersList(container, servers, groups) {
       if (serverCard) {
         const statusHtml = `
                   <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(server.name)}</div>
+                    <div class="list-item-title">
+                      <span class="server-icon">🖥️</span>
+                      ${escapeHtml(server.name)}
+                    </div>
                     <div class="server-version">
                       <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
                       <span class="badge badge-secondary">${escapeHtml(version)}</span>
@@ -166,6 +172,7 @@ async function renderServersList(container, servers, groups) {
                     ${groupBadgesHtml}
                   </div>
                   <div class="flex gap-2 items-center">
+                    <span class="badge badge-info">${counts.allow + counts.block + counts.disabled}</span>
                     <span class="badge badge-success">${counts.allow}</span>
                     <span class="badge badge-danger">${counts.block}</span>
                     <span class="badge badge-warning">${counts.disabled}</span>
@@ -202,7 +209,10 @@ async function renderServersList(container, servers, groups) {
       if (serverCard) {
         const errorHtml = `
                   <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(server.name)}</div>
+                    <div class="list-item-title">
+                      <span class="server-icon">🖥️</span>
+                      ${escapeHtml(server.name)}
+                    </div>
                     <div class="server-version">
                       <span class="status-indicator status-offline"></span>
                       <span class="text-xs text-tertiary">Offline</span>

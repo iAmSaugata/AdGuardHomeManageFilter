@@ -176,28 +176,51 @@ function renderServerDetailView(container, server, version, rules, fromCache, wa
     const filtered = allRules.filter(rule =>
       rule.toLowerCase().includes(searchTerm)
     );
-    document.getElementById('rules-list').innerHTML = renderRulesList(filtered);
+    // Pass full rules array so we can find correct indices
+    document.getElementById('rules-list').innerHTML = renderRulesList(filtered, allRules);
+
+    // Re-attach event listeners after re-rendering
+    attachRuleEventListeners(serverId, allRules);
   });
 
+  // Attach initial event listeners
+  attachRuleEventListeners(serverId, allRules);
+}
+
+// Separate function for event listeners to avoid duplication
+function attachRuleEventListeners(serverId, allRules) {
   // Rule edit/delete event delegation
   const rulesList = document.getElementById('rules-list');
-  rulesList.addEventListener('click', async (e) => {
+
+  // Remove old listeners by cloning
+  const newRulesList = rulesList.cloneNode(true);
+  rulesList.parentNode.replaceChild(newRulesList, rulesList);
+
+  newRulesList.addEventListener('click', async (e) => {
     const actionBtn = e.target.closest('.rule-action-btn');
     if (!actionBtn) return;
 
     const ruleItem = actionBtn.closest('.rule-item');
-    const ruleIndex = parseInt(ruleItem.dataset.ruleIndex);
+    const ruleText = ruleItem.dataset.ruleText;
     const action = actionBtn.dataset.action;
 
+    // Find actual index in full rules array
+    const actualIndex = allRules.indexOf(ruleText);
+
+    if (actualIndex === -1) {
+      window.app.showToast('Rule not found', 'error');
+      return;
+    }
+
     if (action === 'edit') {
-      handleEditRule(ruleItem, serverId, allRules, ruleIndex);
+      handleEditRule(ruleItem, serverId, allRules, actualIndex);
     } else if (action === 'delete') {
-      handleDeleteRule(ruleItem, serverId, allRules, ruleIndex);
+      handleDeleteRule(ruleItem, serverId, allRules, actualIndex);
     }
   });
 }
 
-function renderRulesList(rules) {
+function renderRulesList(rules, allRules = null) {
   if (!rules || rules.length === 0) {
     return `
       <div class="empty-state">
@@ -212,8 +235,9 @@ function renderRulesList(rules) {
       type === 'disabled' ? 'rule-disabled' :
         'rule-block';
 
+    // Store actual rule text instead of index to handle search correctly
     return `
-      <div class="rule-item ${colorClass}" data-rule-index="${index}" style="position: relative;">
+      <div class="rule-item ${colorClass}" data-rule-text="${escapeHtml(rule)}" style="position: relative;">
         <span class="rule-indicator"></span>
         <span class="rule-text">${escapeHtml(rule)}</span>
         <div class="rule-actions">
@@ -242,7 +266,10 @@ async function handleRefresh(serverId) {
     document.querySelector('.badge-info').textContent = `${counts.total} Total`;
 
     // Update rules list
-    document.getElementById('rules-list').innerHTML = renderRulesList(rules);
+    document.getElementById('rules-list').innerHTML = renderRulesList(rules, rules);
+
+    // Re-attach event listeners
+    attachRuleEventListeners(serverId, rules);
 
     // Clear search if any
     const searchInput = document.getElementById('rule-search');

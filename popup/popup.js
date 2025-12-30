@@ -152,6 +152,14 @@ function renderCurrentView() {
     }
 }
 
+/**
+ * Refresh the current view (re-render without changing state)
+ * Useful for updating UI after background data changes
+ */
+export function refreshCurrentView() {
+    renderCurrentView();
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -162,7 +170,8 @@ window.app = {
     sendMessage,
     showToast,
     showLoading,
-    hideLoading
+    hideLoading,
+    refreshCurrentView
 };
 
 document.addEventListener('DOMContentLoaded', () => {

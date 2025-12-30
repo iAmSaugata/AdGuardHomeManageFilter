@@ -53,7 +53,7 @@ export async function renderAddRuleSection(container) {
                         
                         <div id="rule-preview" class="rule-preview">Add a server first</div>
                         
-                        <button id="add-sync-btn" class="btn btn-primary" disabled>ADD TO RULE</button>
+                        <button id="add-sync-btn" class="btn btn-primary" disabled>ADD TO RULES</button>
                     </div>
                 </div>
             </div>
@@ -104,7 +104,7 @@ export async function renderAddRuleSection(container) {
                     
                     <div id="rule-preview" class="rule-preview">||example.com^</div>
                     
-                    <button id="add-sync-btn" class="btn btn-primary">ADD TO RULE</button>
+                    <button id="add-sync-btn" class="btn btn-primary">ADD TO RULES</button>
                 </div>
             </div>
         </div>
@@ -193,7 +193,13 @@ function setupEventListeners() {
 
             if (summary.success > 0) {
                 const ruleType = isBlock ? 'Block' : 'Allow';
-                window.app.showToast(`${ruleType} rule added to ${summary.success}/${summary.total} server(s)`, 'success');
+                let message = `${ruleType} rule added to ${summary.success}/${summary.total} server(s)`;
+
+                if (summary.replaced > 0) {
+                    message += ` (${summary.replaced} replaced)`;
+                }
+
+                window.app.showToast(message, 'success');
                 input.value = '';
                 updatePreview();
             }
@@ -203,14 +209,17 @@ function setupEventListeners() {
             }
 
             if (summary.failed > 0) {
-                window.app.showToast(`Failed on ${summary.failed} server(s)`, 'error');
+                const errorMsg = summary.domainConflicts.length > 0
+                    ? `Cancelled or failed on ${summary.failed} server(s)`
+                    : `Failed on ${summary.failed} server(s)`;
+                window.app.showToast(errorMsg, 'error');
             }
         } catch (error) {
             console.error('Add rule error:', error);
             window.app.showToast(`Error: ${error.message}`, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'ADD TO RULE';
+            btn.textContent = 'ADD TO RULES';
         }
     });
 }

@@ -132,6 +132,47 @@ const messageHandlers = {
 
     async clearCache({ serverId }) {
         return await storage.clearCache(serverId);
+    },
+
+    // New API operations (following OpenAPI spec)
+    async addFilterURL({ serverId, url, name, whitelist }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.addFilterURL(server, url, name, whitelist);
+    },
+
+    async removeFilterURL({ serverId, url, whitelist }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.removeFilterURL(server, url, whitelist);
+    },
+
+    async setFilteringConfig({ serverId, config }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.setFilteringConfig(server, config);
+    },
+
+    async refreshFilters({ serverId, force }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.refreshFilters(server, force);
+    },
+
+    async checkHost({ serverId, name }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.checkHost(server, name);
     }
 };
 

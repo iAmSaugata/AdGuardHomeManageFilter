@@ -4,6 +4,7 @@
 // Auth: HTTP Basic Auth
 
 import { withTimeout, withRetry, sanitizeServerForLog } from './helpers.js';
+import { apiInterceptor } from './api-interceptors.js';
 
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
 const DEFAULT_RETRIES = 2;
@@ -30,13 +31,18 @@ function normalizeHost(host) {
 
 /**
  * Make API request with timeout and error handling
+ * Now includes interceptor support for logging, tracing, and error enrichment
  */
 async function apiRequest(url, options = {}) {
     const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options;
 
     try {
+        // ===== REQUEST INTERCEPTORS =====
+        const { url: interceptedUrl, options: interceptedOptions } =
+            await apiInterceptor.interceptRequest(url, fetchOptions);
+
         const response = await withTimeout(
-            fetch(url, fetchOptions),
+            fetch(interceptedUrl, interceptedOptions),
             timeout
         );
 
@@ -46,9 +52,16 @@ async function apiRequest(url, options = {}) {
             throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
+        // ===== RESPONSE INTERCEPTORS =====
+        const interceptedResponse = await apiInterceptor.interceptResponse(
+            response,
+            interceptedUrl,
+            interceptedOptions
+        );
+
         // Parse JSON response only if there's content
-        const contentLength = response.headers.get('content-length');
-        const contentType = response.headers.get('content-type');
+        const contentLength = interceptedResponse.headers.get('content-length');
+        const contentType = interceptedResponse.headers.get('content-type');
 
         // If response is empty or not JSON, return success
         if (contentLength === '0' || !contentType || !contentType.includes('application/json')) {
@@ -56,7 +69,7 @@ async function apiRequest(url, options = {}) {
         }
 
         // Try to parse JSON
-        const text = await response.text();
+        const text = await interceptedResponse.text();
         if (!text || text.trim() === '') {
             return { success: true };
         }
@@ -64,14 +77,21 @@ async function apiRequest(url, options = {}) {
         const data = JSON.parse(text);
         return data;
     } catch (error) {
-        // Enhance error message
-        if (error.message.includes('timed out')) {
+        // ===== ERROR INTERCEPTORS =====
+        const interceptedError = await apiInterceptor.interceptError(
+            error,
+            url,
+            fetchOptions
+        );
+
+        // Enhance error message (now done in interceptor, but keep fallback)
+        if (interceptedError.message.includes('timed out')) {
             throw new Error('Request timed out. Check server connectivity.');
         }
-        if (error.message.includes('Failed to fetch')) {
+        if (interceptedError.message.includes('Failed to fetch')) {
             throw new Error('Network error. Check server URL and connectivity.');
         }
-        throw error;
+        throw interceptedError;
     }
 }
 
@@ -221,3 +241,166 @@ export async function removeRules(server, rulesToRemove) {
     await setRules(server, filteredRules);
     return filteredRules;
 }
+
+// ============================================================================
+// NEW API ENDPOINTS (Following OpenAPI Spec)
+// ============================================================================
+
+/**
+ * Add a filter subscription URL
+ * POST /control/filtering/add_url
+ * @param {Object} server - Server configuration
+ * @param {string} url - URL to filter list
+ * @param {string} name - Name for the filter
+ * @param {boolean} whitelist - Whether it's a whitelist (true) or blocklist (false)
+ * @returns {Promise<void>}
+ */
+export async function addFilterURL(server, url, name, whitelist = false) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/add_url`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Adding filter URL:', sanitizeServerForLog(server), { url, name, whitelist });
+
+    await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, name, whitelist })
+        });
+    }, DEFAULT_RETRIES);
+
+    console.log('Filter URL added successfully');
+}
+
+/**
+ * Remove a filter subscription URL
+ * POST /control/filtering/remove_url
+ * @param {Object} server - Server configuration
+ * @param {string} url - URL to remove
+ * @param {boolean} whitelist - Whether it's a whitelist
+ * @returns {Promise<void>}
+ */
+export async function removeFilterURL(server, url, whitelist = false) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/remove_url`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Removing filter URL:', sanitizeServerForLog(server), { url, whitelist });
+
+    await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, whitelist })
+        });
+    }, DEFAULT_RETRIES);
+
+    console.log('Filter URL removed successfully');
+}
+
+/**
+ * Set filtering configuration
+ * POST /control/filtering/set_config
+ * @param {Object} server - Server configuration
+ * @param {Object} config - Filtering configuration
+ * @param {boolean} config.enabled - Enable/disable filtering
+ * @param {number} config.interval - Update interval in hours
+ * @returns {Promise<void>}
+ */
+export async function setFilteringConfig(server, config) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/set_config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Setting filtering config:', sanitizeServerForLog(server), config);
+
+    await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+    }, DEFAULT_RETRIES);
+
+    console.log('Filtering config updated');
+}
+
+/**
+ * Force refresh all filter lists
+ * POST /control/filtering/refresh
+ * @param {Object} server - Server configuration
+ * @param {boolean} force - Force update even if not stale
+ * @returns {Promise<Object>} Refresh result with updated count
+ */
+export async function refreshFilters(server, force = false) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/refresh`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Refreshing filters:', sanitizeServerForLog(server), { force });
+
+    const result = await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ whitelist: false })
+        });
+    }, DEFAULT_RETRIES);
+
+    console.log('Filters refreshed');
+    return result;
+}
+
+/**
+ * Check if a host is blocked
+ * POST /control/filtering/check_host
+ * @param {Object} server - Server configuration
+ * @param {string} name - Hostname to check
+ * @returns {Promise<Object>} Result with reason, rule, filterId, etc.
+ * Result format: {
+ *   reason: string, // 'NotFilteredNotFound', 'FilteredBlackList', 'FilteredWhiteList', etc.
+ *   rule: string,   // Matching rule (if blocked)
+ *   filter_id: number,
+ *   service_name: string
+ * }
+ */
+export async function checkHost(server, name) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/check_host`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    console.log('Checking host:', sanitizeServerForLog(server), { name });
+
+    const result = await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name })
+        });
+    }, DEFAULT_RETRIES);
+
+    console.log('Host check result:', {
+        name,
+        reason: result.reason,
+        blocked: result.reason !== 'NotFilteredNotFound'
+    });
+
+    return result;
+}
+
