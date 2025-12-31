@@ -235,6 +235,7 @@ export async function isCacheFresh(serverId) {
 // ============================================================================
 
 const UI_SNAPSHOT_KEY = 'ui_snapshot';
+const CACHE_VERSION = 2; // Increment to invalidate all old caches
 
 /**
  * Get cached UI snapshot for instant rendering
