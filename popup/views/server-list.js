@@ -383,6 +383,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         // Store server data for change detection
         serverDataMap[server.id] = { rules, counts, version, isOnline };
         console.log(`[DEBUG] ${server.name}: ${rules.length} rules, counts:`, counts);
+        console.log(`[DEBUG] ${server.name} rulesResult:`, rulesResult);
 
         // Find groups this server belongs to
         const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
