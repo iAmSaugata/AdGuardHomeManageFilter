@@ -365,7 +365,8 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   if (shouldFetch || true) { // Always fetch to ensure fresh data for charts
     const serverDataMap = {};
 
-    servers.forEach(async (server) => {
+    // Use for...of instead of forEach to properly await async operations
+    for (const server of servers) {
       try {
         // Fetch server info and rules in parallel
         const [serverInfo, rulesResult] = await Promise.all([
@@ -507,7 +508,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           }
         }
       }
-    });
+    }
+
+    // Save snapshot after all servers are loaded
+    await saveUISnapshot(servers, groups, serverDataMap);
   }
 }
 
