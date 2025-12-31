@@ -254,14 +254,7 @@ export async function getUISnapshot() {
     return null;
   }
 
-  // Check if snapshot is too old (max 10 minutes)
-  const age = Date.now() - new Date(snapshot.timestamp).getTime();
-  const MAX_AGE = 10 * 60 * 1000; // 10 minutes
-
-  if (age > MAX_AGE) {
-    return null; // Too old, ignore
-  }
-
+  // Cache never expires - background checks handle updates automatically
   return snapshot;
 }
 
