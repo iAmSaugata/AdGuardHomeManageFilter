@@ -293,3 +293,179 @@ export function sanitizeServerForLog(server) {
         // Never log password
     };
 }
+
+
+// ============================================================================
+// API RESPONSE VALIDATION (Phase 1 Security Fix)
+// ============================================================================
+
+/**
+ * Validate and sanitize rules array from API response
+ * Filters out invalid entries and ensures all rules are strings
+ * @param {any} rules - Rules data from API
+ * @param {string} source - Source identifier for logging
+ * @returns {string[]} Validated array of rule strings
+ */
+export function validateRulesArray(rules, source = 'API') {
+    // Handle non-array responses
+    if (!Array.isArray(rules)) {
+        console.error([Validation]  returned non-array rules:, typeof rules);
+        return [];
+    }
+    
+    // Filter and validate each rule
+    const validRules = [];
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+        
+        // Check if rule is a string
+        if (typeof rule !== 'string') {
+            console.warn([Validation]  rule[] is not a string:, typeof rule, rule);
+            continue;
+        }
+        
+        // Add valid rule
+        validRules.push(rule);
+    }
+    
+    // Log if any rules were filtered
+    const filteredCount = rules.length - validRules.length;
+    if (filteredCount > 0) {
+        console.warn([Validation] Filtered  invalid rule(s) from );
+    }
+    
+    return validRules;
+}
+
+/**
+ * Validate and sanitize filtering status response from AdGuard Home API
+ * Ensures response structure matches expected schema
+ * @param {any} status - Raw status response from API
+ * @returns {Object} Validated and sanitized status object
+ * @throws {Error} If response is completely invalid
+ */
+export function validateFilteringStatus(status) {
+    // Validate response is an object
+    if (!status || typeof status !== 'object' || Array.isArray(status)) {
+        console.error('[Validation] Invalid filtering status response:', typeof status);
+        throw new Error('Server returned invalid filtering status (not an object)');
+    }
+    
+    // Build validated response with defaults
+    const validated = {
+        enabled: Boolean(status.enabled),
+        interval: typeof status.interval === 'number' ? status.interval : 24,
+        user_rules: validateRulesArray(status.user_rules || [], 'filtering/status'),
+        filters: Array.isArray(status.filters) ? status.filters : [],
+        whitelist_filters: Array.isArray(status.whitelist_filters) ? status.whitelist_filters : [],
+        filters_updated_count: typeof status.filters_updated_count === 'number' ? status.filters_updated_count : null
+    };
+    
+    // Log validation summary
+    console.log('[Validation] Filtering status validated:', {
+        enabled: validated.enabled,
+        userRulesCount: validated.user_rules.length,
+        filtersCount: validated.filters.length
+    });
+    
+    return validated;
+}
+
+/**
+ * Validate server info response
+ * @param {any} info - Raw server info from API
+ * @returns {Object} Validated server info
+ * @throws {Error} If response is invalid
+ */
+export function validateServerInfo(info) {
+    if (!info || typeof info !== 'object' || Array.isArray(info)) {
+        console.error('[Validation] Invalid server info response:', typeof info);
+        throw new Error('Server returned invalid info (not an object)');
+    }
+    
+    return {
+        version: typeof info.version === 'string' ? info.version : 'unknown',
+        dns_port: typeof info.dns_port === 'number' ? info.dns_port : null,
+        http_port: typeof info.http_port === 'number' ? info.http_port : null,
+        protection_enabled: Boolean(info.protection_enabled),
+        dhcp_available: Boolean(info.dhcp_available),
+        running: Boolean(info.running)
+    };
+}
+
+// ============================================================================
+// RUNTIME PERMISSIONS (Phase 1 Security Fix)
+// ============================================================================
+
+/**
+ * Request runtime permission for a server's host
+ * @param {string} serverUrl - Server URL (e.g., https://192.168.1.1)
+ * @returns {Promise<boolean>} True if permission granted
+ * @throws {Error} If permission request fails or is denied
+ */
+export async function requestHostPermission(serverUrl) {
+    try {
+        const url = new URL(serverUrl);
+        const origin = ${url.protocol}///*;
+        
+        console.log([Permissions] Requesting access to );
+        
+        const granted = await chrome.permissions.request({
+            origins: [origin]
+        });
+        
+        if (!granted) {
+            throw new Error('Permission denied. Cannot access this server.');
+        }
+        
+        console.log([Permissions] Granted access to );
+        return true;
+    } catch (error) {
+        console.error('[Permissions] Request failed:', error);
+        throw new Error(Permission request failed: );
+    }
+}
+
+/**
+ * Check if permission is already granted for a server's host
+ * @param {string} serverUrl - Server URL
+ * @returns {Promise<boolean>} True if permission is granted
+ */
+export async function checkHostPermission(serverUrl) {
+    try {
+        const url = new URL(serverUrl);
+        const origin = ${url.protocol}///*;
+        
+        return await chrome.permissions.contains({
+            origins: [origin]
+        });
+    } catch (error) {
+        console.error('[Permissions] Check failed:', error);
+        return false;
+    }
+}
+
+/**
+ * Remove permission for a server's host
+ * @param {string} serverUrl - Server URL
+ * @returns {Promise<boolean>} True if permission was removed
+ */
+export async function revokeHostPermission(serverUrl) {
+    try {
+        const url = new URL(serverUrl);
+        const origin = ${url.protocol}///*;
+        
+        const removed = await chrome.permissions.remove({
+            origins: [origin]
+        });
+        
+        if (removed) {
+            console.log([Permissions] Revoked access to );
+        }
+        
+        return removed;
+    } catch (error) {
+        console.error('[Permissions] Revoke failed:', error);
+        return false;
+    }
+}

@@ -3,7 +3,7 @@
 // Base path: /control
 // Auth: HTTP Basic Auth
 
-import { withTimeout, withRetry, sanitizeServerForLog } from './helpers.js';
+import { withTimeout, withRetry, sanitizeServerForLog, validateRulesArray, validateFilteringStatus, validateServerInfo } from './helpers.js';
 import { apiInterceptor } from './api-interceptors.js';
 
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
@@ -154,7 +154,8 @@ export async function getFilteringStatus(server) {
         });
     }, DEFAULT_RETRIES);
 
-    return data;
+    // Validate response before returning
+    return validateFilteringStatus(data);
 }
 
 /**
@@ -179,7 +180,8 @@ export async function getServerInfo(server) {
         });
     }, DEFAULT_RETRIES);
 
-    return data;
+    // Validate response before returning
+    return validateServerInfo(data);
 }
 
 /**
@@ -216,7 +218,8 @@ export async function setRules(server, rules) {
  */
 export async function getUserRules(server) {
     const status = await getFilteringStatus(server);
-    return status.user_rules || [];
+    // Status is already validated in getFilteringStatus
+    return status.user_rules;
 }
 
 /**

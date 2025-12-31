@@ -354,6 +354,22 @@
         }
     }
 
+    /**
+     * Sanitize text to prevent XSS attacks
+     * Ensures all user-controlled data is safely rendered as text
+     * @param {any} text - Text to sanitize
+     * @returns {string} Sanitized text safe for DOM insertion
+     */
+    function sanitizeText(text) {
+        // Handle null, undefined, and non-string types
+        if (text === null || text === undefined) return '';
+
+        // Convert to string and escape HTML entities
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.textContent;
+    }
+
     async function loadTargets(selector, errorContainer) {
         try {
             const servers = await window.app.sendMessage('getServers') || [];
@@ -366,9 +382,9 @@
                 groupOptgroup.label = 'Groups';
                 groups.forEach(group => {
                     const option = document.createElement('option');
-                    option.value = `group:${group.id}`;
-                    // Escape for defense-in-depth, even though from trusted storage
-                    option.textContent = `📁 ${group.name}`;
+                    option.value = `group:${sanitizeText(group.id)}`;
+                    // Sanitize group name to prevent XSS
+                    option.textContent = `📁 ${sanitizeText(group.name)}`;
                     groupOptgroup.appendChild(option);
                 });
                 selector.appendChild(groupOptgroup);
@@ -379,9 +395,9 @@
                 serverOptgroup.label = 'Servers';
                 servers.forEach(server => {
                     const option = document.createElement('option');
-                    option.value = `server:${server.id}`;
-                    // Escape for defense-in-depth, even though from trusted storage
-                    option.textContent = `🖥️ ${server.name}`;
+                    option.value = `server:${sanitizeText(server.id)}`;
+                    // Sanitize server name to prevent XSS
+                    option.textContent = `🖥️ ${sanitizeText(server.name)}`;
                     serverOptgroup.appendChild(option);
                 });
                 selector.appendChild(serverOptgroup);

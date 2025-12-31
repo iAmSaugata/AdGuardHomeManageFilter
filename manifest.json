@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AdGuard Home Central Manager",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Securely manage AdGuard Home servers and filtering rules with encrypted credential storage",
   "icons": {
     "16": "icons/icon16.png",
@@ -39,11 +39,11 @@
       ]
     }
   ],
-  "host_permissions": [
+  "optional_host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
   }
 }
