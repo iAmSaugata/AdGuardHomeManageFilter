@@ -220,7 +220,7 @@ async function detectRuleChanges(servers, groups, cachedServerData) {
     // Check this server for changes
     try {
       const rulesResult = await window.app.sendMessage('getServerRules', { serverId: server.id });
-      const currentRules = rulesResult.data?.rules || [];
+      const currentRules = rulesResult.rules || [];
       const cachedRules = cachedServerData[server.id]?.rules || [];
 
       // Compare rule counts (fast check)
@@ -281,9 +281,18 @@ function renderEmptyState(container) {
   }
 }
 
-async function renderServersList(container, servers, groups) {
+async function renderServersList(container, servers, groups, cachedServerData = null) {
   // Render server cards immediately with loading charts
-  const initialServerItems = servers.map(server => `
+  const initialServerItems = servers.map(server => {
+    // Check if we have cached data for this server
+    const cached = cachedServerData?.[server.id];
+    const chartHtml = cached?.counts ? createDonutChart(cached.counts) : `
+      <div class="chart-loading">
+        <span class="chart-loading-text">Loading</span>
+      </div>
+    `;
+
+    return `
       <div class="server-card" data-server-id="${server.id}" id="server-${server.id}">
         <div class="server-info">
           <div class="server-name">
@@ -291,13 +300,15 @@ async function renderServersList(container, servers, groups) {
             ${escapeHtml(server.name)}
           </div>
           <div class="server-version">
-            <span class="badge badge-secondary">Loading...</span>
+            ${cached?.isOnline !== undefined ?
+        `<span class="status-indicator ${cached.isOnline ? 'status-online' : 'status-offline'}"></span>
+              <span class="badge badge-secondary" style="font-size: 10px;">${escapeHtml(cached.version || 'Unknown')}</span>` :
+        `<span class="badge badge-secondary">Loading...</span>`
+      }
           </div>
         </div>
         <div class="donut-chart-container">
-          <div class="chart-loading">
-            <span class="chart-loading-text">Loading</span>
-          </div>
+          ${chartHtml}
         </div>
         <div class="server-actions">
           <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
@@ -305,7 +316,8 @@ async function renderServersList(container, servers, groups) {
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+  }).join('');
 
   container.innerHTML = `
       <div class="view-header">
@@ -346,28 +358,32 @@ async function renderServersList(container, servers, groups) {
     });
   });
 
-  // Fetch data for each server progressively
-  const serverDataMap = {};
+  // Fetch data for each server progressively (even if we have cache, update it)
+  // Skip fetching only if we have complete cached data
+  const shouldFetch = !cachedServerData || Object.keys(cachedServerData).length === 0;
 
-  servers.forEach(async (server) => {
-    try {
-      // Fetch server info and rules in parallel
-      const [serverInfo, rulesResult] = await Promise.all([
-        window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
-        window.app.sendMessage('getServerRules', { serverId: server.id })
-      ]);
+  if (shouldFetch || true) { // Always fetch to ensure fresh data for charts
+    const serverDataMap = {};
 
-      const rules = rulesResult.rules || [];
-      const counts = getRuleCounts(rules);
-      const version = serverInfo?.version || 'Unknown';
-      const isOnline = serverInfo !== null;
+    servers.forEach(async (server) => {
+      try {
+        // Fetch server info and rules in parallel
+        const [serverInfo, rulesResult] = await Promise.all([
+          window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
+          window.app.sendMessage('getServerRules', { serverId: server.id })
+        ]);
 
-      // Store server data for change detection
-      serverDataMap[server.id] = { rules, counts, version, isOnline };
+        const rules = rulesResult.rules || [];
+        const counts = getRuleCounts(rules);
+        const version = serverInfo?.version || 'Unknown';
+        const isOnline = serverInfo !== null;
 
-      // Find groups this server belongs to
-      const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
-      const groupBadgesHtml = serverGroups.length > 0 ? `
+        // Store server data for change detection
+        serverDataMap[server.id] = { rules, counts, version, isOnline };
+
+        // Find groups this server belongs to
+        const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
+        const groupBadgesHtml = serverGroups.length > 0 ? `
         <div class="server-groups-inline">
           ${serverGroups.map(group => `
             <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
@@ -377,12 +393,12 @@ async function renderServersList(container, servers, groups) {
         </div>
       ` : '';
 
-      // Update the server card
-      const serverCard = document.getElementById(`server-${server.id}`);
-      if (serverCard) {
-        const chartHtml = createDonutChart(counts);
+        // Update the server card
+        const serverCard = document.getElementById(`server-${server.id}`);
+        if (serverCard) {
+          const chartHtml = createDonutChart(counts);
 
-        const statusHtml = `
+          const statusHtml = `
           <div class="server-info">
             <div class="server-name">
               <span class="server-icon-large">🖥️</span>
@@ -419,44 +435,44 @@ async function renderServersList(container, servers, groups) {
             </button>
           </div>
         `;
-        serverCard.innerHTML = statusHtml;
+          serverCard.innerHTML = statusHtml;
 
-        // Re-attach click handler
-        serverCard.addEventListener('click', (e) => {
-          if (e.target.closest('button')) return;
-          window.app.navigateTo('server-detail', { serverId: server.id });
-        });
-
-        // Re-attach edit button listener
-        const editBtn = serverCard.querySelector('.edit-server-btn');
-        if (editBtn) {
-          editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+          // Re-attach click handler
+          serverCard.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            window.app.navigateTo('server-detail', { serverId: server.id });
           });
-        }
 
-        // Add group badge click handlers
-        serverCard.querySelectorAll('.group-badge-inline').forEach(badge => {
-          badge.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const groupId = badge.dataset.groupId;
-            window.app.navigateTo('group-form', { mode: 'edit', groupId });
+          // Re-attach edit button listener
+          const editBtn = serverCard.querySelector('.edit-server-btn');
+          if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+            });
+          }
+
+          // Add group badge click handlers
+          serverCard.querySelectorAll('.group-badge-inline').forEach(badge => {
+            badge.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const groupId = badge.dataset.groupId;
+              window.app.navigateTo('group-form', { mode: 'edit', groupId });
+            });
           });
-        });
 
-        // Save snapshot after last server is done
-        if (Object.keys(serverDataMap).length === servers.length) {
-          saveUISnapshot(servers, groups, serverDataMap);
+          // Save snapshot after last server is done
+          if (Object.keys(serverDataMap).length === servers.length) {
+            saveUISnapshot(servers, groups, serverDataMap);
+          }
         }
-      }
-    } catch (error) {
-      console.error(`Failed to fetch data for ${server.name}:`, error);
+      } catch (error) {
+        console.error(`Failed to fetch data for ${server.name}:`, error);
 
-      // Update with error state
-      const serverCard = document.getElementById(`server-${server.id}`);
-      if (serverCard) {
-        const errorHtml = `
+        // Update with error state
+        const serverCard = document.getElementById(`server-${server.id}`);
+        if (serverCard) {
+          const errorHtml = `
           <div class="server-info">
             <div class="server-name">
               <span class="server-icon-large">🖥️</span>
@@ -479,20 +495,20 @@ async function renderServersList(container, servers, groups) {
             </button>
           </div>
         `;
-        serverCard.innerHTML = errorHtml;
+          serverCard.innerHTML = errorHtml;
 
-        // Re-attach event listeners
-        const editBtn = serverCard.querySelector('.edit-server-btn');
-        if (editBtn) {
-          editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
-          });
+          // Re-attach event listeners
+          const editBtn = serverCard.querySelector('.edit-server-btn');
+          if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              window.app.navigateTo('server-form', { mode: 'edit', serverId: server.id });
+            });
+          }
         }
       }
-    }
-  });
-}
+    });
+  }
 
 
 
