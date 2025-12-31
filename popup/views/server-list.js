@@ -98,6 +98,7 @@ export async function renderServerList(container) {
   if (snapshot && snapshot.servers && snapshot.servers.length > 0) {
     // INSTANT RENDER from cache
     console.log('[Performance] Rendering from cache');
+    console.log('[DEBUG] Cached serverData:', snapshot.serverData);
     renderServersList(container, snapshot.servers, snapshot.groups, snapshot.serverData);
 
     // Background: Check for changes and update if needed
@@ -381,6 +382,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
         // Store server data for change detection
         serverDataMap[server.id] = { rules, counts, version, isOnline };
+        console.log(`[DEBUG] ${server.name}: ${rules.length} rules, counts:`, counts);
 
         // Find groups this server belongs to
         const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
@@ -511,6 +513,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     }
 
     // Save snapshot after all servers are loaded
+    console.log('[DEBUG] Saving snapshot. serverDataMap:', serverDataMap);
     await saveUISnapshot(servers, groups, serverDataMap);
   }
 }
