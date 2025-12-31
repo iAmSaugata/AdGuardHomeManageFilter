@@ -270,18 +270,6 @@ export async function setUISnapshot(data) {
   await chrome.storage.local.set({ [UI_SNAPSHOT_KEY]: snapshot });
 }
 
-export async function isCacheFresh(serverId) {
-  const cached = await getCache(serverId);
-  if (!cached || !cached.fetchedAt) return false;
-
-  const settings = await getSettings();
-  const ttlMs = settings.cacheTTLMinutes * 60 * 1000;
-  const fetchedAt = new Date(cached.fetchedAt).getTime();
-  const now = Date.now();
-
-  return (now - fetchedAt) < ttlMs;
-}
-
 // ============================================================================
 // INITIALIZATION
 // ============================================================================

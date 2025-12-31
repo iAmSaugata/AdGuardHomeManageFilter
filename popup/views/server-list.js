@@ -357,7 +357,7 @@ async function renderServersList(container, servers, groups) {
         window.app.sendMessage('getServerRules', { serverId: server.id })
       ]);
 
-      const rules = rulesResult.data?.rules || [];
+      const rules = rulesResult.rules || [];
       const counts = getRuleCounts(rules);
       const version = serverInfo?.version || 'Unknown';
       const isOnline = serverInfo !== null;
