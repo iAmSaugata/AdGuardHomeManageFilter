@@ -308,8 +308,24 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       }
           </div>
         </div>
-        <div class="donut-chart-container">
-          ${chartHtml}
+        <div class="chart-legend-container">
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-dot allow"></span>
+              <span class="legend-text">Allow</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot block"></span>
+              <span class="legend-text">Block</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot inactive"></span>
+              <span class="legend-text">Inactive</span>
+            </div>
+          </div>
+          <div class="donut-chart-container">
+            ${chartHtml}
+          </div>
         </div>
         <div class="server-actions">
           <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
@@ -415,9 +431,6 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             </div>
           </div>
           <div class="chart-legend-container">
-            <div class="donut-chart-container">
-              ${chartHtml}
-            </div>
             <div class="chart-legend">
               <div class="legend-item">
                 <span class="legend-dot allow"></span>
@@ -431,6 +444,9 @@ async function renderServersList(container, servers, groups, cachedServerData = 
                 <span class="legend-dot inactive"></span>
                 <span class="legend-text">Inactive</span>
               </div>
+            </div>
+            <div class="donut-chart-container">
+              ${chartHtml}
             </div>
           </div>
           <div class="server-actions">
