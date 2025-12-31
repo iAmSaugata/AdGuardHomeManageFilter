@@ -13,6 +13,55 @@ import { generateUUID, validateServer } from './helpers.js';
 chrome.runtime.onInstalled.addListener(async () => {
     console.log('AdGuard Home Manager installed');
     await storage.initializeStorage();
+
+    // Create context menu
+    chrome.contextMenus.create({
+        id: 'add-to-adguard',
+        title: 'Add to AdGuard Home',
+        contexts: ['link', 'page', 'selection']
+    });
+});
+
+// ============================================================================
+// CONTEXT MENU HANDLER
+// ============================================================================
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (info.menuItemId === 'add-to-adguard') {
+        // Get URL from link or page
+        const url = info.linkUrl || info.pageUrl || info.selectionText;
+
+        if (url && tab && tab.id) {
+            try {
+                // Inject CSS first
+                await chrome.scripting.insertCSS({
+                    target: { tabId: tab.id },
+                    files: ['context-menu/modal.css']
+                });
+
+                // Inject script in ISOLATED world (has chrome API access)
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['context-menu/content-script.js'],
+                    world: 'ISOLATED'
+                });
+
+                // Send direct message to injected script
+                setTimeout(async () => {
+                    try {
+                        await chrome.tabs.sendMessage(tab.id, {
+                            type: 'ADGUARD_SHOW_MODAL',
+                            url: url
+                        });
+                    } catch (e) {
+                        console.error('[AdGuard] Failed to send message:', e);
+                    }
+                }, 200);
+            } catch (error) {
+                console.error('Failed to show modal:', error);
+            }
+        }
+    }
 });
 
 // ============================================================================
@@ -175,6 +224,9 @@ const messageHandlers = {
         return await apiClient.checkHost(server, name);
     }
 };
+
+// Note: Context menu logic now handled in content-script.js
+// which imports parseInput, generateRule, and addRuleToTarget directly
 
 // ============================================================================
 // MESSAGE LISTENER

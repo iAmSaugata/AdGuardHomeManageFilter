@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add to AdGuard Home</title>
+    <link rel="stylesheet" href="../popup/popup.css">
+    <style>
+        body {
+            width: 320px;
+            height: auto;
+            min-height: 200px;
+            padding: var(--space-4);
+        }
+
+        .dialog-header {
+            margin-bottom: var(--space-4);
+        }
+
+        .dialog-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-2);
+        }
+
+        .url-display {
+            background: var(--color-bg-secondary);
+            padding: var(--space-2);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            word-break: break-all;
+            margin-bottom: var(--space-4);
+            color: var(--color-text-secondary);
+        }
+
+        .form-section {
+            margin-bottom: var(--space-4);
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: var(--space-2) var(--space-3);
+            border: 2px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .toggle-btn:hover {
+            border-color: var(--color-accent);
+        }
+
+        .toggle-btn.active {
+            background: var(--color-danger);
+            border-color: var(--color-danger);
+            color: white;
+        }
+
+        .toggle-btn.active.allow {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .actions {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .btn {
+            flex: 1;
+        }
+
+        select {
+            width: 100%;
+            padding: var(--space-2);
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-base);
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--space-4);
+            color: var(--color-text-secondary);
+        }
+
+        .error {
+            background: var(--color-danger-light);
+            color: var(--color-danger);
+            padding: var(--space-2);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-3);
+            font-size: var(--font-size-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="dialog-header">
+            <h1 class="dialog-title">Add to AdGuard Home</h1>
+            <div class="url-display" id="url-display">Loading...</div>
+        </div>
+
+        <div id="error-container"></div>
+
+        <div id="form-container" style="display: none;">
+            <div class="form-section">
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="block-btn" data-action="block">
+                        🚫 Block
+                    </button>
+                    <button class="toggle-btn allow" id="allow-btn" data-action="allow">
+                        ✅ Allow
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Add to:</label>
+                <select id="target-selector">
+                    <option value="">Select target...</option>
+                </select>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                <button class="btn btn-primary" id="add-btn">Add Rule</button>
+            </div>
+        </div>
+
+        <div id="loading-container" class="loading">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script type="module" src="context-menu-dialog.js"></script>
+</body>
+
+</html>

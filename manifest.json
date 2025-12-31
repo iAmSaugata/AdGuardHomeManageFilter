@@ -22,7 +22,22 @@
     "type": "module"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "contextMenus",
+    "scripting",
+    "activeTab"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "context-menu/*",
+        "popup/utils/*",
+        "popup/services/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
   ],
   "host_permissions": [
     "http://*/*",

@@ -2,6 +2,7 @@
 // Create/Edit groups with merged rule preview
 
 import { escapeHtml, classifyRule, getRuleCounts, showConfirmDialog } from '../utils.js';
+import { normalizeRule, dedupRules, generateId } from '../shared/utilities.js';
 
 export async function renderGroupForm(container, data = {}) {
     const { mode = 'add', groupId } = data;
@@ -414,20 +415,6 @@ async function handleSaveGroup(isEdit, groupId) {
     }
 }
 
-// Group-specific helper functions
-function generateId() {
-    return 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function normalizeRule(rule) {
-    if (typeof rule !== 'string') return '';
-    return rule.trim();
-}
-
-function dedupRules(rules) {
-    return [...new Set(rules)];
-}
-
 async function handleDeleteGroup(groupId) {
     const group = await window.app.sendMessage('getGroup', { id: groupId });
 
@@ -454,6 +441,3 @@ async function handleDeleteGroup(groupId) {
         window.app.showToast('Failed to delete group: ' + error.message, 'error');
     }
 }
-
-// Shared helper functions (classifyRule, getRuleCounts, escapeHtml) imported from utils.js
-

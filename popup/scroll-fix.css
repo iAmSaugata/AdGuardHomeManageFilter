@@ -1,10 +1,11 @@
 /* Server List & Rule List Scrolling - Consistent Styling */
+/* Large enough to fit 2 servers comfortably, scrollbar only appears with 3+ */
 .list,
 [data-scrollable] {
-    max-height: 240px !important;
-    /* Fits exactly 2 servers or multiple rules without scrollbar */
+    max-height: 500px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    padding-top: 2px;
 }
 
 /* Custom Scrollbar - Dark Theme - Applied to all scrollable areas */

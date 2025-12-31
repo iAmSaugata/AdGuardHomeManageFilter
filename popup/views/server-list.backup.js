@@ -1,10 +1,10 @@
-// Server List View - Professional Design with Interactive Donut Charts
+// Server List View - Professional Design with Donut Charts
 // Displays list of configured servers with visual rule statistics
 
 import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
 
 /**
- * Create an interactive SVG donut chart with hoverable slices
+ * Create a donut chart using conic-gradient
  */
 function createDonutChart(counts) {
   const total = counts.allow + counts.block + counts.disabled;
@@ -17,74 +17,39 @@ function createDonutChart(counts) {
     `;
   }
 
-  // Calculate angles for each segment
-  const allowAngle = (counts.allow / total) * 360;
-  const blockAngle = (counts.block / total) * 360;
-  const disabledAngle = (counts.disabled / total) * 360;
+  // Calculate percentages
+  const allowPercent = (counts.allow / total) * 360;
+  const blockPercent = (counts.block / total) * 360;
+  const disabledPercent = (counts.disabled / total) * 360;
 
-  // SVG dimensions
-  const size = 84;
-  const center = size / 2;
-  const radius = 42;
-  const innerRadius = 28.5;
-
-  // Helper function to describe SVG arc path
-  function describeArc(startAngle, endAngle, outerR, innerR) {
-    const start = polarToCartesian(center, center, outerR, endAngle);
-    const end = polarToCartesian(center, center, outerR, startAngle);
-    const innerStart = polarToCartesian(center, center, innerR, endAngle);
-    const innerEnd = polarToCartesian(center, center, innerR, startAngle);
-
-    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-
-    return [
-      'M', start.x, start.y,
-      'A', outerR, outerR, 0, largeArcFlag, 0, end.x, end.y,
-      'L', innerEnd.x, innerEnd.y,
-      'A', innerR, innerR, 0, largeArcFlag, 1, innerStart.x, innerStart.y,
-      'Z'
-    ].join(' ');
-  }
-
-  function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-    return {
-      x: centerX + (radius * Math.cos(angleInRadians)),
-      y: centerY + (radius * Math.sin(angleInRadians))
-    };
-  }
-
-  // Build SVG paths for each segment
-  let svgPaths = '';
-  let currentAngle = 0;
+  // Create conic gradient
+  const gradientStops = [];
+  let currentDeg = 0;
 
   if (counts.allow > 0) {
-    const path = describeArc(currentAngle, currentAngle + allowAngle, radius, innerRadius);
-    svgPaths += `<path class="pie-slice" d="${path}" fill="var(--color-accent)" data-count="${counts.allow}" data-label="Allow Rules">
-      <title>Allow: ${counts.allow}</title>
-    </path>`;
-    currentAngle += allowAngle;
+    gradientStops.push(`var(--color-accent) ${currentDeg}deg ${currentDeg + allowPercent}deg`);
+    currentDeg += allowPercent;
   }
 
   if (counts.block > 0) {
-    const path = describeArc(currentAngle, currentAngle + blockAngle, radius, innerRadius);
-    svgPaths += `<path class="pie-slice" d="${path}" fill="var(--color-danger)" data-count="${counts.block}" data-label="Block Rules">
-      <title>Block: ${counts.block}</title>
-    </path>`;
-    currentAngle += blockAngle;
+    gradientStops.push(`var(--color-danger) ${currentDeg}deg ${currentDeg + blockPercent}deg`);
+    currentDeg += blockPercent;
   }
 
   if (counts.disabled > 0) {
-    const path = describeArc(currentAngle, currentAngle + disabledAngle, radius, innerRadius);
-    svgPaths += `<path class="pie-slice" d="${path}" fill="var(--color-warning)" data-count="${counts.disabled}" data-label="Inactive Rules">
-      <title>Inactive: ${counts.disabled}</title>
-    </path>`;
+    gradientStops.push(`var(--color-warning) ${currentDeg}deg ${currentDeg + disabledPercent}deg`);
   }
 
+  const gradient = `conic-gradient(${gradientStops.join(', ')})`;
+
+  const tooltipText = `Total: ${total}\nAllow: ${counts.allow}\nBlock: ${counts.block}\nInactive: ${counts.disabled}`;
+
   return `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="donut-chart">
-      ${svgPaths}
-    </svg>
+    <div class="donut-chart" style="background: ${gradient};" title="${tooltipText}">
+      <svg width="45" height="45" style="position: absolute; top: 0; left: 0;">
+        <circle cx="22.5" cy="22.5" r="16" fill="var(--color-bg-secondary)" />
+      </svg>
+    </div>
     <div class="donut-center" title="Total Rules: ${total}">
       <div class="donut-total">${total}</div>
     </div>
@@ -242,12 +207,12 @@ async function renderServersList(container, servers, groups) {
       const version = serverInfo?.version || 'Unknown';
       const isOnline = serverInfo !== null;
 
-      // Find groups this server belongs to
+      //Find groups this server belongs to
       const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
       const groupBadgesHtml = serverGroups.length > 0 ? `
-        <div class="server-groups-inline">
+        <div class="server-groups" style="margin-top: 4px;">
           ${serverGroups.map(group => `
-            <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
+            <span class="group-badge" data-group-id="${group.id}" title="Click to edit group" style="font-size: 11px; padding: 2px 6px;">
               📁 ${escapeHtml(group.name)}
             </span>
           `).join('')}
@@ -264,12 +229,12 @@ async function renderServersList(container, servers, groups) {
             <div class="server-name">
               <span class="server-icon-large">🖥️</span>
               ${escapeHtml(server.name)}
-              ${groupBadgesHtml}
             </div>
             <div class="server-version">
               <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
               <span class="badge badge-secondary" style="font-size: 10px;">${escapeHtml(version)}</span>
             </div>
+            ${groupBadgesHtml}
           </div>
           <div class="chart-legend-container">
             <div class="donut-chart-container">
@@ -279,14 +244,17 @@ async function renderServersList(container, servers, groups) {
               <div class="legend-item">
                 <span class="legend-dot allow"></span>
                 <span class="legend-text">Allow</span>
+                <span class="legend-value">${counts.allow}</span>
               </div>
               <div class="legend-item">
                 <span class="legend-dot block"></span>
                 <span class="legend-text">Block</span>
+                <span class="legend-value">${counts.block}</span>
               </div>
               <div class="legend-item">
                 <span class="legend-dot inactive"></span>
                 <span class="legend-text">Inactive</span>
+                <span class="legend-value">${counts.disabled}</span>
               </div>
             </div>
           </div>
@@ -314,7 +282,7 @@ async function renderServersList(container, servers, groups) {
         }
 
         // Add group badge click handlers
-        serverCard.querySelectorAll('.group-badge-inline').forEach(badge => {
+        serverCard.querySelectorAll('.group-badge').forEach(badge => {
           badge.addEventListener('click', (e) => {
             e.stopPropagation();
             const groupId = badge.dataset.groupId;
@@ -365,9 +333,3 @@ async function renderServersList(container, servers, groups) {
     }
   });
 }
-
-
-
-
-
-

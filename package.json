@@ -5,9 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:unit": "vitest run tests/unit --coverage",
+    "test:coverage:watch": "vitest --coverage"
   },
   "repository": {
     "type": "git",
@@ -23,6 +27,7 @@
   "homepage": "https://github.com/iAmSaugata/AdGuardHomeManageFilter#readme",
   "devDependencies": {
     "@types/chrome": "^0.1.32",
+    "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "jsdom": "^27.4.0",
     "vitest": "^4.0.16"

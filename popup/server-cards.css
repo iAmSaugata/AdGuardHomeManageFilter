@@ -1,0 +1,227 @@
+/* Server Card Redesign - Compact Design with Donut Chart */
+
+.server-card {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--space-2);
+    align-items: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    min-height: 84px;
+}
+
+.server-card:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Server Info Section */
+.server-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.server-name {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.server-icon-large {
+    font-size: 21px;
+    opacity: 0.9;
+}
+
+.server-version {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.server-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+}
+
+/* Chart and Legend Container */
+.chart-legend-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+}
+
+/* Donut Chart - Interactive */
+.donut-chart-container {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.donut-chart {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    position: relative;
+    cursor: help;
+}
+
+/* SVG Pie slices */
+.pie-slice {
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform-origin: center;
+}
+
+.pie-slice:hover {
+    opacity: 0.8;
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+}
+
+.donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2;
+}
+
+.donut-total {
+    font-size: 21px;
+    font-weight: var(--font-weight-bold);
+    color: #ffffff;
+    line-height: 1;
+    cursor: help;
+    pointer-events: none;
+}
+
+.donut-label {
+    font-size: 6px;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    margin-top: 1px;
+    display: none;
+}
+
+/* Chart Legend - Compact beside chart */
+.chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-dot.total {
+    background: var(--color-info);
+}
+
+.legend-dot.allow {
+    background: var(--color-accent);
+}
+
+.legend-dot.block {
+    background: var(--color-danger);
+}
+
+.legend-dot.inactive {
+    background: var(--color-warning);
+}
+
+.legend-text {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    min-width: 45px;
+}
+
+.legend-value {
+    margin-left: auto;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    min-width: 20px;
+    text-align: right;
+    display: none;
+}
+
+/* Server Actions */
+.server-actions {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+}
+
+/* Loading State for Charts */
+.chart-loading {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: conic-gradient(var(--color-bg-tertiary) 0deg 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-loading-text {
+    font-size: 9px;
+    color: var(--color-text-tertiary);
+}
+
+/* Group badges - inline with server name */
+.server-groups-inline {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.group-badge-inline {
+    font-size: 8px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.group-badge-inline:hover {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: var(--color-accent);
+    transform: scale(1.05);
+}

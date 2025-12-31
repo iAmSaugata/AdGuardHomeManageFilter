@@ -158,6 +158,11 @@ export async function decrypt(encrypted) {
  * @returns {boolean} True if data appears to be encrypted
  */
 export function isEncrypted(data) {
+    // Explicitly return false for null/undefined
+    if (data === null || data === undefined) {
+        return false;
+    }
+
     return (
         data &&
         typeof data === 'object' &&

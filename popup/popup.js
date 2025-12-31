@@ -7,6 +7,8 @@ import { renderServerDetail } from './views/server-detail.js';
 import { renderSettings } from './views/settings.js';
 import { renderGroupForm } from './views/group-form.js';
 import { renderAddRuleSection } from './views/add-rule.js';
+import { initializeKeyboardHandler, focusFirstElement, storeFocus, restoreFocus } from './shared/keyboard-handler.js';
+import { announceNavigation, announceLoading, initializeAnnouncer } from './shared/announcer.js';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -98,9 +100,24 @@ export function hideLoading() {
 // ============================================================================
 
 export function navigateTo(view, data = null) {
+    // Store current focus before navigation
+    storeFocus();
+
     state.currentView = view;
     state.viewData = data;
+
+    // Announce navigation to screen readers
+    announceNavigation(view);
+
     renderCurrentView();
+
+    // Set focus on first interactive element after render
+    setTimeout(() => {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            focusFirstElement(mainContent);
+        }
+    }, 150);
 }
 
 function renderCurrentView() {
@@ -171,11 +188,17 @@ window.app = {
     showToast,
     showLoading,
     hideLoading,
-    refreshCurrentView
+    refreshCurrentView,
+    currentView: state.currentView // Expose for keyboard handler
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup initialized');
+
+    // Initialize accessibility features
+    initializeAnnouncer();
+    initializeKeyboardHandler();
+    console.log('[Accessibility] Keyboard shortcuts and screen reader support enabled');
 
     // Settings button event listener
     const settingsBtn = document.getElementById('settings-btn');
