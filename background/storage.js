@@ -231,6 +231,58 @@ export async function isCacheFresh(serverId) {
 }
 
 // ============================================================================
+// UI SNAPSHOT CACHE (for instant popup rendering)
+// ============================================================================
+
+const UI_SNAPSHOT_KEY = 'ui_snapshot';
+
+/**
+ * Get cached UI snapshot for instant rendering
+ * @returns {Promise<{servers: Array, groups: Array, timestamp: string} | null>}
+ */
+export async function getUISnapshot() {
+  const result = await chrome.storage.local.get(UI_SNAPSHOT_KEY);
+  const snapshot = result[UI_SNAPSHOT_KEY];
+
+  if (!snapshot) return null;
+
+  // Check if snapshot is too old (max 10 minutes)
+  const age = Date.now() - new Date(snapshot.timestamp).getTime();
+  const MAX_AGE = 10 * 60 * 1000; // 10 minutes
+
+  if (age > MAX_AGE) {
+    return null; // Too old, ignore
+  }
+
+  return snapshot;
+}
+
+/**
+ * Save UI snapshot for next popup open
+ * @param {{servers: Array, groups: Array, serverData: Object}} data
+ */
+export async function setUISnapshot(data) {
+  const snapshot = {
+    ...data,
+    timestamp: new Date().toISOString()
+  };
+
+  await chrome.storage.local.set({ [UI_SNAPSHOT_KEY]: snapshot });
+}
+
+export async function isCacheFresh(serverId) {
+  const cached = await getCache(serverId);
+  if (!cached || !cached.fetchedAt) return false;
+
+  const settings = await getSettings();
+  const ttlMs = settings.cacheTTLMinutes * 60 * 1000;
+  const fetchedAt = new Date(cached.fetchedAt).getTime();
+  const now = Date.now();
+
+  return (now - fetchedAt) < ttlMs;
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 

@@ -92,38 +92,156 @@ function createDonutChart(counts) {
 }
 
 export async function renderServerList(container) {
-  // Show loading skeleton FIRST
-  container.innerHTML = `
-    <div class="view-header">
-      <h1 class="view-title">Servers</h1>
-      <button class="btn btn-primary btn-sm" id="add-server-btn">
-        Add Server
-      </button>
-    </div>
-    <div class="view-body">
-      <div class="skeleton skeleton-title"></div>
-      <div class="skeleton skeleton-text"></div>
-      <div class="skeleton skeleton-text"></div>
-    </div>
-  `;
+  // Try to get cached snapshot for instant rendering
+  const snapshot = await getUISnapshotFromBackground();
 
+  if (snapshot && snapshot.servers && snapshot.servers.length > 0) {
+    // INSTANT RENDER from cache
+    console.log('[Performance] Rendering from cache');
+    renderServersList(container, snapshot.servers, snapshot.groups, snapshot.serverData);
+
+    // Background: Check for changes and update if needed
+    checkAndUpdateInBackground(container, snapshot);
+  } else {
+    // No cache - show skeleton and fetch fresh
+    console.log('[Performance] No cache, fetching fresh data');
+    container.innerHTML = `
+      <div class="view-header">
+        <h1 class="view-title">Servers</h1>
+        <button class="btn btn-primary btn-sm" id="add-server-btn">
+          Add Server
+        </button>
+      </div>
+      <div class="view-body">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text"></div>
+      </div>
+    `;
+
+    try {
+      await fetchAndRenderFresh(container);
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+      window.app.showToast('Failed to load servers: ' + error.message, 'error');
+      renderEmptyState(container);
+    }
+  }
+}
+
+// Helper to get UI snapshot via message passing
+async function getUISnapshotFromBackground() {
   try {
-    // Fetch servers and groups
-    const [servers, groups] = await Promise.all([
+    return await window.app.sendMessage('getUISnapshot');
+  } catch (error) {
+    console.error('Failed to get UI snapshot:', error);
+    return null;
+  }
+}
+
+// Fetch fresh data and render
+async function fetchAndRenderFresh(container) {
+  const [servers, groups] = await Promise.all([
+    window.app.sendMessage('getServers'),
+    window.app.sendMessage('getGroups')
+  ]);
+
+  if (servers.length === 0) {
+    renderEmptyState(container);
+    return;
+  }
+
+  // Render with skeleton charts (will update progressively)
+  renderServersList(container, servers, groups);
+
+  // Save snapshot for next time
+  await saveUISnapshot(servers, groups, {});
+}
+
+// Background check for changes
+async function checkAndUpdateInBackground(container, cachedSnapshot) {
+  try {
+    const [freshServers, freshGroups] = await Promise.all([
       window.app.sendMessage('getServers'),
       window.app.sendMessage('getGroups')
     ]);
 
-    // Render servers
-    if (servers.length === 0) {
-      renderEmptyState(container);
+    // Quick check: server/group count changed?
+    if (freshServers.length !== cachedSnapshot.servers.length ||
+      freshGroups.length !== cachedSnapshot.groups.length) {
+      console.log('[Performance] Server/group count changed, refreshing');
+      renderServersList(container, freshServers, freshGroups);
+      await saveUISnapshot(freshServers, freshGroups, {});
+      return;
+    }
+
+    // Check for rule changes (optimized per requirements)
+    const hasChanges = await detectRuleChanges(freshServers, freshGroups, cachedSnapshot.serverData);
+
+    if (hasChanges) {
+      console.log('[Performance] Rule changes detected, refreshing');
+      // Re-render with fresh data
+      renderServersList(container, freshServers, freshGroups);
     } else {
-      renderServersList(container, servers, groups);
+      console.log('[Performance] No changes detected, keeping cached UI');
+      // Still save snapshot to update timestamp
+      await saveUISnapshot(freshServers, freshGroups, cachedSnapshot.serverData);
     }
   } catch (error) {
-    console.error('Failed to load servers:', error);
-    window.app.showToast('Failed to load servers: ' + error.message, 'error');
-    renderEmptyState(container);
+    console.error('[Performance] Background check failed:', error);
+    // Keep showing cached data - don't interrupt user
+  }
+}
+
+// Detect rule changes across servers
+async function detectRuleChanges(servers, groups, cachedServerData) {
+  const checkedServers = new Set();
+
+  for (const server of servers) {
+    // Skip if already checked
+    if (checkedServers.has(server.id)) continue;
+
+    // Check if server belongs to a group
+    const parentGroup = groups.find(g => g.serverIds && g.serverIds.includes(server.id));
+
+    if (parentGroup) {
+      // Server in group: only check FIRST server in group
+      const firstInGroup = parentGroup.serverIds[0];
+      if (server.id !== firstInGroup) {
+        continue; // Skip, will be checked by first server
+      }
+
+      // Mark all servers in group as checked
+      parentGroup.serverIds.forEach(id => checkedServers.add(id));
+    } else {
+      checkedServers.add(server.id);
+    }
+
+    // Check this server for changes
+    try {
+      const rulesResult = await window.app.sendMessage('getServerRules', { serverId: server.id });
+      const currentRules = rulesResult.data?.rules || [];
+      const cachedRules = cachedServerData[server.id]?.rules || [];
+
+      // Compare rule counts (fast check)
+      if (currentRules.length !== cachedRules.length) {
+        return true; // Changes detected
+      }
+    } catch (error) {
+      console.error(`Failed to check server ${server.id}:`, error);
+      // Continue checking other servers
+    }
+  }
+
+  return false; // No changes detected
+}
+
+// Save UI snapshot for next popup open
+async function saveUISnapshot(servers, groups, serverData) {
+  try {
+    await window.app.sendMessage('setUISnapshot', { servers, groups, serverData });
+  } catch (error) {
+    console.error('Failed to save UI snapshot:', error);
   }
 }
 
@@ -229,6 +347,8 @@ async function renderServersList(container, servers, groups) {
   });
 
   // Fetch data for each server progressively
+  const serverDataMap = {};
+
   servers.forEach(async (server) => {
     try {
       // Fetch server info and rules in parallel
@@ -241,6 +361,9 @@ async function renderServersList(container, servers, groups) {
       const counts = getRuleCounts(rules);
       const version = serverInfo?.version || 'Unknown';
       const isOnline = serverInfo !== null;
+
+      // Store server data for change detection
+      serverDataMap[server.id] = { rules, counts, version, isOnline };
 
       // Find groups this server belongs to
       const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
@@ -321,6 +444,11 @@ async function renderServersList(container, servers, groups) {
             window.app.navigateTo('group-form', { mode: 'edit', groupId });
           });
         });
+
+        // Save snapshot after last server is done
+        if (Object.keys(serverDataMap).length === servers.length) {
+          saveUISnapshot(servers, groups, serverDataMap);
+        }
       }
     } catch (error) {
       console.error(`Failed to fetch data for ${server.name}:`, error);

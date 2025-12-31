@@ -183,6 +183,15 @@ const messageHandlers = {
         return await storage.clearCache(serverId);
     },
 
+    // UI Snapshot operations (for instant popup rendering)
+    async getUISnapshot() {
+        return await storage.getUISnapshot();
+    },
+
+    async setUISnapshot({ servers, groups, serverData }) {
+        return await storage.setUISnapshot({ servers, groups, serverData });
+    },
+
     // New API operations (following OpenAPI spec)
     async addFilterURL({ serverId, url, name, whitelist }) {
         const server = await storage.getServer(serverId);
