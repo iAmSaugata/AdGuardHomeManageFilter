@@ -221,7 +221,7 @@ async function detectRuleChanges(servers, groups, cachedServerData) {
     // Check this server for changes
     try {
       const rulesResult = await window.app.sendMessage('getServerRules', { serverId: server.id });
-      const currentRules = rulesResult.rules || [];
+      const currentRules = rulesResult.data?.rules || [];
       const cachedRules = cachedServerData[server.id]?.rules || [];
 
       // Compare rule counts (fast check)
@@ -375,7 +375,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           window.app.sendMessage('getServerRules', { serverId: server.id })
         ]);
 
-        const rules = rulesResult.rules || [];
+        const rules = rulesResult.data?.rules || [];
         const counts = getRuleCounts(rules);
         const version = serverInfo?.version || 'Unknown';
         const isOnline = serverInfo !== null;
