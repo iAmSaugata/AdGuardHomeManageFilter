@@ -16,6 +16,16 @@ export async function renderSettings(container) {
 
             <div class="view-body">
                 <div class="settings-section">
+                    <h2 class="settings-section-title">Cache Management</h2>
+                    <p class="settings-section-description">
+                        Clear cached server data to force a fresh reload. Useful if charts show stale data.
+                    </p>
+                    <button class="btn btn-secondary" id="clear-cache-btn">
+                        🗑️ Clear Cache & Reload
+                    </button>
+                </div>
+                
+                <div class="settings-section">
                     <h2 class="settings-section-title">Groups</h2>
                     <p class="settings-section-description">
                         Merge rules from multiple servers with auto-deduplication.
@@ -41,6 +51,24 @@ export async function renderSettings(container) {
 
     document.getElementById('create-group-btn').addEventListener('click', () => {
         window.app.navigateTo('group-form', { mode: 'add' });
+    });
+
+    // Clear Cache button
+    document.getElementById('clear-cache-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('clear-cache-btn');
+        btn.disabled = true;
+        btn.textContent = '🔄 Clearing...';
+
+        try {
+            await chrome.storage.local.remove('ui_snapshot');
+            window.app.showToast('Cache cleared! Reloading...', 'success');
+            setTimeout(() => location.reload(), 500);
+        } catch (error) {
+            console.error('Failed to clear cache:', error);
+            window.app.showToast('Failed to clear cache', 'error');
+            btn.disabled = false;
+            btn.textContent = '🗑️ Clear Cache & Reload';
+        }
     });
 
     // Load and display groups

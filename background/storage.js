@@ -247,6 +247,13 @@ export async function getUISnapshot() {
 
   if (!snapshot) return null;
 
+  // Invalidate old cache versions
+  if (snapshot.version !== CACHE_VERSION) {
+    console.log(`[Cache] Invalidating old cache version ${snapshot.version || 1}, current is ${CACHE_VERSION}`);
+    await chrome.storage.local.remove(UI_SNAPSHOT_KEY);
+    return null;
+  }
+
   // Check if snapshot is too old (max 10 minutes)
   const age = Date.now() - new Date(snapshot.timestamp).getTime();
   const MAX_AGE = 10 * 60 * 1000; // 10 minutes
@@ -265,6 +272,7 @@ export async function getUISnapshot() {
 export async function setUISnapshot(data) {
   const snapshot = {
     ...data,
+    version: CACHE_VERSION,
     timestamp: new Date().toISOString()
   };
 
