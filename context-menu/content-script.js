@@ -126,26 +126,26 @@
         container.className = 'adguard-modal-overlay';
 
         container.innerHTML = `
-            <div class="adguard-modal">
+            <div class="adguard-modal" role="dialog" aria-labelledby="adguard-modal-title" aria-modal="true">
                 <div class="adguard-modal-header">
-                    <h2 class="adguard-modal-title">Add to AdGuard Home</h2>
+                    <h2 class="adguard-modal-title" id="adguard-modal-title">Add to AdGuard Home</h2>
                 </div>
                 <div class="adguard-modal-body">
-                    <div class="adguard-url-display">${escapeHtml(url)}</div>
-                    <div id="adguard-error-container"></div>
+                    <div class="adguard-url-display" aria-label="URL to filter">${escapeHtml(url)}</div>
+                    <div id="adguard-error-container" role="alert" aria-live="polite"></div>
                     <div id="adguard-form-container">
-                        <div class="adguard-toggle-group">
-                            <button class="adguard-toggle-btn active" id="adguard-block-btn">🚫 Block</button>
-                            <button class="adguard-toggle-btn allow" id="adguard-allow-btn">✅ Allow</button>
+                        <div class="adguard-toggle-group" role="group" aria-label="Rule type selection">
+                            <button class="adguard-toggle-btn active" id="adguard-block-btn" aria-pressed="true">🚫 Block</button>
+                            <button class="adguard-toggle-btn allow" id="adguard-allow-btn" aria-pressed="false">✅ Allow</button>
                         </div>
-                        <label class="adguard-form-label">Add to:</label>
-                        <select id="adguard-target-selector" class="adguard-select">
+                        <label class="adguard-form-label" for="adguard-target-selector">Add to:</label>
+                        <select id="adguard-target-selector" class="adguard-select" aria-label="Select target server or group">
                             <option value="">Loading...</option>
                         </select>
-                        <div class="adguard-rule-preview" id="adguard-rule-preview">||example.com^</div>
+                        <div class="adguard-rule-preview" id="adguard-rule-preview" role="status" aria-live="polite">||example.com^</div>
                         <div class="adguard-actions">
-                            <button class="adguard-btn adguard-btn-secondary" id="adguard-cancel-btn">Cancel</button>
-                            <button class="adguard-btn adguard-btn-primary" id="adguard-add-btn">Add Rule</button>
+                            <button class="adguard-btn adguard-btn-secondary" id="adguard-cancel-btn" aria-label="Cancel and close">Cancel</button>
+                            <button class="adguard-btn adguard-btn-primary" id="adguard-add-btn" aria-label="Add filtering rule">Add Rule</button>
                         </div>
                     </div>
                 </div>
@@ -191,6 +191,9 @@
             selectedAction = action;
             blockBtn.classList.toggle('active', action === 'block');
             allowBtn.classList.toggle('active', action === 'allow');
+            // Update ARIA pressed states
+            blockBtn.setAttribute('aria-pressed', action === 'block');
+            allowBtn.setAttribute('aria-pressed', action === 'allow');
             updatePreview();
         }
 
@@ -364,8 +367,8 @@
                 groups.forEach(group => {
                     const option = document.createElement('option');
                     option.value = `group:${group.id}`;
-                    // Server/group names from storage are trusted, no need to escape
-                    option.innerHTML = `📁 ${group.name}`;
+                    // Escape for defense-in-depth, even though from trusted storage
+                    option.textContent = `📁 ${group.name}`;
                     groupOptgroup.appendChild(option);
                 });
                 selector.appendChild(groupOptgroup);
@@ -377,8 +380,8 @@
                 servers.forEach(server => {
                     const option = document.createElement('option');
                     option.value = `server:${server.id}`;
-                    // Server/group names from storage are trusted, no need to escape
-                    option.innerHTML = `🖥️ ${server.name}`;
+                    // Escape for defense-in-depth, even though from trusted storage
+                    option.textContent = `🖥️ ${server.name}`;
                     serverOptgroup.appendChild(option);
                 });
                 selector.appendChild(serverOptgroup);
@@ -431,15 +434,15 @@
 
             // Replace entire modal content with compact, dark confirmation dialog
             formContainer.innerHTML = `
-                <div style="position: relative; padding: 8px;">
+                <div role="alertdialog" aria-labelledby="conflict-title" aria-describedby="conflict-description" style="position: relative; padding: 8px;">
                     <!-- Background card layer for depth -->
                     <div style="position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; background: #1a1d24; border-radius: 8px; border: 1px solid #23262e; opacity: 0.7;"></div>
                     
                     <!-- Main content card -->
                     <div style="position: relative; background: #23262e; border-radius: 8px; border: 1px solid #2a2d35; padding: 12px 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
                         <div style="text-align: center; margin-bottom: 14px;">
-                            <h3 style="font-size: 15px; font-weight: 600; margin: 0 0 6px 0; color: #ffffff;">Domain Conflict Detected</h3>
-                            <p style="font-size: 12px; color: #8a8d93; margin: 0;">Domain "<strong style="color: #ffffff;">${escapeHtml(domain)}</strong>" already exists on <strong style="color: #ffffff;">${serverCount}</strong> server(s):</p>
+                            <h3 id="conflict-title" style="font-size: 15px; font-weight: 600; margin: 0 0 6px 0; color: #ffffff;">Domain Conflict Detected</h3>
+                            <p id="conflict-description" style="font-size: 12px; color: #8a8d93; margin: 0;">Domain "<strong style="color: #ffffff;">${escapeHtml(domain)}</strong>" already exists on <strong style="color: #ffffff;">${serverCount}</strong> server(s):</p>
                         </div>
                         
                         <div style="background: #1c1f26; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #2a2d35;">
