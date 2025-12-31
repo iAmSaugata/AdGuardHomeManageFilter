@@ -228,31 +228,115 @@
             if (error) throw new Error(error);
 
             const rule = generateRule(hostname, action === 'block', false);
+            const [type, id] = target.split(':');
+            let serverIds = [];
 
-            // Use addRuleToTarget from add-rule-service.js via dynamic import
-            const { addRuleToTarget } = await import(chrome.runtime.getURL('popup/services/add-rule-service.js'));
-            const summary = await addRuleToTarget(target, rule);
+            // Get server IDs based on target type - MATCHES main ADD RULE logic
+            if (type === 'group') {
+                const groups = await window.app.sendMessage('getGroups');
+                const group = groups.find(g => g.id === id);
+                if (!group) throw new Error('Group not found');
+                serverIds = group.serverIds || [];
+            } else if (type === 'server') {
+                // Check if this server belongs to a group
+                const groups = await window.app.sendMessage('getGroups');
+                const parentGroup = groups.find(g => g.serverIds && g.serverIds.includes(id));
 
-            if (summary.success > 0) {
+                if (parentGroup) {
+                    // Server is in a group - add to all servers in the group
+                    serverIds = parentGroup.serverIds;
+                } else {
+                    // Server is standalone - add only to this server
+                    serverIds = [id];
+                }
+            }
+
+            // Check for duplicates/conflicts on each server
+            let hasExactDuplicate = false;
+            let hasDomainConflict = false;
+            let conflictingRule = null;
+
+            for (const serverId of serverIds) {
+                const currentRules = await window.app.sendMessage('getUserRules', { serverId });
+
+                // Check exact duplicate
+                if (currentRules.includes(rule)) {
+                    hasExactDuplicate = true;
+                    break;
+                }
+
+                // Check domain conflict (same domain, different type)
+                const domainCheck = checkDomainExists(rule, currentRules);
+                if (domainCheck.exists) {
+                    hasDomainConflict = true;
+                    conflictingRule = domainCheck.conflictingRule;
+                    break;
+                }
+            }
+
+            // Handle exact duplicate
+            if (hasExactDuplicate) {
+                showSuccess(errorContainer, `Rule already exists`);
+                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
+                addBtn.disabled = false;
+                addBtn.textContent = 'Add Rule';
+                return;
+            }
+
+            // Handle domain conflict - show confirmation
+            if (hasDomainConflict) {
+                const shouldReplace = await showConfirmationDialog(hostname, conflictingRule, rule, serverIds.length, errorContainer);
+
+                if (!shouldReplace) {
+                    showError(errorContainer, 'Operation cancelled');
+                    addBtn.disabled = false;
+                    addBtn.textContent = 'Add Rule';
+                    return;
+                }
+
+                // User confirmed - replace rules
+                let successCount = 0;
+                for (const serverId of serverIds) {
+                    try {
+                        const currentRules = await window.app.sendMessage('getUserRules', { serverId });
+                        const updatedRules = currentRules.map(r => r === conflictingRule ? rule : r);
+                        await window.app.sendMessage('setRules', { serverId, rules: updatedRules });
+                        successCount++;
+                    } catch (err) {
+                        console.error(`Failed to update server ${serverId}:`, err);
+                    }
+                }
+
+                showSuccess(errorContainer, `Rule replaced on ${successCount}/${serverIds.length} server(s)`);
+                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
+                addBtn.disabled = false;
+                addBtn.textContent = 'Add Rule';
+                return;
+            }
+
+            // No conflicts - add normally
+            let successCount = 0;
+            for (const serverId of serverIds) {
+                try {
+                    const currentRules = await window.app.sendMessage('getUserRules', { serverId });
+                    const updatedRules = [...currentRules, rule];
+                    await window.app.sendMessage('setRules', { serverId, rules: updatedRules });
+                    successCount++;
+                } catch (err) {
+                    console.error(`Failed to add to server ${serverId}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
                 const ruleType = action === 'block' ? 'Block' : 'Allow';
-                let message = `${ruleType} rule added to ${summary.success}/${summary.total} server(s)`;
-                if (summary.replaced > 0) message += ` (${summary.replaced} replaced)`;
-                showSuccess(errorContainer, message);
+                showSuccess(errorContainer, `${ruleType} rule added to ${successCount}/${serverIds.length} server(s)`);
                 setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
-                return;
+            } else {
+                throw new Error('Failed to add rule to any server');
             }
 
-            if (summary.duplicate > 0) {
-                showSuccess(errorContainer, `Rule exists on ${summary.duplicate} server(s)`);
-                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
-                return;
-            }
-
-            if (summary.failed > 0) {
-                throw new Error(`Failed on ${summary.failed} server(s)`);
-            }
-
-            throw new Error('Failed to add rule');
+            addBtn.disabled = false;
+            addBtn.textContent = 'Add Rule';
         } catch (error) {
             console.error('Add rule error:', error);
             showError(errorContainer, error.message);
@@ -274,7 +358,8 @@
                 groups.forEach(group => {
                     const option = document.createElement('option');
                     option.value = `group:${group.id}`;
-                    option.textContent = `📁 ${group.name}`;
+                    // Server/group names from storage are trusted, no need to escape
+                    option.innerHTML = `📁 ${group.name}`;
                     groupOptgroup.appendChild(option);
                 });
                 selector.appendChild(groupOptgroup);
@@ -286,7 +371,8 @@
                 servers.forEach(server => {
                     const option = document.createElement('option');
                     option.value = `server:${server.id}`;
-                    option.textContent = `🖥️ ${server.name}`;
+                    // Server/group names from storage are trusted, no need to escape
+                    option.innerHTML = `🖥️ ${server.name}`;
                     serverOptgroup.appendChild(option);
                 });
                 selector.appendChild(serverOptgroup);
@@ -299,6 +385,103 @@
             console.error('Load targets error:', error);
             showError(errorContainer, 'Failed to load servers: ' + error.message);
         }
+    }
+
+    // Check if domain already exists in rules (different rule type)
+    function checkDomainExists(rule, existingRules) {
+        const domain = extractDomain(rule);
+        if (!domain) return { exists: false };
+
+        for (const existingRule of existingRules) {
+            const existingDomain = extractDomain(existingRule);
+            if (existingDomain === domain && existingRule !== rule) {
+                return { exists: true, domain, conflictingRule: existingRule };
+            }
+        }
+        return { exists: false };
+    }
+
+    // Extract domain from AdGuard rule
+    function extractDomain(rule) {
+        const match = rule.match(/\|\|([^\^\$]+)/);
+        return match ? match[1] : null;
+    }
+
+    // Get rule type (block/allow)
+    function getRuleType(rule) {
+        if (!rule) return 'unknown';
+        return rule.startsWith('@@') ? 'allow' : 'block';
+    }
+
+    // Show confirmation dialog within modal
+    async function showConfirmationDialog(domain, existingRule, newRule, serverCount, errorContainer) {
+        return new Promise((resolve) => {
+            const existingType = getRuleType(existingRule);
+            const newType = getRuleType(newRule);
+
+            // Disable form controls during confirmation
+            const blockBtn = document.getElementById('adguard-block-btn');
+            const allowBtn = document.getElementById('adguard-allow-btn');
+            const targetSelector = document.getElementById('adguard-target-selector');
+            const addBtn = document.getElementById('adguard-add-btn');
+            const cancelModalBtn = document.getElementById('adguard-cancel-btn');
+
+            if (blockBtn) blockBtn.disabled = true;
+            if (allowBtn) allowBtn.disabled = true;
+            if (targetSelector) targetSelector.disabled = true;
+            if (addBtn) addBtn.disabled = true;
+            if (cancelModalBtn) cancelModalBtn.disabled = true;
+
+            errorContainer.innerHTML = `
+                <div style="background: #2a2d35; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #ff9800;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #ffffff;">Domain Conflict Detected</div>
+                    <div style="font-size: 12px; color: #b0b3b8; margin-bottom: 8px;">
+                        Domain "${escapeHtml(domain)}" already exists on ${serverCount} server(s):
+                    </div>
+                    <div style="background: #1c1f26; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="margin-bottom: 6px;">
+                            <strong style="color: #ffffff;">Existing:</strong>
+                            <span style="display: inline-block; padding: 2px 6px; background: ${existingType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 10px; margin-left: 6px;">${existingType.toUpperCase()}</span>
+                            <div style="font-family: monospace; font-size: 11px; color: #8a8d93; margin-top: 4px;">${escapeHtml(existingRule)}</div>
+                        </div>
+                        <div>
+                            <strong style="color: #ffffff;">New:</strong>
+                            <span style="display: inline-block; padding: 2px 6px; background: ${newType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 10px; margin-left: 6px;">${newType.toUpperCase()}</span>
+                            <div style="font-family: monospace; font-size: 11px; color: #8a8d93; margin-top: 4px;">${escapeHtml(newRule)}</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px;">Replace existing rule on all ${serverCount} server(s)?</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="confirm-cancel" style="flex: 1; padding: 8px; background: #3a3d45; color: #ffffff; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancel</button>
+                        <button id="confirm-replace" style="flex: 1; padding: 8px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Replace All</button>
+                    </div>
+                </div>
+            `;
+
+            const confirmCancelBtn = errorContainer.querySelector('#confirm-cancel');
+            const replaceBtn = errorContainer.querySelector('#confirm-replace');
+
+            // Re-enable form controls helper
+            const enableFormControls = () => {
+                if (blockBtn) blockBtn.disabled = false;
+                if (allowBtn) allowBtn.disabled = false;
+                if (targetSelector) targetSelector.disabled = false;
+                if (addBtn) addBtn.disabled = false;
+                if (cancelModalBtn) cancelModalBtn.disabled = false;
+            };
+
+            confirmCancelBtn.addEventListener('click', () => {
+                errorContainer.innerHTML = '';
+                enableFormControls();
+                resolve(false);
+            });
+
+            replaceBtn.addEventListener('click', () => {
+                errorContainer.innerHTML = '';
+                enableFormControls();
+                resolve(true);
+            });
+        });
     }
 
     function showError(container, message) {

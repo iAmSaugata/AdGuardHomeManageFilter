@@ -7,8 +7,39 @@ import { checkDomainExists, getRuleType } from '../utils/rule-domain-validator.j
 
 /**
  * Show custom styled confirmation dialog for replace operation
+ * Falls back to native confirm() in content script context
  */
 async function showReplaceConfirmDialog(domain, existingRule, newRule, serverCount) {
+    // Check if we're in a popup context or content script context
+    const appContainer = document.getElementById('app');
+
+    // If no app container exists, we're likely in a content script - use native confirm
+    if (!appContainer) {
+        const existingType = getRuleType(existingRule);
+        const newType = getRuleType(newRule);
+
+        const message = `Domain "${domain}" already exists on ${serverCount} server(s):\n\n` +
+            `Existing: ${existingRule}\n` +
+            `(Type: ${existingType.toUpperCase()})\n\n` +
+            `New: ${newRule}\n` +
+            `(Type: ${newType.toUpperCase()})\n\n` +
+            `Replace existing rule on all ${serverCount} server(s)?`;
+
+        console.log('[DEBUG] About to call native confirm()');
+        console.log('[DEBUG] Message:', message);
+        console.log('[DEBUG] typeof confirm:', typeof confirm);
+
+        try {
+            const result = confirm(message);
+            console.log('[DEBUG] confirm() returned:', result);
+            return result;
+        } catch (error) {
+            console.error('[DEBUG] confirm() threw error:', error);
+            return false;
+        }
+    }
+
+    // Full styled dialog for popup context
     return new Promise((resolve) => {
         // Create overlay
         const overlay = document.createElement('div');
@@ -46,9 +77,6 @@ async function showReplaceConfirmDialog(domain, existingRule, newRule, serverCou
         `;
 
         overlay.appendChild(dialog);
-
-        // Append to app container
-        const appContainer = document.getElementById('app') || document.body;
         appContainer.appendChild(overlay);
 
         // Event listeners
@@ -152,11 +180,20 @@ export async function addRuleToTarget(targetValue, rule) {
     let userDecision = null; // null = not asked, true = replace, false = cancel
 
     if (conflictMap.size > 0) {
+        console.log('[DEBUG] Domain conflicts detected:', conflictMap.size, 'conflicts');
+
         // Show single confirmation dialog
         // For simplicity, we'll assume one type of conflict (same domain, same new rule)
         // and take the first conflict found to construct the message.
         const conflict = Array.from(conflictMap.values())[0];
         const serverCount = conflict.servers.length;
+
+        console.log('[DEBUG] Conflict details:', {
+            domain: conflict.domain,
+            existingRule: conflict.existingRule,
+            newRule: conflict.newRule,
+            serverCount
+        });
 
         const message = `Domain "${conflict.domain}" already exists on ${serverCount} server(s):\n\n` +
             `Existing: ${conflict.existingRule}\n` +
@@ -165,7 +202,14 @@ export async function addRuleToTarget(targetValue, rule) {
             `(Type: ${getRuleType(conflict.newRule)})\n\n` +
             `Replace on all ${serverCount} server(s)?`;
 
+        console.log('[DEBUG] About to show confirmation dialog');
+        console.log('[DEBUG] appContainer exists:', !!document.getElementById('app'));
+
         userDecision = await showReplaceConfirmDialog(conflict.domain, conflict.existingRule, conflict.newRule, serverCount);
+
+        console.log('[DEBUG] User decision:', userDecision);
+    } else {
+        console.log('[DEBUG] No domain conflicts detected');
     }
 
     // Second pass: apply rules based on conflicts and user decision
