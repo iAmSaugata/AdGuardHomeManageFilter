@@ -509,6 +509,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       }
     });
   }
+}
 
 
 
