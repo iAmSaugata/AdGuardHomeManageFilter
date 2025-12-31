@@ -177,6 +177,12 @@
         const addBtn = container.querySelector('#adguard-add-btn');
         const errorContainer = container.querySelector('#adguard-error-container');
 
+        // Reset button state (in case it was stuck in "Adding..." state)
+        if (addBtn) {
+            addBtn.disabled = false;
+            addBtn.textContent = 'Add Rule';
+        }
+
         let selectedAction = 'block';
 
         await loadTargets(targetSelector, errorContainer);
@@ -419,66 +425,76 @@
             const existingType = getRuleType(existingRule);
             const newType = getRuleType(newRule);
 
-            // Disable form controls during confirmation
-            const blockBtn = document.getElementById('adguard-block-btn');
-            const allowBtn = document.getElementById('adguard-allow-btn');
-            const targetSelector = document.getElementById('adguard-target-selector');
-            const addBtn = document.getElementById('adguard-add-btn');
-            const cancelModalBtn = document.getElementById('adguard-cancel-btn');
+            // Store original form HTML to restore on cancel
+            const formContainer = document.getElementById('adguard-form-container');
+            const originalFormHTML = formContainer.innerHTML;
 
-            if (blockBtn) blockBtn.disabled = true;
-            if (allowBtn) allowBtn.disabled = true;
-            if (targetSelector) targetSelector.disabled = true;
-            if (addBtn) addBtn.disabled = true;
-            if (cancelModalBtn) cancelModalBtn.disabled = true;
-
-            errorContainer.innerHTML = `
-                <div style="background: #2a2d35; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #ff9800;">
-                    <div style="font-weight: 600; margin-bottom: 8px; color: #ffffff;">Domain Conflict Detected</div>
-                    <div style="font-size: 12px; color: #b0b3b8; margin-bottom: 8px;">
-                        Domain "${escapeHtml(domain)}" already exists on ${serverCount} server(s):
-                    </div>
-                    <div style="background: #1c1f26; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-                        <div style="margin-bottom: 6px;">
-                            <strong style="color: #ffffff;">Existing:</strong>
-                            <span style="display: inline-block; padding: 2px 6px; background: ${existingType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 10px; margin-left: 6px;">${existingType.toUpperCase()}</span>
-                            <div style="font-family: monospace; font-size: 11px; color: #8a8d93; margin-top: 4px;">${escapeHtml(existingRule)}</div>
+            // Replace entire modal content with compact, dark confirmation dialog
+            formContainer.innerHTML = `
+                <div style="position: relative; padding: 8px;">
+                    <!-- Background card layer for depth -->
+                    <div style="position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; background: #1a1d24; border-radius: 8px; border: 1px solid #23262e; opacity: 0.7;"></div>
+                    
+                    <!-- Main content card -->
+                    <div style="position: relative; background: #23262e; border-radius: 8px; border: 1px solid #2a2d35; padding: 12px 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+                        <div style="text-align: center; margin-bottom: 14px;">
+                            <h3 style="font-size: 15px; font-weight: 600; margin: 0 0 6px 0; color: #ffffff;">Domain Conflict Detected</h3>
+                            <p style="font-size: 12px; color: #8a8d93; margin: 0;">Domain "<strong style="color: #ffffff;">${escapeHtml(domain)}</strong>" already exists on <strong style="color: #ffffff;">${serverCount}</strong> server(s):</p>
                         </div>
-                        <div>
-                            <strong style="color: #ffffff;">New:</strong>
-                            <span style="display: inline-block; padding: 2px 6px; background: ${newType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 10px; margin-left: 6px;">${newType.toUpperCase()}</span>
-                            <div style="font-family: monospace; font-size: 11px; color: #8a8d93; margin-top: 4px;">${escapeHtml(newRule)}</div>
+                        
+                        <div style="background: #1c1f26; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #2a2d35;">
+                            <div style="margin-bottom: 10px;">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <span style="font-size: 11px; color: #b0b3b8; font-weight: 600;">Existing:</span>
+                                    <span style="display: inline-block; padding: 2px 7px; background: ${existingType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.3px;">${existingType.toUpperCase()}</span>
+                                </div>
+                                <div style="font-family: 'Courier New', monospace; color: #8a8d93; font-size: 11px; padding: 6px; background: #16181e; border-radius: 3px; border-left: 2px solid ${existingType === 'allow' ? '#4caf50' : '#f44336'};">${escapeHtml(existingRule)}</div>
+                            </div>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <span style="font-size: 11px; color: #b0b3b8; font-weight: 600;">New:</span>
+                                    <span style="display: inline-block; padding: 2px 7px; background: ${newType === 'allow' ? '#4caf50' : '#f44336'}; color: white; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.3px;">${newType.toUpperCase()}</span>
+                                </div>
+                                <div style="font-family: 'Courier New', monospace; color: #8a8d93; font-size: 11px; padding: 6px; background: #16181e; border-radius: 3px; border-left: 2px solid ${newType === 'allow' ? '#4caf50' : '#f44336'};">${escapeHtml(newRule)}</div>
+                            </div>
                         </div>
-                    </div>
-                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px;">Replace existing rule on all ${serverCount} server(s)?</div>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="confirm-cancel" style="flex: 1; padding: 8px; background: #3a3d45; color: #ffffff; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancel</button>
-                        <button id="confirm-replace" style="flex: 1; padding: 8px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Replace All</button>
+                        
+                        <p style="font-size: 12px; color: #ffffff; text-align: center; margin: 0 0 12px 0; font-weight: 500;">Replace existing rule on all ${serverCount} server(s)?</p>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <button id="confirm-cancel" class="adguard-btn adguard-btn-secondary" style="flex: 1; padding: 9px; font-size: 13px;">Cancel</button>
+                            <button id="confirm-replace" class="adguard-btn adguard-btn-primary" style="flex: 1; padding: 9px; font-size: 13px;">Replace All</button>
+                        </div>
                     </div>
                 </div>
             `;
 
-            const confirmCancelBtn = errorContainer.querySelector('#confirm-cancel');
-            const replaceBtn = errorContainer.querySelector('#confirm-replace');
+            errorContainer.innerHTML = '';
 
-            // Re-enable form controls helper
-            const enableFormControls = () => {
-                if (blockBtn) blockBtn.disabled = false;
-                if (allowBtn) allowBtn.disabled = false;
-                if (targetSelector) targetSelector.disabled = false;
-                if (addBtn) addBtn.disabled = false;
-                if (cancelModalBtn) cancelModalBtn.disabled = false;
-            };
+            const confirmCancelBtn = formContainer.querySelector('#confirm-cancel');
+            const replaceBtn = formContainer.querySelector('#confirm-replace');
 
+            // Cancel - restore form to allow selecting different target
             confirmCancelBtn.addEventListener('click', () => {
+                formContainer.innerHTML = originalFormHTML;
                 errorContainer.innerHTML = '';
-                enableFormControls();
+                // Re-initialize modal to restore all event listeners and allow retrying with different target
+                const container = document.getElementById('adguard-modal-container');
+                const url = container.querySelector('.adguard-url-display').textContent;
+                initializeModal(url, container);
                 resolve(false);
             });
 
+            // Replace All
             replaceBtn.addEventListener('click', () => {
+                // Disable both buttons immediately to prevent duplicate clicks
+                confirmCancelBtn.disabled = true;
+                replaceBtn.disabled = true;
+                replaceBtn.textContent = 'Replacing...';
+
+                // Don't restore form - let the button stay in "Adding..." state while processing
+                // Just clear the confirmation dialog and let handleAddRule continue
                 errorContainer.innerHTML = '';
-                enableFormControls();
                 resolve(true);
             });
         });
