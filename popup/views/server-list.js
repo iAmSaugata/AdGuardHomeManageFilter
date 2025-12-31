@@ -363,7 +363,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   // Skip fetching only if we have complete cached data
   const shouldFetch = !cachedServerData || Object.keys(cachedServerData).length === 0;
 
-  if (shouldFetch || true) { // Always fetch to ensure fresh data for charts
+  if (shouldFetch) {
     const serverDataMap = {};
 
     // Use for...of instead of forEach to properly await async operations
