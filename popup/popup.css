@@ -803,19 +803,18 @@ p {
 
 .empty-state {
     text-align: center;
-    padding: var(--space-8);
+    padding: var(--space-3) var(--space-4);
 }
 
-.empty-state-icon {
-    font-size: 48px;
+$136px;
     margin-bottom: var(--space-4);
     opacity: 0.3;
 }
 
 .empty-state-title {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
 }
 
 .empty-state-text {
@@ -1632,3 +1631,104 @@ p {
 }
 
      
+/* ============================================================================
+   VIEW HEADERS - STANDARDIZED (Phase 2 UI Improvement)
+   ============================================================================ */
+
+.view-header {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-4);
+    background-color: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.view-header-left {
+    grid-column: 1;
+    justify-self: start;
+}
+
+.view-header-title {
+    grid-column: 2;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.view-header-actions {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+/* ============================================================================
+   LOADING STATES - CONSISTENT (Phase 2 UI Improvement)
+   ============================================================================ */
+
+/* Inline spinner for buttons */
+.spinner-sm {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: var(--space-2);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Skeleton loaders for initial page loads */
+.skeleton-card {
+    padding: var(--space-4);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--color-border);
+}
+
+.skeleton-title,
+.skeleton-text {
+    height: 16px;
+    background: linear-gradient(
+        90deg,
+        var(--color-bg-tertiary) 0%,
+        var(--color-bg-secondary) 50%,
+        var(--color-bg-tertiary) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+}
+
+.skeleton-title {
+    height: 20px;
+    width: 40%;
+    margin-bottom: var(--space-3);
+}
+
+.skeleton-text:last-child {
+    margin-bottom: 0;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Loading text variation */
+.loading-text {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}

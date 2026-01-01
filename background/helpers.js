@@ -29,13 +29,24 @@ export function normalizeRule(rule) {
     // Trim whitespace
     let normalized = rule.trim();
 
-    // Empty or comment - return as-is
-    if (!normalized || normalized.startsWith('!')) {
+    // Empty lines
+    if (!normalized) {
+        return normalized;
+    }
+
+    // [BUG FIX] DO NOT strip prefixes - preserve FULL rule text
+    // Comments (!, #) - preserve as-is
+    if (normalized.startsWith('!') || normalized.startsWith('#')) {
         return normalized;
     }
 
     // Exception rule (@@) - preserve
     if (normalized.startsWith('@@')) {
+        return normalized;
+    }
+
+    // Block rules (||) - preserve  
+    if (normalized.startsWith('||')) {
         return normalized;
     }
 
@@ -51,7 +62,7 @@ export function normalizeRule(rule) {
  * Deduplicate rules while preserving order
  * - Remove exact duplicates
  * - Keep first occurrence
- * - Preserve comments
+ * - [FIXED] Now properly deduplicates comments/disabled rules
  */
 export function dedupRules(rules) {
     if (!Array.isArray(rules)) return [];
@@ -65,13 +76,9 @@ export function dedupRules(rules) {
         // Skip empty rules
         if (!normalized) continue;
 
-        // Always keep comments (they might be different)
-        if (normalized.startsWith('!')) {
-            deduped.push(normalized);
-            continue;
-        }
-
-        // Deduplicate non-comments
+        // [BUG FIX] Deduplicate ALL rules including comments
+        // Previously, comments were always kept without dedup check,
+        // causing double counting in group merges (e.g., 17 + 17 = 34 instead of 17)
         if (!seen.has(normalized)) {
             seen.add(normalized);
             deduped.push(normalized);
@@ -130,24 +137,29 @@ export function generateAllowRule(domain) {
 }
 
 /**
- * Classify rule type
+ * Classify rule type using STRICT golden rule
  * Returns: 'disabled' | 'allow' | 'block' | 'unknown'
+ * 
+ * GOLDEN RULE:
+ * - "@@" at start = Allow
+ * - "||" at start = Block
+ * - Everything else = Disabled/Inactive
  */
 export function classifyRule(rule) {
     if (typeof rule !== 'string') return 'unknown';
 
     const trimmed = rule.trim();
 
-    if (!trimmed) return 'disabled'; // Empty lines are disabled
-    if (trimmed.startsWith('!')) return 'disabled'; // Comments with ! are disabled
-    if (trimmed.startsWith('#')) return 'disabled'; // Comments with # are disabled
+    // Empty lines are disabled
+    if (!trimmed) return 'disabled';
+
+    // GOLDEN RULE: Apply strict matching
     if (trimmed.startsWith('@@')) return 'allow';
-    if (trimmed.startsWith('||') || trimmed.startsWith('|')) return 'block';
+    if (trimmed.startsWith('||')) return 'block';
 
-    // Domain-only style or hosts-style
-    if (trimmed.match(/^[a-zA-Z0-9.-]+$/)) return 'block';
-
-    return 'block'; // Default assumption
+    // Everything else is disabled/inactive
+    // This includes: comments (!), single pipe (|), domain-only, etc.
+    return 'disabled';
 }
 
 /**
@@ -294,7 +306,6 @@ export function sanitizeServerForLog(server) {
     };
 }
 
-
 // ============================================================================
 // API RESPONSE VALIDATION (Phase 1 Security Fix)
 // ============================================================================
@@ -309,31 +320,31 @@ export function sanitizeServerForLog(server) {
 export function validateRulesArray(rules, source = 'API') {
     // Handle non-array responses
     if (!Array.isArray(rules)) {
-        console.error([Validation]  returned non-array rules:, typeof rules);
+        console.error(`[Validation] ${source} returned non-array rules:`, typeof rules);
         return [];
     }
-    
+
     // Filter and validate each rule
     const validRules = [];
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i];
-        
+
         // Check if rule is a string
         if (typeof rule !== 'string') {
-            console.warn([Validation]  rule[] is not a string:, typeof rule, rule);
+            console.warn(`[Validation] ${source} rule[${i}] is not a string:`, typeof rule, rule);
             continue;
         }
-        
+
         // Add valid rule
         validRules.push(rule);
     }
-    
+
     // Log if any rules were filtered
     const filteredCount = rules.length - validRules.length;
     if (filteredCount > 0) {
-        console.warn([Validation] Filtered  invalid rule(s) from );
+        console.warn(`[Validation] Filtered ${filteredCount} invalid rule(s) from ${source}`);
     }
-    
+
     return validRules;
 }
 
@@ -350,7 +361,7 @@ export function validateFilteringStatus(status) {
         console.error('[Validation] Invalid filtering status response:', typeof status);
         throw new Error('Server returned invalid filtering status (not an object)');
     }
-    
+
     // Build validated response with defaults
     const validated = {
         enabled: Boolean(status.enabled),
@@ -360,14 +371,14 @@ export function validateFilteringStatus(status) {
         whitelist_filters: Array.isArray(status.whitelist_filters) ? status.whitelist_filters : [],
         filters_updated_count: typeof status.filters_updated_count === 'number' ? status.filters_updated_count : null
     };
-    
+
     // Log validation summary
     console.log('[Validation] Filtering status validated:', {
         enabled: validated.enabled,
         userRulesCount: validated.user_rules.length,
         filtersCount: validated.filters.length
     });
-    
+
     return validated;
 }
 
@@ -382,7 +393,7 @@ export function validateServerInfo(info) {
         console.error('[Validation] Invalid server info response:', typeof info);
         throw new Error('Server returned invalid info (not an object)');
     }
-    
+
     return {
         version: typeof info.version === 'string' ? info.version : 'unknown',
         dns_port: typeof info.dns_port === 'number' ? info.dns_port : null,
@@ -406,23 +417,23 @@ export function validateServerInfo(info) {
 export async function requestHostPermission(serverUrl) {
     try {
         const url = new URL(serverUrl);
-        const origin = ${url.protocol}///*;
-        
-        console.log([Permissions] Requesting access to );
-        
+        const origin = `${url.protocol}//${url.host}/*`;
+
+        console.log(`[Permissions] Requesting access to ${origin}`);
+
         const granted = await chrome.permissions.request({
             origins: [origin]
         });
-        
+
         if (!granted) {
             throw new Error('Permission denied. Cannot access this server.');
         }
-        
-        console.log([Permissions] Granted access to );
+
+        console.log(`[Permissions] Granted access to ${origin}`);
         return true;
     } catch (error) {
         console.error('[Permissions] Request failed:', error);
-        throw new Error(Permission request failed: );
+        throw new Error(`Permission request failed: ${error.message}`);
     }
 }
 
@@ -434,8 +445,8 @@ export async function requestHostPermission(serverUrl) {
 export async function checkHostPermission(serverUrl) {
     try {
         const url = new URL(serverUrl);
-        const origin = ${url.protocol}///*;
-        
+        const origin = `${url.protocol}//${url.host}/*`;
+
         return await chrome.permissions.contains({
             origins: [origin]
         });
@@ -453,19 +464,93 @@ export async function checkHostPermission(serverUrl) {
 export async function revokeHostPermission(serverUrl) {
     try {
         const url = new URL(serverUrl);
-        const origin = ${url.protocol}///*;
-        
+        const origin = `${url.protocol}//${url.host}/*`;
+
         const removed = await chrome.permissions.remove({
             origins: [origin]
         });
-        
+
         if (removed) {
-            console.log([Permissions] Revoked access to );
+            console.log(`[Permissions] Revoked access to ${origin}`);
         }
-        
+
         return removed;
     } catch (error) {
         console.error('[Permissions] Revoke failed:', error);
         return false;
     }
 }
+
+// ============================================================================
+// PRODUCTION LOGGING SYSTEM
+// ============================================================================
+
+/**
+ * Log levels for production filtering
+ * ERROR: Critical errors only (always shown)
+ * WARN: Warnings that need attention
+ * INFO: Informational messages
+ * DEBUG: Verbose debugging (development only)
+ */
+export const LOG_LEVEL = {
+    ERROR: 0,
+    WARN: 1,
+    INFO: 2,
+    DEBUG: 3
+};
+
+// Current log level (loaded from settings)
+let currentLogLevel = LOG_LEVEL.ERROR;
+
+/**
+ * Set the global log level
+ * Should be called on extension startup with user's preference
+ * @param {number} level - LOG_LEVEL constant
+ */
+export function setLogLevel(level) {
+    if (typeof level === 'number' && level >= 0 && level <= 3) {
+        currentLogLevel = level;
+        console.log(`[Logger] Log level set to ${level} (${Object.keys(LOG_LEVEL)[level]})`);
+    }
+}
+
+/**
+ * Production-ready logger with configurable verbosity
+ * Respects user's logLevel setting to prevent information disclosure
+ */
+export const Logger = {
+    /**
+     * Log error (always shown, cannot be disabled)
+     */
+    error(...args) {
+        console.error('[ERROR]', ...args);
+    },
+
+    /**
+     * Log warning (shown if logLevel >= WARN)
+     */
+    warn(...args) {
+        if (currentLogLevel >= LOG_LEVEL.WARN) {
+            console.warn('[WARN]', ...args);
+        }
+    },
+
+    /**
+     * Log info (shown if logLevel >= INFO)
+     */
+    info(...args) {
+        if (currentLogLevel >= LOG_LEVEL.INFO) {
+            console.log('[INFO]', ...args);
+        }
+    },
+
+    /**
+     * Log debug (shown if logLevel >= DEBUG)
+     */
+    debug(...args) {
+        if (currentLogLevel >= LOG_LEVEL.DEBUG) {
+            console.log('[DEBUG]', ...args);
+        }
+    }
+};
+

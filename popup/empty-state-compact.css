@@ -1,0 +1,23 @@
+/* Emergency compact fix for empty state visibility */
+.empty-state {
+    text-align: center;
+    padding: 12px 16px !important;
+}
+
+.empty-state-icon {
+    font-size: 36px !important;
+    margin-bottom: 8px !important;
+    opacity: 0.3;
+}
+
+.empty-state-title {
+    font-size: 14px !important;
+    font-weight: 600;
+    margin-bottom: 4px !important;
+}
+
+.empty-state-text {
+    color: var(--color-text-secondary);
+    font-size: 12px !important;
+    margin-bottom: 12px !important;
+}

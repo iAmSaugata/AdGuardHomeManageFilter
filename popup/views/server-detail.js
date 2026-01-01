@@ -201,21 +201,19 @@ function attachRuleEventListeners(serverId, allRules) {
     if (!actionBtn) return;
 
     const ruleItem = actionBtn.closest('.rule-item');
-    const ruleText = ruleItem.dataset.ruleText;
+    const ruleIndex = parseInt(ruleItem.dataset.ruleIndex, 10);
     const action = actionBtn.dataset.action;
 
-    // Find actual index in full rules array
-    const actualIndex = allRules.indexOf(ruleText);
-
-    if (actualIndex === -1) {
+    // Validate index
+    if (isNaN(ruleIndex) || ruleIndex < 0 || ruleIndex >= allRules.length) {
       window.app.showToast('Rule not found', 'error');
       return;
     }
 
     if (action === 'edit') {
-      handleEditRule(ruleItem, serverId, allRules, actualIndex);
+      handleEditRule(ruleItem, serverId, allRules, ruleIndex);
     } else if (action === 'delete') {
-      handleDeleteRule(ruleItem, serverId, allRules, actualIndex);
+      handleDeleteRule(ruleItem, serverId, allRules, ruleIndex);
     }
   });
 }
@@ -229,15 +227,21 @@ function renderRulesList(rules, allRules = null) {
     `;
   }
 
+  // If allRules is not provided, use rules as the source
+  const sourceRules = allRules || rules;
+
   return rules.map((rule, index) => {
     const type = classifyRule(rule);
     const colorClass = type === 'allow' ? 'rule-allow' :
       type === 'disabled' ? 'rule-disabled' :
         'rule-block';
 
-    // Store actual rule text instead of index to handle search correctly
+    // Find the actual index in the full rules array
+    const actualIndex = sourceRules.indexOf(rule);
+
+    // Store index instead of text to avoid HTML escaping issues
     return `
-      <div class="rule-item ${colorClass}" data-rule-text="${escapeHtml(rule)}" style="position: relative;">
+      <div class="rule-item ${colorClass}" data-rule-index="${actualIndex}" style="position: relative;">
         <span class="rule-indicator"></span>
         <span class="rule-text">${escapeHtml(rule)}</span>
         <div class="rule-actions">

@@ -4,15 +4,47 @@
 import * as storage from './storage.js';
 import * as apiClient from './api-client.js';
 import * as syncEngine from './sync-engine.js';
-import { generateUUID, validateServer } from './helpers.js';
+import { generateUUID, validateServer, Logger, setLogLevel } from './helpers.js';
+
+// ============================================================================
+// SERVICE WORKER LIFECYCLE (Phase 2 Reliability)
+// ============================================================================
+
+// Track service worker uptime for monitoring
+let serviceWorkerStartTime = Date.now();
+
+// Log when extension starts up
+chrome.runtime.onStartup.addListener(() => {
+    console.log('[SW] Extension startup - service worker initialized');
+    serviceWorkerStartTime = Date.now();
+});
+
+// Log when service worker is about to suspend
+chrome.runtime.onSuspend.addListener(() => {
+    const uptime = Date.now() - serviceWorkerStartTime;
+    console.log(`[SW] Service worker suspended after ${uptime}ms (${(uptime / 1000).toFixed(1)}s)`);
+});
+
+// Optional: Keep-alive alarm to prevent premature termination
+// Uncomment if background tasks need service worker to stay alive longer
+// chrome.alarms.create('keepAlive', { periodInMinutes: 1 });
+// chrome.alarms.onAlarm.addListener((alarm) => {
+//     if (alarm.name === 'keepAlive') {
+//         console.log('[SW] Keep-alive ping');
+//     }
+// });
 
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
 
 chrome.runtime.onInstalled.addListener(async () => {
-    console.log('AdGuard Home Manager installed');
+    Logger.info('AdGuard Home Manager installed');
     await storage.initializeStorage();
+
+    // Set log level from settings
+    const settings = await storage.getSettings();
+    setLogLevel(settings.logLevel || 0);
 
     // Create context menu
     chrome.contextMenus.create({
@@ -54,11 +86,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
                             url: url
                         });
                     } catch (e) {
-                        console.error('[AdGuard] Failed to send message:', e);
+                        Logger.error('[AdGuard] Failed to send message:', e);
                     }
                 }, 200);
             } catch (error) {
-                console.error('Failed to show modal:', error);
+                Logger.error('Failed to show modal:', error);
             }
         }
     }
@@ -264,7 +296,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 data: result
             });
         } catch (error) {
-            console.error(`Error handling ${action}:`, error);
+            Logger.error(`Error handling ${action}:`, error);
             sendResponse({
                 success: false,
                 error: error.message
@@ -276,4 +308,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
-console.log('Service worker initialized');
+Logger.info('Service worker initialized');

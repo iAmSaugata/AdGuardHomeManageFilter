@@ -3,7 +3,7 @@
 
 import * as storage from './storage.js';
 import * as apiClient from './api-client.js';
-import { dedupRules, normalizeRule } from './helpers.js';
+import { dedupRules, normalizeRule, Logger } from './helpers.js';
 
 // ============================================================================
 // SYNC PRIMITIVES
@@ -70,7 +70,7 @@ export async function refreshServerRules(serverId, options = {}) {
             // Network failed - try cache fallback
             const cached = await storage.getCache(serverId);
             if (cached) {
-                console.warn(`Network fetch failed for server ${serverId}, using stale cache:`, networkError.message);
+                Logger.warn(`Network fetch failed for server ${serverId}, using stale cache:`, networkError.message);
                 return {
                     success: true,
                     data: cached,
@@ -83,7 +83,7 @@ export async function refreshServerRules(serverId, options = {}) {
             throw networkError;
         }
     } catch (error) {
-        console.error(`Failed to refresh server ${serverId}:`, error);
+        Logger.error(`Failed to refresh server ${serverId}:`, error);
         return {
             success: false,
             error: error.message,
@@ -127,7 +127,7 @@ export async function refreshAllServers(options = {}) {
             results
         };
     } catch (error) {
-        console.error('Failed to refresh all servers:', error);
+        Logger.error('Failed to refresh all servers:', error);
         return {
             success: false,
             error: error.message

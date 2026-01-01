@@ -25,31 +25,48 @@ const state = {
 // ============================================================================
 
 /**
- * Send message to background script
+ * Send message to background script with retry logic
+ * Handles service worker restart scenarios gracefully
  * @param {string} action - Action name
  * @param {Object} data - Data payload
+ * @param {number} retries - Maximum retry attempts (default: 3)
  * @returns {Promise} Response from background
  */
-export async function sendMessage(action, data = {}) {
-    return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({ action, data }, (response) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
+export async function sendMessage(action, data = {}, retries = 3) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({ action, data }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                        return;
+                    }
+
+                    if (!response) {
+                        reject(new Error('No response from background script'));
+                        return;
+                    }
+
+                    if (response.success) {
+                        resolve(response.data);
+                    } else {
+                        reject(new Error(response.error || 'Unknown error'));
+                    }
+                });
+            });
+        } catch (error) {
+            // If this was the last attempt, throw the error
+            if (attempt === retries) {
+                throw error;
             }
 
-            if (!response) {
-                reject(new Error('No response from background script'));
-                return;
-            }
+            // Log retry attempt
+            console.warn(`[Message] Retry ${attempt + 1}/${retries} for action "${action}":`, error.message);
 
-            if (response.success) {
-                resolve(response.data);
-            } else {
-                reject(new Error(response.error || 'Unknown error'));
-            }
-        });
-    });
+            // Exponential backoff: 100ms, 200ms, 300ms
+            await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+        }
+    }
 }
 
 // ============================================================================

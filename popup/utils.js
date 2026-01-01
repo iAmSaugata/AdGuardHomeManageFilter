@@ -13,25 +13,30 @@ export function escapeHtml(text) {
 }
 
 /**
- * Classify a filtering rule by type
+ * Classify a filtering rule by type using STRICT golden rule
  * @param {string} rule - AdGuard filtering rule
  * @returns {string} Rule type: 'allow' | 'block' | 'disabled' | 'unknown'
+ * 
+ * GOLDEN RULE:
+ * - "@@" at start = Allow (green)
+ * - "||" at start = Block (red)
+ * - Everything else = Disabled/Inactive (gray)
  */
 export function classifyRule(rule) {
     if (typeof rule !== 'string') return 'unknown';
 
     const trimmed = rule.trim();
 
-    // Empty or comment lines are disabled
+    // Empty lines are disabled
     if (!trimmed) return 'disabled';
-    if (trimmed.startsWith('!')) return 'disabled';
-    if (trimmed.startsWith('#')) return 'disabled';
 
-    // Exception/allow rules start with @@
+    // GOLDEN RULE: Apply strict matching
     if (trimmed.startsWith('@@')) return 'allow';
+    if (trimmed.startsWith('||')) return 'block';
 
-    // Everything else is a block rule
-    return 'block';
+    // Everything else is disabled/inactive
+    // This includes: comments (!, #), single pipe (|), domain-only, etc.
+    return 'disabled';
 }
 
 /**

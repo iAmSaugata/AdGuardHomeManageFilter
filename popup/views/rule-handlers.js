@@ -11,6 +11,13 @@ export function handleEditRule(ruleItem, serverId, allRules, ruleIndex) {
     if (ruleItem.classList.contains('editing')) return;
 
     const originalRule = allRules[ruleIndex];
+
+    // DEBUG: Log to see what we're actually getting
+    console.log('[DEBUG] Editing rule at index', ruleIndex);
+    console.log('[DEBUG] Original rule text:', originalRule);
+    console.log('[DEBUG] Rule starts with #:', originalRule.startsWith('#'));
+    console.log('[DEBUG] Rule starts with !:', originalRule.startsWith('!'));
+
     const ruleTextSpan = ruleItem.querySelector('.rule-text');
     const actionsDiv = ruleItem.querySelector('.rule-actions');
 
@@ -21,7 +28,7 @@ export function handleEditRule(ruleItem, serverId, allRules, ruleIndex) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'rule-edit-input';
-    input.value = originalRule;
+    input.value = originalRule;  // This should contain the FULL rule including prefixes
     input.style.cssText = 'flex:1;font-family:monospace;font-size:12px;padding:2px 4px;background:rgba(0,0,0,0.3);border:1px solid #4caf50;border-radius:3px;color:#fff;outline:none;height:18px;line-height:14px;margin-right:4px;';
 
     // Create edit actions as inline buttons

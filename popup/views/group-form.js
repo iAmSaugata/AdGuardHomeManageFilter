@@ -249,8 +249,24 @@ async function updatePreview() {
 
         // Normalize and deduplicate for merged view
         const normalized = allRules.map(normalizeRule).filter(r => r);
+
+        // DEBUG: Log deduplication details
+        console.log('[Group Merge DEBUG] Total rules before dedup:', normalized.length);
+        console.log('[Group Merge DEBUG] Sample rules:', normalized.slice(0, 5));
+
         const deduped = dedupRules(normalized);
+
+        console.log('[Group Merge DEBUG] Total rules after dedup:', deduped.length);
+        console.log('[Group Merge DEBUG] Duplicates removed:', normalized.length - deduped.length);
+
         const mergedCounts = getRuleCounts(deduped);
+
+        console.log('[Group Merge DEBUG] Merged counts:', mergedCounts);
+
+        // DEBUG: Show all disabled rules to identify why count is wrong
+        const disabledRules = deduped.filter(r => classifyRule(r) === 'disabled');
+        console.log('[Group Merge DEBUG] All disabled rules:', disabledRules);
+        console.log('[Group Merge DEBUG] Disabled count:', disabledRules.length);
 
         // Display warnings
         if (warnings.length > 0) {

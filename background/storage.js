@@ -14,7 +14,8 @@ const DEFAULT_SETTINGS = {
   autoSync: true,
   preferLatest: true,
   cacheTTLMinutes: 30,
-  theme: 'dark'
+  theme: 'dark',
+  logLevel: 0 // 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG (production default: ERROR only)
 };
 
 // ============================================================================
@@ -260,9 +261,35 @@ export async function getUISnapshot() {
 
 /**
  * Save UI snapshot for next popup open
+ * [Phase 1 - Task 1.5] Added memory guard to prevent quota errors
  * @param {{servers: Array, groups: Array, serverData: Object}} data
  */
 export async function setUISnapshot(data) {
+  const MAX_SNAPSHOT_SIZE = 5 * 1024 * 1024; // 5MB limit
+
+  // Calculate approximate size
+  const jsonString = JSON.stringify(data);
+  const size = new Blob([jsonString]).size;
+
+  if (size > MAX_SNAPSHOT_SIZE) {
+    console.warn(`[Storage] UI snapshot exceeds ${MAX_SNAPSHOT_SIZE / 1024 / 1024}MB (${(size / 1024 / 1024).toFixed(2)}MB), truncating...`);
+
+    // Keep only essential metadata, discard full rule arrays
+    data.serverData = Object.fromEntries(
+      Object.entries(data.serverData || {}).map(([id, info]) => [
+        id,
+        {
+          counts: info?.counts || { allow: 0, block: 0, disabled: 0 },
+          version: info?.version || 'Unknown',
+          isOnline: info?.isOnline || false,
+          fetchedAt: info?.fetchedAt || new Date().toISOString()
+        }
+      ])
+    );
+
+    console.warn('[Storage] Truncated serverData to essential metadata only');
+  }
+
   const snapshot = {
     ...data,
     version: CACHE_VERSION,

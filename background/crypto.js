@@ -9,17 +9,44 @@ const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 const IV_LENGTH = 12; // 96 bits for GCM
 const PBKDF2_ITERATIONS = 100000;
-const VERSION = 1;
+const VERSION = 2; // Bumped for enhanced key derivation
 
 // Cache for the encryption key (generated once per session)
 let cachedKey = null;
+
+// Storage key for device-specific secret
+const DEVICE_SECRET_KEY = '_deviceSecret';
 
 // ============================================================================
 // KEY DERIVATION
 // ============================================================================
 
 /**
- * Generate a deterministic encryption key from Chrome runtime ID
+ * Get or create device-specific secret (32 random bytes)
+ * Generated once on first install, then persisted in chrome.storage.local
+ * @returns {Promise<Uint8Array>}
+ */
+async function getOrCreateDeviceSecret() {
+    const result = await chrome.storage.local.get(DEVICE_SECRET_KEY);
+
+    if (result[DEVICE_SECRET_KEY]) {
+        // Device secret exists, return it
+        return new Uint8Array(result[DEVICE_SECRET_KEY]);
+    }
+
+    // First install - generate random device-specific secret
+    const deviceSecret = crypto.getRandomValues(new Uint8Array(32));
+    await chrome.storage.local.set({
+        [DEVICE_SECRET_KEY]: Array.from(deviceSecret)
+    });
+
+    console.log('[Crypto] Device-specific secret generated (32 bytes)');
+    return deviceSecret;
+}
+
+/**
+ * Generate encryption key from multiple entropy sources
+ * Combines Chrome runtime ID + device-specific secret for stronger key material
  * Uses PBKDF2 for key derivation to ensure consistent key across sessions
  * @returns {Promise<CryptoKey>}
  */
@@ -30,14 +57,23 @@ async function getEncryptionKey() {
     }
 
     try {
-        // Use Chrome runtime ID as base material (unique per extension install)
+        // Gather entropy from multiple sources
         const runtimeId = chrome.runtime.id;
-        const salt = new TextEncoder().encode('adguard-home-manager-v1');
+        const deviceSecret = await getOrCreateDeviceSecret();
 
-        // Import the runtime ID as key material
+        // Combine multiple entropy sources for stronger key material
+        const combinedMaterial = new Uint8Array([
+            ...new TextEncoder().encode(runtimeId),
+            ...deviceSecret
+        ]);
+
+        // Updated salt with version bump
+        const salt = new TextEncoder().encode('adguard-home-manager-v2');
+
+        // Import the combined material as key material
         const keyMaterial = await crypto.subtle.importKey(
             'raw',
-            new TextEncoder().encode(runtimeId),
+            combinedMaterial,
             'PBKDF2',
             false,
             ['deriveBits', 'deriveKey']

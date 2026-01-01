@@ -293,12 +293,25 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       </div>
     `;
 
+    // Find groups this server belongs to (for initial render)
+    const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
+    const groupBadgesHtml = serverGroups.length > 0 ? `
+      <div class="server-groups-inline">
+        ${serverGroups.map(group => `
+          <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
+            📁 ${escapeHtml(group.name)}
+          </span>
+        `).join('')}
+      </div>
+    ` : '';
+
     return `
       <div class="server-card" data-server-id="${server.id}" id="server-${server.id}">
         <div class="server-info">
           <div class="server-name">
             <span class="server-icon-large">🖥️</span>
             ${escapeHtml(server.name)}
+            ${groupBadgesHtml}
           </div>
           <div class="server-version">
             ${cached?.isOnline !== undefined ?
@@ -361,6 +374,15 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       e.stopPropagation();
       const serverId = btn.dataset.serverId;
       window.app.navigateTo('server-form', { mode: 'edit', serverId });
+    });
+  });
+
+  // Group badge click handlers (initial render)
+  document.querySelectorAll('.group-badge-inline').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const groupId = badge.dataset.groupId;
+      window.app.navigateTo('group-form', { mode: 'edit', groupId });
     });
   });
 

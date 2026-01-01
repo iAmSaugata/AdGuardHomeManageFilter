@@ -1,0 +1,160 @@
+# Privacy Policy - AdGuard Home Central Manager
+
+**Last Updated**: January 1, 2026  
+**Extension Version**: 0.3.0
+
+---
+
+## Overview
+
+AdGuard Home Central Manager is a browser extension that helps you manage multiple AdGuard Home servers from a single interface. We are committed to protecting your privacy and maintaining transparency about how your data is handled.
+
+## Data Collection
+
+**We DO NOT collect, transmit, or share any user data.**
+
+This extension:
+- ❌ Does NOT send data to external servers
+- ❌ Does NOT use analytics or tracking tools
+- ❌ Does NOT collect telemetry or usage statistics
+- ❌ Does NOT share data with third parties
+- ✅ ALL data stays on YOUR device
+
+## Local Storage
+
+All extension data is stored locally in your browser using `chrome.storage.local`:
+
+### What We Store
+- **Server Configurations**: Name, URL, username (encrypted password)
+- **Group Definitions**: Group names and associated server IDs
+- **User Settings**: UI preferences (theme, cache TTL, sync settings)
+- **Rule Cache**: Temporary cache of filtering rules for performance
+- **Device Secret**: Random 32-byte secret for encryption (auto-generated)
+
+### How We Protect It
+- **AES-256-GCM Encryption**: All passwords are encrypted before storage
+- **PBKDF2 Key Derivation**: Encryption key derived using 100,000 iterations
+- **Device-Specific Keys**: Each device has a unique encryption key
+- **No Cloud Sync**: Data never leaves your local browser storage
+
+## Permissions Explanation
+
+This extension requests the following permissions:
+
+### Required Permissions
+
+| Permission | Purpose | Why Needed |
+|------------|---------|------------|
+| `storage` | Store server configurations locally | Save your server list and encrypted credentials |
+| `contextMenus` | Add "Add to AdGuard Home" to right-click menu | Quick rule addition from any webpage |
+| `scripting` | Inject modal dialog into web pages | Display rule addition interface |
+| `activeTab` | Read current page URL | Extract URL for context menu feature |
+
+### Optional Permissions
+
+| Permission | Purpose | When Requested |
+|------------|---------|----------------|
+| `optional_host_permissions` | Connect to AdGuard Home servers | Only when you add a server with a specific URL |
+
+**Important**: The extension only requests access to AdGuard Home servers YOU explicitly configure. We never access any other websites without your permission.
+
+## External Connections
+
+This extension ONLY makes network requests to:
+- **AdGuard Home servers YOU configure** - To fetch/update filtering rules
+- **No other destinations** - Zero analytics, tracking, or third-party services
+
+All API communications use **HTTP Basic Authentication** over your configured protocol (HTTPS recommended).
+
+## Data Security
+
+### Encryption Details
+```
+Algorithm:      AES-GCM (Galois/Counter Mode)
+Key Length:     256-bit
+IV Length:      96-bit (randomly generated per encryption)
+Key Derivation: PBKDF2 with SHA-256
+Iterations:     100,000
+Entropy:        Chrome runtime ID + 32-byte random device secret
+```
+
+### Security Best Practices
+- ✅ Use HTTPS URLs for all AdGuard Home servers (not HTTP)
+- ✅ Encryption keys are device-specific and non-extractable
+- ✅ Passwords never logged to browser console
+- ✅ Content Security Policy prevents inline script execution
+
+## What We DON'T Do
+
+- ❌ We don't sell your data (we don't have access to it)
+- ❌ We don't use cookies or tracking pixels
+- ❌ We don't inject ads or modify webpage content (except our modal)
+- ❌ We don't access your browsing history
+- ❌ We don't communicate with servers you didn't configure
+
+## Your Rights
+
+You have complete control over your data:
+
+- **Export Data**: Use the Settings → Export feature to backup your configuration
+- **Delete Data**: Uninstalling the extension deletes all local storage
+- **Modify Data**: Edit or delete servers anytime via the extension UI
+- **Revoke Permissions**: Chrome allows revoking host permissions at any time
+
+## Data Retention
+
+- **Local Storage**: Data persists until you uninstall the extension or clear browser data
+- **Cache**: Rule cache respects TTL settings (default: 30 minutes)
+- **Logs**: Console logs are session-only (cleared when browser closes)
+
+## Children's Privacy
+
+This extension is not directed at children under 13. We do not knowingly collect information from children.
+
+## Open Source
+
+This extension is open source. You can:
+- Review the complete source code on GitHub
+- Audit our security practices
+- Contribute improvements
+- Report security issues
+
+**GitHub Repository**: [Your Repository URL]
+
+## Changes to This Policy
+
+We will update this privacy policy if our data handling practices change. Material changes will be communicated through:
+- Updated "Last Updated" date at top of this document
+- GitHub release notes (for significant changes)
+
+We recommend checking this page periodically.
+
+## Contact Information
+
+For privacy questions or concerns:
+- **GitHub Issues**: [Your GitHub Issues URL]
+- **Email**: [Your Contact Email]
+- **Security Issues**: Please report privately via GitHub Security Advisories
+
+## Legal
+
+This extension is provided "as is" without warranties. By using this extension, you agree to:
+- Configure only AdGuard Home servers you own or have permission to manage
+- Use the extension in compliance with applicable laws
+- Not use the extension for malicious purposes
+
+## Compliance
+
+This extension complies with:
+- ✅ Chrome Web Store Developer Program Policies
+- ✅ Google API Services User Data Policy
+- ✅ General Data Protection Regulation (GDPR) - EU
+- ✅ California Consumer Privacy Act (CCPA) - USA
+
+**No personal data is collected, so GDPR/CCPA data subject rights are not applicable** (there is no personal data to access, delete, or port).
+
+---
+
+**Summary**: Your privacy is paramount. This extension operates entirely locally with zero data collection or transmission to external parties. All data stays on your device, encrypted and secure.
+
+If you have questions about this privacy policy, please open an issue on GitHub.

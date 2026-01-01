@@ -3,11 +3,83 @@
 // Base path: /control
 // Auth: HTTP Basic Auth
 
-import { withTimeout, withRetry, sanitizeServerForLog, validateRulesArray, validateFilteringStatus, validateServerInfo } from './helpers.js';
+import { withTimeout, withRetry, sanitizeServerForLog, validateRulesArray, validateFilteringStatus, validateServerInfo, Logger } from './helpers.js';
 import { apiInterceptor } from './api-interceptors.js';
 
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
 const DEFAULT_RETRIES = 2;
+
+// ============================================================================
+// RATE LIMITING (Phase 1 - Task 1.2)
+// ============================================================================
+
+/**
+ * Token bucket rate limiter to prevent API abuse
+ * Limits requests to maxRequests per windowMs
+ */
+class RateLimiter {
+    constructor(maxRequests, windowMs) {
+        this.tokens = maxRequests;
+        this.max = maxRequests;
+        this.window = windowMs;
+        this.lastRefill = Date.now();
+    }
+
+    async acquire() {
+        this.refill();
+
+        if (this.tokens < 1) {
+            const waitTime = this.window - (Date.now() - this.lastRefill);
+            Logger.warn(`[RateLimit] Throttling request, waiting ${waitTime}ms`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            this.refill();
+        }
+
+        this.tokens--;
+    }
+
+    refill() {
+        const now = Date.now();
+        if (now - this.lastRefill >= this.window) {
+            this.tokens = this.max;
+            this.lastRefill = now;
+        }
+    }
+}
+
+// Create rate limiter: 5 requests per second maximum
+const apiLimiter = new RateLimiter(5, 1000);
+
+// ============================================================================
+// REQUEST DEDUPLICATION (Phase 1 - Task 1.4)
+// ============================================================================
+
+/**
+ * Map to track inflight requests and prevent duplicate concurrent calls
+ * @type {Map<string, Promise>}
+ */
+const inflightRequests = new Map();
+
+/**
+ * Deduplicates concurrent requests by caching promises
+ * If a request with the same cache key is already inflight, returns the existing promise
+ * @param {string} cacheKey - Unique identifier for the request
+ * @param {Function} requestFn - Async function that returns the request promise
+ * @returns {Promise} - The deduplicated promise
+ */
+function dedupedRequest(cacheKey, requestFn) {
+    if (inflightRequests.has(cacheKey)) {
+        Logger.debug(`[Dedup] Reusing inflight request: ${cacheKey}`);
+        return inflightRequests.get(cacheKey);
+    }
+
+    const promise = requestFn().finally(() => {
+        inflightRequests.delete(cacheKey);
+    });
+
+    inflightRequests.set(cacheKey, promise);
+    return promise;
+}
 
 // ============================================================================
 // API CLIENT
@@ -106,10 +178,6 @@ async function apiRequest(url, options = {}) {
  */
 export async function testConnection(host, username, password) {
     try {
-        // Note: With optional_host_permissions, Chrome will automatically
-        // prompt the user for permission when we try to access the host.
-        // We don't need to manually request permission here.
-
         const normalizedHost = normalizeHost(host);
         const url = `${normalizedHost}/control/filtering/status`;
         const authHeader = createAuthHeader(username, password);
@@ -124,7 +192,7 @@ export async function testConnection(host, username, password) {
 
         return { success: true };
     } catch (error) {
-        console.error('Connection test failed:', error.message);
+        Logger.error('Connection test failed:', error.message);
         return {
             success: false,
             error: error.message
@@ -138,11 +206,13 @@ export async function testConnection(host, username, password) {
  * Returns: FilterStatus object from API
  */
 export async function getFilteringStatus(server) {
+    await apiLimiter.acquire(); // Rate limiting
+
     const normalizedHost = normalizeHost(server.host);
     const url = `${normalizedHost}/control/filtering/status`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Fetching filtering status for:', sanitizeServerForLog(server));
+    Logger.debug('Fetching filtering status for:', sanitizeServerForLog(server));
 
     const data = await withRetry(async () => {
         return await apiRequest(url, {
@@ -168,7 +238,7 @@ export async function getServerInfo(server) {
     const url = `${normalizedHost}/control/status`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Fetching server info for:', sanitizeServerForLog(server));
+    Logger.debug('Fetching server info for:', sanitizeServerForLog(server));
 
     const data = await withRetry(async () => {
         return await apiRequest(url, {
@@ -192,11 +262,13 @@ export async function getServerInfo(server) {
  * Returns: void (success) or throws error
  */
 export async function setRules(server, rules) {
+    await apiLimiter.acquire(); // Rate limiting
+
     const normalizedHost = normalizeHost(server.host);
     const url = `${normalizedHost}/control/filtering/set_rules`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Setting rules for:', sanitizeServerForLog(server), `(${rules.length} rules)`);
+    Logger.debug('Setting rules for:', sanitizeServerForLog(server), `(${rules.length} rules)`);
 
     await withRetry(async () => {
         return await apiRequest(url, {
@@ -209,7 +281,7 @@ export async function setRules(server, rules) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Rules set successfully');
+    Logger.debug('Rules set successfully');
 }
 
 /**
@@ -263,7 +335,7 @@ export async function addFilterURL(server, url, name, whitelist = false) {
     const endpoint = `${normalizedHost}/control/filtering/add_url`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Adding filter URL:', sanitizeServerForLog(server), { url, name, whitelist });
+    Logger.debug('Adding filter URL:', sanitizeServerForLog(server), { url, name, whitelist });
 
     await withRetry(async () => {
         return await apiRequest(endpoint, {
@@ -276,7 +348,7 @@ export async function addFilterURL(server, url, name, whitelist = false) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Filter URL added successfully');
+    Logger.debug('Filter URL added successfully');
 }
 
 /**
@@ -292,7 +364,7 @@ export async function removeFilterURL(server, url, whitelist = false) {
     const endpoint = `${normalizedHost}/control/filtering/remove_url`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Removing filter URL:', sanitizeServerForLog(server), { url, whitelist });
+    Logger.debug('Removing filter URL:', sanitizeServerForLog(server), { url, whitelist });
 
     await withRetry(async () => {
         return await apiRequest(endpoint, {
@@ -305,7 +377,7 @@ export async function removeFilterURL(server, url, whitelist = false) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Filter URL removed successfully');
+    Logger.debug('Filter URL removed successfully');
 }
 
 /**
@@ -322,7 +394,7 @@ export async function setFilteringConfig(server, config) {
     const endpoint = `${normalizedHost}/control/filtering/set_config`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Setting filtering config:', sanitizeServerForLog(server), config);
+    Logger.debug('Setting filtering config:', sanitizeServerForLog(server), config);
 
     await withRetry(async () => {
         return await apiRequest(endpoint, {
@@ -335,7 +407,7 @@ export async function setFilteringConfig(server, config) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Filtering config updated');
+    Logger.debug('Filtering config updated');
 }
 
 /**
@@ -346,11 +418,13 @@ export async function setFilteringConfig(server, config) {
  * @returns {Promise<Object>} Refresh result with updated count
  */
 export async function refreshFilters(server, force = false) {
+    await apiLimiter.acquire(); // Rate limiting
+
     const normalizedHost = normalizeHost(server.host);
     const endpoint = `${normalizedHost}/control/filtering/refresh`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Refreshing filters:', sanitizeServerForLog(server), { force });
+    Logger.debug('Refreshing filters:', sanitizeServerForLog(server), { force });
 
     const result = await withRetry(async () => {
         return await apiRequest(endpoint, {
@@ -363,7 +437,7 @@ export async function refreshFilters(server, force = false) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Filters refreshed');
+    Logger.debug('Filters refreshed');
     return result;
 }
 
@@ -385,7 +459,7 @@ export async function checkHost(server, name) {
     const endpoint = `${normalizedHost}/control/filtering/check_host`;
     const authHeader = createAuthHeader(server.username, server.password);
 
-    console.log('Checking host:', sanitizeServerForLog(server), { name });
+    Logger.debug('Checking host:', sanitizeServerForLog(server), { name });
 
     const result = await withRetry(async () => {
         return await apiRequest(endpoint, {
@@ -398,7 +472,7 @@ export async function checkHost(server, name) {
         });
     }, DEFAULT_RETRIES);
 
-    console.log('Host check result:', {
+    Logger.debug('Host check result:', {
         name,
         reason: result.reason,
         blocked: result.reason !== 'NotFilteredNotFound'

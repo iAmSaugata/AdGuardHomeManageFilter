@@ -108,13 +108,56 @@
     // Listen for chrome.runtime.onMessage from background
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            if (message.type === 'ADGUARD_SHOW_MODAL') {
-                console.log('[AdGuard Modal] Showing modal for:', message.url);
-                showModal(message.url);
-                sendResponse({ success: true });
+            // [SECURITY] Validate message structure
+            if (!message || typeof message !== 'object') {
+                console.error('[Security] Invalid message format');
+                sendResponse({ success: false, error: 'Invalid message format' });
+                return true;
             }
+
+            // [SECURITY] Whitelist allowed message types
+            const ALLOWED_TYPES = ['ADGUARD_SHOW_MODAL'];
+            if (!ALLOWED_TYPES.includes(message.type)) {
+                console.error('[Security] Unauthorized message type:', message.type);
+                sendResponse({ success: false, error: 'Unauthorized message type' });
+                return true;
+            }
+
+            // [SECURITY] Validate URL parameter
+            if (!message.url || typeof message.url !== 'string') {
+                console.error('[Security] Missing or invalid URL');
+                sendResponse({ success: false, error: 'Missing or invalid URL' });
+                return true;
+            }
+
+            // [SECURITY] Validate URL format and protocol
+            if (!isValidURL(message.url)) {
+                console.error('[Security] Invalid URL format or disallowed protocol:', message.url);
+                sendResponse({ success: false, error: 'Invalid URL format' });
+                return true;
+            }
+
+            console.log('[AdGuard Modal] Showing modal for:', message.url);
+            showModal(message.url);
+            sendResponse({ success: true });
             return true;
         });
+    }
+
+    /**
+     * [SECURITY] Validate URL format and protocol
+     * Only allows http: and https: protocols
+     * @param {string} url - URL to validate
+     * @returns {boolean} - true if valid, false otherwise
+     */
+    function isValidURL(url) {
+        try {
+            const parsed = new URL(url);
+            // Only allow http/https protocols (prevent javascript:, data:, file:, etc.)
+            return ['http:', 'https:'].includes(parsed.protocol);
+        } catch {
+            return false;
+        }
     }
 
     function showModal(url) {
