@@ -1,7 +1,7 @@
 # Privacy Policy - AdGuard Home Central Manager
 
 **Last Updated**: January 1, 2026  
-**Extension Version**: 0.3.0
+**Extension Version**: 0.4.0
 
 ---
 
@@ -50,13 +50,13 @@ This extension requests the following permissions:
 | `scripting` | Inject modal dialog into web pages | Display rule addition interface |
 | `activeTab` | Read current page URL | Extract URL for context menu feature |
 
-### Optional Permissions
+### Host Permissions
 
 | Permission | Purpose | When Requested |
 |------------|---------|----------------|
-| `optional_host_permissions` | Connect to AdGuard Home servers | Only when you add a server with a specific URL |
+| `host_permissions` | Connect to AdGuard Home servers | Automatic access to all HTTP/HTTPS sites to connect to your configured servers |
 
-**Important**: The extension only requests access to AdGuard Home servers YOU explicitly configure. We never access any other websites without your permission.
+**Important**: The extension only communicates with AdGuard Home servers YOU explicitly configure. Network requests are made only to fetch/update filtering rules from your servers.
 
 ## External Connections
 
@@ -64,7 +64,7 @@ This extension ONLY makes network requests to:
 - **AdGuard Home servers YOU configure** - To fetch/update filtering rules
 - **No other destinations** - Zero analytics, tracking, or third-party services
 
-All API communications use **HTTP Basic Authentication** over your configured protocol (HTTPS recommended).
+All API communications use **HTTP Basic Authentication** over your configured protocol (HTTPS recommended for public servers, HTTP acceptable for local networks).
 
 ## Data Security
 
@@ -79,7 +79,8 @@ Entropy:        Chrome runtime ID + 32-byte random device secret
 ```
 
 ### Security Best Practices
-- ✅ Use HTTPS URLs for all AdGuard Home servers (not HTTP)
+- ✅ Use HTTPS URLs for public AdGuard Home servers
+- ✅ HTTP is acceptable for local/private networks (192.168.x.x, 10.x.x.x)
 - ✅ Encryption keys are device-specific and non-extractable
 - ✅ Passwords never logged to browser console
 - ✅ Content Security Policy prevents inline script execution
@@ -99,7 +100,7 @@ You have complete control over your data:
 - **Export Data**: Use the Settings → Export feature to backup your configuration
 - **Delete Data**: Uninstalling the extension deletes all local storage
 - **Modify Data**: Edit or delete servers anytime via the extension UI
-- **Revoke Permissions**: Chrome allows revoking host permissions at any time
+- **Revoke Permissions**: Chrome allows managing extension permissions at any time
 
 ## Data Retention
 
@@ -119,7 +120,7 @@ This extension is open source. You can:
 - Contribute improvements
 - Report security issues
 
-**GitHub Repository**: [Your Repository URL]
+**GitHub Repository**: https://github.com/iAmSaugata/AdGuardHomeManageFilter
 
 ## Changes to This Policy
 
@@ -132,8 +133,8 @@ We recommend checking this page periodically.
 ## Contact Information
 
 For privacy questions or concerns:
-- **GitHub Issues**: [Your GitHub Issues URL]
-- **Email**: [Your Contact Email]
+- **GitHub Issues**: https://github.com/iAmSaugata/AdGuardHomeManageFilter/issues
+- **GitHub Profile**: https://github.com/iAmSaugata
 - **Security Issues**: Please report privately via GitHub Security Advisories
 
 ## Legal
