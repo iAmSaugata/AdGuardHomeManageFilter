@@ -2,6 +2,7 @@
 // Displays list of configured servers with visual rule statistics
 
 import { escapeHtml, classifyRule, getRuleCounts } from '../utils.js';
+import { Logger } from '../utils/logger.js';
 
 /**
  * Create an interactive SVG donut chart with hoverable slices
@@ -97,15 +98,15 @@ export async function renderServerList(container) {
 
   if (snapshot && snapshot.servers && snapshot.servers.length > 0) {
     // INSTANT RENDER from cache
-    console.log('[Performance] Rendering from cache');
-    console.log('[DEBUG] Cached serverData:', snapshot.serverData);
+    Logger.info('[Performance] Rendering from cache');
+    Logger.debug('[DEBUG] Cached serverData:', snapshot.serverData);
     renderServersList(container, snapshot.servers, snapshot.groups, snapshot.serverData);
 
     // Background: Check for changes and update if needed
     checkAndUpdateInBackground(container, snapshot);
   } else {
     // No cache - show skeleton and fetch fresh
-    console.log('[Performance] No cache, fetching fresh data');
+    Logger.info('[Performance] No cache, fetching fresh data');
     container.innerHTML = `
       <div class="view-header">
         <h1 class="view-title">Servers</h1>
@@ -135,7 +136,7 @@ async function getUISnapshotFromBackground() {
   try {
     return await window.app.sendMessage('getUISnapshot');
   } catch (error) {
-    console.error('Failed to get UI snapshot:', error);
+    Logger.error('Failed to get UI snapshot:', error);
     return null;
   }
 }
@@ -170,7 +171,7 @@ async function checkAndUpdateInBackground(container, cachedSnapshot) {
     // Quick check: server/group count changed?
     if (freshServers.length !== cachedSnapshot.servers.length ||
       freshGroups.length !== cachedSnapshot.groups.length) {
-      console.log('[Performance] Server/group count changed, refreshing');
+      Logger.info('[Performance] Server/group count changed, refreshing');
       renderServersList(container, freshServers, freshGroups);
       await saveUISnapshot(freshServers, freshGroups, {});
       return;
@@ -180,16 +181,16 @@ async function checkAndUpdateInBackground(container, cachedSnapshot) {
     const hasChanges = await detectRuleChanges(freshServers, freshGroups, cachedSnapshot.serverData);
 
     if (hasChanges) {
-      console.log('[Performance] Rule changes detected, refreshing');
+      Logger.info('[Performance] Rule changes detected, refreshing');
       // Re-render with fresh data
       renderServersList(container, freshServers, freshGroups);
     } else {
-      console.log('[Performance] No changes detected, keeping cached UI');
+      Logger.info('[Performance] No changes detected, keeping cached UI');
       // Still save snapshot to update timestamp
       await saveUISnapshot(freshServers, freshGroups, cachedSnapshot.serverData);
     }
   } catch (error) {
-    console.error('[Performance] Background check failed:', error);
+    Logger.error('[Performance] Background check failed:', error);
     // Keep showing cached data - don't interrupt user
   }
 }
@@ -229,7 +230,7 @@ async function detectRuleChanges(servers, groups, cachedServerData) {
         return true; // Changes detected
       }
     } catch (error) {
-      console.error(`Failed to check server ${server.id}:`, error);
+      Logger.error(`Failed to check server ${server.id}:`, error);
       // Continue checking other servers
     }
   }
@@ -242,7 +243,7 @@ async function saveUISnapshot(servers, groups, serverData) {
   try {
     await window.app.sendMessage('setUISnapshot', { servers, groups, serverData });
   } catch (error) {
-    console.error('Failed to save UI snapshot:', error);
+    Logger.error('Failed to save UI snapshot:', error);
   }
 }
 
@@ -341,6 +342,9 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           </div>
         </div>
         <div class="server-actions">
+          <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Toggle protection (loading...)">
+            ⏻
+          </button>
           <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
             ⚙️
           </button>
@@ -374,6 +378,63 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       e.stopPropagation();
       const serverId = btn.dataset.serverId;
       window.app.navigateTo('server-form', { mode: 'edit', serverId });
+    });
+  });
+
+  // Protection toggle buttons
+  document.querySelectorAll('.protection-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const serverId = btn.dataset.serverId;
+
+      // Determine new state (toggle)
+      const isCurrentlyEnabled = btn.classList.contains('protection-on');
+      const newState = !isCurrentlyEnabled;
+
+      // Show loading
+      btn.classList.remove('protection-on', 'protection-off');
+      btn.classList.add('protection-loading');
+      btn.disabled = true;
+      btn.title = 'Toggling protection...';
+
+      try {
+        const result = await window.app.sendMessage('toggleProtection', {
+          serverId,
+          enabled: newState
+        });
+
+        if (result.success) {
+          // Update all affected server buttons
+          result.affectedServers.forEach(affectedServer => {
+            const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
+            if (affectedBtn) {
+              affectedBtn.classList.remove('protection-loading');
+              if (affectedServer.error) {
+                // Error for this specific server
+                affectedBtn.classList.add('protection-off');
+                affectedBtn.title = `Protection toggle failed: ${affectedServer.error}`;
+              } else {
+                affectedBtn.classList.add(newState ? 'protection-on' : 'protection-off');
+                affectedBtn.title = `Protection ${newState ? 'enabled' : 'disabled'}. Click to ${newState ? 'disable' : 'enable'}.`;
+              }
+              affectedBtn.disabled = false;
+            }
+          });
+
+          const successCount = result.affectedServers.filter(s => !s.error).length;
+          window.app.showToast(
+            `Protection ${newState ? 'enabled' : 'disabled'} for ${successCount} server(s)`,
+            'success'
+          );
+        }
+      } catch (error) {
+        Logger.error('Failed to toggle protection:', error);
+        btn.classList.remove('protection-loading');
+        btn.classList.add('protection-off');
+        btn.disabled = false;
+        btn.title = 'Protection toggle failed';
+        window.app.showToast('Failed to toggle protection: ' + error.message, 'error');
+      }
     });
   });
 
@@ -420,8 +481,28 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
         // Store server data for change detection
         serverDataMap[server.id] = { rules, counts, version, isOnline };
-        console.log(`[DEBUG] ${server.name}: ${rules.length} rules, counts:`, counts);
-        console.log(`[DEBUG] ${server.name} rulesResult:`, rulesResult);
+        Logger.debug(`${server.name}: ${rules.length} rules, counts:`, counts);
+        Logger.debug(`${server.name} rulesResult:`, rulesResult);
+
+        // Fetch protection status (async, don't wait)
+        window.app.sendMessage('getProtectionStatus', { serverId: server.id })
+          .then(result => {
+            const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
+            if (protectionBtn && result.success) {
+              protectionBtn.classList.remove('protection-loading');
+              protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
+              protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
+            }
+          })
+          .catch(err => {
+            Logger.error(`Failed to get protection status for ${server.name}:`, err);
+            const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
+            if (protectionBtn) {
+              protectionBtn.classList.remove('protection-loading');
+              protectionBtn.classList.add('protection-off');
+              protectionBtn.title = 'Failed to load protection status';
+            }
+          });
 
         // Find groups this server belongs to
         const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
@@ -509,7 +590,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           }
         }
       } catch (error) {
-        console.error(`Failed to fetch data for ${server.name}:`, error);
+        Logger.error(`Failed to fetch data for ${server.name}:`, error);
 
         // Update with error state
         const serverCard = document.getElementById(`server-${server.id}`);
@@ -552,7 +633,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     }
 
     // Save snapshot after all servers are loaded
-    console.log('[DEBUG] Saving snapshot. serverDataMap:', serverDataMap);
+    Logger.debug('Saving snapshot. serverDataMap:', serverDataMap);
     await saveUISnapshot(servers, groups, serverDataMap);
   }
 }

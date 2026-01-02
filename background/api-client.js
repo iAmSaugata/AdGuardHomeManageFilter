@@ -481,3 +481,60 @@ export async function checkHost(server, name) {
     return result;
 }
 
+// ============================================================================
+// PROTECTION CONTROL API
+// ============================================================================
+
+/**
+ * Get current protection status
+ * GET /control/dns_config
+ * @param {Object} server - Server configuration  
+ * @returns {Promise<boolean>} - true if protection enabled, false otherwise
+ */
+export async function getProtectionStatus(server) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/dns_config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Getting protection status:', sanitizeServerForLog(server));
+
+    const result = await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        }, server.bypassSSL);
+    }, DEFAULT_RETRIES);
+
+    const config = await result.json();
+    return config.protection_enabled === true;
+}
+
+/**
+ * Enable or disable DNS protection
+ * POST /control/dns_config
+ * @param {Object} server - Server configuration
+ * @param {boolean} enabled - true to enable, false to disable
+ * @returns {Promise<void>}
+ */
+export async function setProtectionEnabled(server, enabled) {
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/dns_config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.info(`${enabled ? 'Enabling' : 'Disabling'} protection:`, sanitizeServerForLog(server));
+
+    await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ protection_enabled: enabled })
+        }, server.bypassSSL);
+    }, DEFAULT_RETRIES);
+
+    Logger.info(`Protection ${enabled ? 'enabled' : 'disabled'} successfully`);
+}

@@ -3,6 +3,7 @@
 
 import { escapeHtml, classifyRule, getRuleCounts, showConfirmDialog } from '../utils.js';
 import { normalizeRule, dedupRules, generateId } from '../shared/utilities.js';
+import { Logger } from '../utils/logger.js';
 
 export async function renderGroupForm(container, data = {}) {
     const { mode = 'add', groupId } = data;
@@ -96,24 +97,6 @@ export async function renderGroupForm(container, data = {}) {
                                 <span>${escapeHtml(server.name)}</span>
                             </label>
                         `).join('')}
-                        ${unavailableServers.length > 0 ? `
-                            <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
-                                <div class="text-xs text-tertiary" style="margin-bottom: var(--space-2);">
-                                    Unavailable (already in groups):
-                                </div>
-                                ${unavailableServerInfo.map(({ server, groupName }) => `
-                                    <label class="toggle-label server-unavailable">
-                                        <input
-                                            type="checkbox"
-                                            class="server-checkbox"
-                                            value="${server.id}"
-                                            disabled
-                                        />
-                                        <span>${escapeHtml(server.name)} <span class="text-xs">(in "${escapeHtml(groupName)}")</span></span>
-                                    </label>
-                                `).join('')}
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
 
@@ -251,22 +234,23 @@ async function updatePreview() {
         const normalized = allRules.map(normalizeRule).filter(r => r);
 
         // DEBUG: Log deduplication details
-        console.log('[Group Merge DEBUG] Total rules before dedup:', normalized.length);
-        console.log('[Group Merge DEBUG] Sample rules:', normalized.slice(0, 5));
+        Logger.debug('[Group Merge] Total rules before dedup:', normalized.length);
+        Logger.debug('[Group Merge] Sample rules:', normalized.slice(0, 5));
 
         const deduped = dedupRules(normalized);
 
-        console.log('[Group Merge DEBUG] Total rules after dedup:', deduped.length);
-        console.log('[Group Merge DEBUG] Duplicates removed:', normalized.length - deduped.length);
+        Logger.debug('[Group Merge] Total rules after dedup:', deduped.length);
+        Logger.debug('[Group Merge] Duplicates removed:', normalized.length - deduped.length);
 
         const mergedCounts = getRuleCounts(deduped);
 
-        console.log('[Group Merge DEBUG] Merged counts:', mergedCounts);
+        Logger.debug('[Group Merge] Merged counts:', mergedCounts);
 
         // DEBUG: Show all disabled rules to identify why count is wrong
         const disabledRules = deduped.filter(r => classifyRule(r) === 'disabled');
-        console.log('[Group Merge DEBUG] All disabled rules:', disabledRules);
-        console.log('[Group Merge DEBUG] Disabled count:', disabledRules.length);
+        Logger.debug('[Group Merge] All disabled rules:', disabledRules);
+        Logger.debug('[Group Merge] Disabled count:', disabledRules.length);
+
 
         // Display warnings
         if (warnings.length > 0) {
@@ -312,7 +296,7 @@ async function updatePreview() {
         }
 
     } catch (error) {
-        console.error('Failed to update preview:', error);
+        Logger.error('Failed to update preview:', error);
         document.getElementById('warnings-container').innerHTML = `
             <div class="warning-banner">
                 ⚠️ Failed to load preview: ${error.message}
@@ -398,7 +382,7 @@ async function handleSaveGroup(isEdit, groupId) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             } catch (error) {
-                console.error(`Failed to apply rules to server ${serverId}:`, error);
+                Logger.error(`Failed to apply rules to server ${serverId}:`, error);
                 failCount++;
             }
         }

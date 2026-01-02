@@ -25,16 +25,16 @@ async function showReplaceConfirmDialog(domain, existingRule, newRule, serverCou
             `(Type: ${newType.toUpperCase()})\n\n` +
             `Replace existing rule on all ${serverCount} server(s)?`;
 
-        console.log('[DEBUG] About to call native confirm()');
-        console.log('[DEBUG] Message:', message);
-        console.log('[DEBUG] typeof confirm:', typeof confirm);
+        Logger.debug('About to call native confirm()');
+        Logger.debug('Message:', message);
+        Logger.debug('typeof confirm:', typeof confirm);
 
         try {
             const result = confirm(message);
-            console.log('[DEBUG] confirm() returned:', result);
+            Logger.debug('confirm() returned:', result);
             return result;
         } catch (error) {
-            console.error('[DEBUG] confirm() threw error:', error);
+            Logger.error('confirm() threw error:', error);
             return false;
         }
     }

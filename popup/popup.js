@@ -1,6 +1,8 @@
 // Popup Application - Main Entry Point
 // Handles view routing, message passing, and UI coordination
 
+import { Logger } from './utils/logger.js';
+
 import { renderServerList } from './views/server-list.js';
 import { renderServerForm } from './views/server-form.js';
 import { renderServerDetail } from './views/server-detail.js';
@@ -210,12 +212,12 @@ window.app = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Popup initialized');
+    Logger.info('Popup initialized');
 
     // Initialize accessibility features
     initializeAnnouncer();
     initializeKeyboardHandler();
-    console.log('[Accessibility] Keyboard shortcuts and screen reader support enabled');
+    Logger.info('[Accessibility] Keyboard shortcuts and screen reader support enabled');
 
     // Settings button event listener
     const settingsBtn = document.getElementById('settings-btn');

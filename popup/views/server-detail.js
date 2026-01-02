@@ -110,7 +110,6 @@ function renderServerDetailView(container, server, version, rules, fromCache, wa
         </button>
         <div class="flex-1 text-center">
           <div class="view-title">${escapeHtml(server.name)}</div>
-          <div class="text-xs text-tertiary">v${escapeHtml(version)}</div>
         </div>
         <div class="flex gap-2">
           <button class="btn btn-ghost btn-sm" id="refresh-btn" title="Refresh rules">

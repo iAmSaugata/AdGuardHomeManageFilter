@@ -2,6 +2,8 @@
 // Provides middleware-like functionality for API requests/responses
 // Enables logging, request IDs, error context, and custom transformations
 
+import { Logger } from './helpers.js';
+
 export class APIInterceptor {
     constructor() {
         this.requestInterceptors = [];
@@ -118,7 +120,7 @@ apiInterceptor.addRequestInterceptor((url, options) => {
     const method = options.method || 'GET';
     const requestId = options.headers?.['X-Request-ID'];
 
-    console.log(`[API Request] ${method} ${url}`, {
+    Logger.debug(`[API Request] ${method} ${url}`, {
         requestId,
         headers: sanitizeHeaders(options.headers),
         hasBody: !!options.body,
@@ -133,7 +135,7 @@ apiInterceptor.addResponseInterceptor((response, url, options) => {
     const method = options.method || 'GET';
     const requestId = options.headers?.['X-Request-ID'];
 
-    console.log(`[API Response] ${method} ${url}`, {
+    Logger.debug(`[API Response] ${method} ${url}`, {
         requestId,
         status: response.status,
         statusText: response.statusText,
@@ -187,8 +189,8 @@ apiInterceptor.addErrorInterceptor((error, url, options) => {
         error.retryable = false;
     }
 
-    // Log enriched error
-    console.error(`[API Error] ${error.type}:`, {
+    // Log enriched error (INFO level - these are network/API errors, not critical app errors)
+    Logger.info(`[API Error] ${error.type}:`, {
         requestId: error.requestId,
         url: error.requestUrl,
         method: error.requestMethod,

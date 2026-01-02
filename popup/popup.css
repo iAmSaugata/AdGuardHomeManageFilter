@@ -1732,3 +1732,11 @@ $136px;
     font-size: var(--font-size-sm);
     font-style: italic;
 }
+.btn-icon {padding: var(--space-2); width: 32px; height: 32px; border-radius: var(--radius-full); font-size: 16px;}
+.protection-btn {border: 1px solid; transition: all var(--transition-fast);}
+.protection-btn.protection-on {background-color: rgba(76, 175, 80, 0.15); border-color: #4CAF50; color: #4CAF50;}
+.protection-btn.protection-on:hover:not(:disabled) {background-color: rgba(76, 175, 80, 0.25); box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);}
+.protection-btn.protection-off {background-color: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #f44336;}
+.protection-btn.protection-off:hover:not(:disabled){background-color: rgba(244, 67, 54, 0.25); box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);}
+.protection-btn.protection-loading {background-color: rgba(255, 255, 255, 0.05); border-color: #666; color: #999; cursor: wait; animation: pulse 1.5s ease-in-out infinite;}
+@keyframes pulse {0%, 100% {opacity: 1;} 50% {opacity: 0.5;}}

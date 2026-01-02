@@ -42,17 +42,36 @@ chrome.runtime.onInstalled.addListener(async () => {
     Logger.info('AdGuard Home Manager installed');
     await storage.initializeStorage();
 
-    // Set log level from settings
-    const settings = await storage.getSettings();
-    setLogLevel(settings.logLevel || 0);
+    // Initialize debug mode from storage
+    await initializeDebugMode();
 
     // Create context menu
     chrome.contextMenus.create({
         id: 'add-to-adguard',
         title: 'Add to AdGuard Home',
-        contexts: ['link', 'page', 'selection']
+        contexts: ['link', 'selection']  // Only show on links and selected text
     });
 });
+
+// Initialize debug mode on startup
+async function initializeDebugMode() {
+    try {
+        const result = await chrome.storage.local.get('debugMode');
+        const debugMode = result.debugMode || false;
+
+        // Set log level based on debug mode
+        // Debug enabled: LOG_LEVEL.DEBUG (3) - shows all logs
+        // Debug disabled: LOG_LEVEL.ERROR (0) - shows only errors
+        const logLevel = debugMode ? 3 : 0;
+        setLogLevel(logLevel);
+
+        Logger.info(`[Init] Debug mode: ${debugMode ? 'enabled' : 'disabled'}, log level: ${logLevel}`);
+    } catch (error) {
+        console.error('[Init] Failed to initialize debug mode:', error);
+        // Default to ERROR level if initialization fails
+        setLogLevel(0);
+    }
+}
 
 // ============================================================================
 // CONTEXT MENU HANDLER
@@ -60,8 +79,8 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'add-to-adguard') {
-        // Get URL from link or page
-        const url = info.linkUrl || info.pageUrl || info.selectionText;
+        // Get URL from link, selected text, or page (in that priority order)
+        const url = info.linkUrl || info.selectionText || info.pageUrl;
 
         if (url && tab && tab.id) {
             try {
@@ -247,6 +266,89 @@ const messageHandlers = {
             throw new Error('Server not found');
         }
         return await apiClient.setFilteringConfig(server, config);
+    },
+
+    // Debug mode control
+    async setDebugMode({ enabled }) {
+        try {
+            // Update log level
+            const logLevel = enabled ? 3 : 0; // DEBUG or ERROR
+            setLogLevel(logLevel);
+
+            Logger.info(`[Debug] Mode ${enabled ? 'enabled' : 'disabled'}, log level set to ${logLevel}`);
+
+            return { success: true, logLevel };
+        } catch (error) {
+            Logger.error('[Debug] Failed to set debug mode:', error);
+            throw error;
+        }
+    },
+
+    // Protection toggle with group-aware logic
+    async toggleProtection({ serverId, enabled }) {
+        try {
+            const server = await storage.getServer(serverId);
+            if (!server) {
+                throw new Error('Server not found');
+            }
+
+            // Find all groups containing this server
+            const allGroups = await storage.getGroups();
+            const serverGroups = allGroups.filter(group =>
+                group.serverIds && group.serverIds.includes(serverId)
+            );
+
+            // Get unique server IDs from all groups
+            const serverIdsSet = new Set([serverId]);
+            for (const group of serverGroups) {
+                for (const id of group.serverIds) {
+                    serverIdsSet.add(id);
+                }
+            }
+
+            const serverIds = Array.from(serverIdsSet);
+            const affectedServers = [];
+
+            // Toggle protection for all linked servers
+            for (const id of serverIds) {
+                const srv = await storage.getServer(id);
+                if (srv) {
+                    try {
+                        await apiClient.setProtectionEnabled(srv, enabled);
+                        affectedServers.push({ id, name: srv.name, enabled });
+                    } catch (error) {
+                        Logger.error(`Failed to toggle protection for ${srv.name}:`, error);
+                        affectedServers.push({ id, name: srv.name, error: error.message });
+                    }
+                }
+            }
+
+            Logger.info(`Protection ${enabled ? 'enabled' : 'disabled'} for ${affectedServers.length} server(s)`);
+
+            return {
+                success: true,
+                affectedServers,
+                totalServers: affectedServers.length
+            };
+        } catch (error) {
+            Logger.error('Failed to toggle protection:', error);
+            throw error;
+        }
+    },
+
+    async getProtectionStatus({ serverId }) {
+        try {
+            const server = await storage.getServer(serverId);
+            if (!server) {
+                throw new Error('Server not found');
+            }
+
+            const enabled = await apiClient.getProtectionStatus(server);
+            return { success: true, enabled };
+        } catch (error) {
+            Logger.error('Failed to get protection status:', error);
+            throw error;
+        }
     },
 
     async refreshFilters({ serverId, force }) {

@@ -2,6 +2,7 @@
 // Separate module to keep server-detail.js manageable
 
 import { classifyRule, getRuleCounts, escapeHtml } from '../utils.js';
+import { Logger } from '../utils/logger.js';
 
 /**
  * Handle clicking the edit button on a rule
@@ -13,10 +14,10 @@ export function handleEditRule(ruleItem, serverId, allRules, ruleIndex) {
     const originalRule = allRules[ruleIndex];
 
     // DEBUG: Log to see what we're actually getting
-    console.log('[DEBUG] Editing rule at index', ruleIndex);
-    console.log('[DEBUG] Original rule text:', originalRule);
-    console.log('[DEBUG] Rule starts with #:', originalRule.startsWith('#'));
-    console.log('[DEBUG] Rule starts with !:', originalRule.startsWith('!'));
+    Logger.debug('Editing rule at index', ruleIndex);
+    Logger.debug('Original rule text:', originalRule);
+    Logger.debug('Rule starts with #:', originalRule.startsWith('#'));
+    Logger.debug('Rule starts with !:', originalRule.startsWith('!'));
 
     const ruleTextSpan = ruleItem.querySelector('.rule-text');
     const actionsDiv = ruleItem.querySelector('.rule-actions');
@@ -131,7 +132,7 @@ async function saveRuleEdit(ruleItem, serverId, allRules, ruleIndex, newRule) {
                 });
                 successCount++;
             } catch (error) {
-                console.error(`Failed to update server ${targetId}:`, error);
+                Logger.error(`Failed to update server ${targetId}:`, error);
             }
         }
 
@@ -163,14 +164,33 @@ async function saveRuleEdit(ruleItem, serverId, allRules, ruleIndex, newRule) {
             ruleItem.setAttribute('data-rule-index', ruleIndex);
             ruleItem.style.position = 'relative';
 
+            // UPDATE COUNTS IN HEADER - This was missing!
+            const counts = getRuleCounts(allRules);
+            const allowBadge = document.querySelector('.badge-success');
+            const blockBadge = document.querySelector('.badge-danger');
+            const disabledBadge = document.querySelector('.badge-warning');
+            const totalBadge = document.querySelector('.badge-info');
+
+            if (allowBadge) allowBadge.textContent = `${counts.allow} Allow`;
+            if (blockBadge) blockBadge.textContent = `${counts.block} Block`;
+            if (disabledBadge) disabledBadge.textContent = `${counts.disabled} Disabled`;
+            if (totalBadge) totalBadge.textContent = `${counts.total} Total`;
+
             const message = groupName
                 ? `Rule updated in group "${groupName}" (${successCount}/${targetServerIds.length} servers)`
                 : 'Rule updated successfully';
 
             window.app.showToast(message, successCount === targetServerIds.length ? 'success' : 'warning');
 
-            // Refresh cache in background
-            window.app.sendMessage('refreshServerRules', { serverId, force: true });
+            // Refresh cache in background AND wait for it
+            // This ensures server list will show updated counts
+            try {
+                await window.app.sendMessage('refreshServerRules', { serverId, force: true });
+                // Also clear UI snapshot to force main screen refresh
+                await chrome.storage.local.remove('ui_snapshot');
+            } catch (error) {
+                Logger.error('Failed to refresh cache:', error);
+            }
         } else {
             throw new Error('Failed to update any servers');
         }
@@ -248,7 +268,7 @@ async function performDeleteRule(ruleItem, serverId, allRules, ruleIndex) {
                 });
                 successCount++;
             } catch (error) {
-                console.error(`Failed to update server ${targetId}:`, error);
+                Logger.error(`Failed to update server ${targetId}:`, error);
             }
         }
 
@@ -278,8 +298,14 @@ async function performDeleteRule(ruleItem, serverId, allRules, ruleIndex) {
 
             window.app.showToast(message, successCount === targetServerIds.length ? 'success' : 'warning');
 
-            // Refresh cache in background
-            window.app.sendMessage('refreshServerRules', { serverId, force: true });
+            // Refresh cache in background AND clear UI snapshot
+            try {
+                await window.app.sendMessage('refreshServerRules', { serverId, force: true });
+                // Clear UI snapshot to force main screen refresh
+                await chrome.storage.local.remove('ui_snapshot');
+            } catch (error) {
+                Logger.error('Failed to refresh cache:', error);
+            }
         } else {
             throw new Error('Failed to update any servers');
         }
