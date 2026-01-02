@@ -323,6 +323,9 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           </div>
         </div>
         <div class="chart-legend-container">
+          <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Toggle protection (loading...)">
+            ⏻
+          </button>
           <div class="chart-legend">
             <div class="legend-item">
               <span class="legend-dot allow"></span>
@@ -334,7 +337,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             </div>
             <div class="legend-item">
               <span class="legend-dot inactive"></span>
-              <span class="legend-text">Inactive</span>
+              <span class="legend-text">Inac</span>
             </div>
           </div>
           <div class="donut-chart-container">
@@ -342,9 +345,6 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           </div>
         </div>
         <div class="server-actions">
-          <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Toggle protection (loading...)">
-            ⏻
-          </button>
           <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
             ⚙️
           </button>

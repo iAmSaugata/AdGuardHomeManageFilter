@@ -307,21 +307,35 @@ const messageHandlers = {
             }
 
             const serverIds = Array.from(serverIdsSet);
-            const affectedServers = [];
 
-            // Toggle protection for all linked servers
+            // Immediately cache the new status for all affected servers
+            const protectionStatus = await chrome.storage.local.get('protectionStatus') || {};
+            const currentStatus = protectionStatus.protectionStatus || {};
             for (const id of serverIds) {
-                const srv = await storage.getServer(id);
-                if (srv) {
-                    try {
-                        await apiClient.setProtectionEnabled(srv, enabled);
-                        affectedServers.push({ id, name: srv.name, enabled });
-                    } catch (error) {
-                        Logger.error(`Failed to toggle protection for ${srv.name}:`, error);
-                        affectedServers.push({ id, name: srv.name, error: error.message });
+                currentStatus[id] = enabled;
+            }
+            await chrome.storage.local.set({ protectionStatus: currentStatus });
+
+            // Return immediately with all affected server IDs for instant UI update
+            const affectedServers = serverIds.map(id => ({ id, enabled }));
+
+            // Toggle protection for all linked servers in background (don't wait)
+            (async () => {
+                for (const id of serverIds) {
+                    const srv = await storage.getServer(id);
+                    if (srv) {
+                        try {
+                            await apiClient.setProtectionEnabled(srv, enabled);
+                            Logger.info(`Protection ${enabled ? 'enabled' : 'disabled'} for ${srv.name}`);
+                        } catch (error) {
+                            Logger.error(`Failed to toggle protection for ${srv.name}:`, error);
+                            // Revert cached status on error
+                            currentStatus[id] = !enabled;
+                            await chrome.storage.local.set({ protectionStatus: currentStatus });
+                        }
                     }
                 }
-            }
+            })();
 
             Logger.info(`Protection ${enabled ? 'enabled' : 'disabled'} for ${affectedServers.length} server(s)`);
 
@@ -338,12 +352,25 @@ const messageHandlers = {
 
     async getProtectionStatus({ serverId }) {
         try {
+            // Check cache first
+            const cached = await chrome.storage.local.get('protectionStatus');
+            if (cached.protectionStatus && cached.protectionStatus[serverId] !== undefined) {
+                return { success: true, enabled: cached.protectionStatus[serverId], fromCache: true };
+            }
+
+            // If not cached, fetch from API
             const server = await storage.getServer(serverId);
             if (!server) {
                 throw new Error('Server not found');
             }
 
             const enabled = await apiClient.getProtectionStatus(server);
+
+            // Cache the result
+            const currentStatus = cached.protectionStatus || {};
+            currentStatus[serverId] = enabled;
+            await chrome.storage.local.set({ protectionStatus: currentStatus });
+
             return { success: true, enabled };
         } catch (error) {
             Logger.error('Failed to get protection status:', error);
