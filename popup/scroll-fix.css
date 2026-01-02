@@ -2,10 +2,12 @@
 /* Large enough to fit 2 servers comfortably, scrollbar only appears with 3+ */
 .list,
 [data-scrollable] {
-    max-height: 500px !important;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     padding-top: 2px;
+    /* Removed max-height to allow full flex growth */
 }
 
 /* Custom Scrollbar - Dark Theme - Applied to all scrollable areas */

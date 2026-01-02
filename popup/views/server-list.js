@@ -310,22 +310,23 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       <div class="server-card" data-server-id="${server.id}" id="server-${server.id}">
         <div class="server-info">
           <div class="server-name">
-            <span class="server-icon-large">🖥️</span>
+            <span class="server-icon-large">
+                🖥️
+                ${cached?.isOnline !== undefined ?
+        `<span class="status-dot-overlay ${cached.isOnline ? 'online' : 'offline'}"></span>` :
+        ''}
+            </span>
             ${escapeHtml(server.name)}
             ${groupBadgesHtml}
           </div>
-          <div class="server-version">
-            ${cached?.isOnline !== undefined ?
-        `<span class="status-indicator ${cached.isOnline ? 'status-online' : 'status-offline'}"></span>
-              <span class="badge badge-secondary" style="font-size: 10px;">${escapeHtml(cached.version || 'Unknown')}</span>` :
-        `<span class="badge badge-secondary">Loading...</span>`
-      }
-          </div>
         </div>
         <div class="chart-legend-container">
-          <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Toggle protection (loading...)">
-            <span class="protection-icon">...</span>
-          </button>
+          <div class="protection-group">
+            <span class="server-version-capsule">${escapeHtml(cached?.version || 'v...')}</span>
+            <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}">
+              <span class="protection-icon">...</span>
+            </button>
+          </div>
           <div class="chart-legend">
             <div class="legend-item">
               <span class="legend-dot allow"></span>
@@ -383,65 +384,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
   // Protection toggle buttons
   document.querySelectorAll('.protection-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const serverId = btn.dataset.serverId;
-
-      // Determine new state (toggle)
-      const isCurrentlyEnabled = btn.classList.contains('protection-on');
-      const newState = !isCurrentlyEnabled;
-
-      // Show loading
-      btn.classList.remove('protection-on', 'protection-off');
-      btn.classList.add('protection-loading');
-      btn.disabled = true;
-      btn.title = 'Toggling protection...';
-
-      try {
-        const result = await window.app.sendMessage('toggleProtection', {
-          serverId,
-          enabled: newState
-        });
-
-        if (result.success) {
-          // Update all affected server buttons
-          result.affectedServers.forEach(affectedServer => {
-            const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
-            if (affectedBtn) {
-              // Remove ALL state classes first
-              affectedBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
-              const icon = affectedBtn.querySelector('.protection-icon');
-              if (affectedServer.error) {
-                // Error for this specific server
-                affectedBtn.classList.add('protection-off');
-                if (icon) icon.textContent = 'OFF';
-                affectedBtn.title = `Protection toggle failed: ${affectedServer.error}`;
-              } else {
-                affectedBtn.classList.add(newState ? 'protection-on' : 'protection-off');
-                if (icon) icon.textContent = newState ? 'ON' : 'OFF';
-                affectedBtn.title = `Protection ${newState ? 'enabled' : 'disabled'}. Click to ${newState ? 'disable' : 'enable'}.`;
-              }
-              affectedBtn.disabled = false;
-            }
-          });
-
-          const successCount = result.affectedServers.filter(s => !s.error).length;
-          window.app.showToast(
-            `Protection ${newState ? 'enabled' : 'disabled'} for ${successCount} server(s)`,
-            'success'
-          );
-        }
-      } catch (error) {
-        Logger.error('Failed to toggle protection:', error);
-        btn.classList.remove('protection-loading');
-        btn.classList.add('protection-off');
-        const icon = btn.querySelector('.protection-icon');
-        if (icon) icon.textContent = 'OFF';
-        btn.disabled = false;
-        btn.title = 'Protection toggle failed';
-        window.app.showToast('Failed to toggle protection: ' + error.message, 'error');
-      }
-    });
+    setupProtectionButton(btn, btn.dataset.serverId);
   });
 
   // Group badge click handlers (initial render)
@@ -550,16 +493,21 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           const statusHtml = `
           <div class="server-info">
             <div class="server-name">
-              <span class="server-icon-large">🖥️</span>
+              <span class="server-icon-large">
+                🖥️
+                <span class="status-dot-overlay ${isOnline ? 'online' : 'offline'}"></span>
+              </span>
               ${escapeHtml(server.name)}
               ${groupBadgesHtml}
             </div>
-            <div class="server-version">
-              <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
-              <span class="badge badge-secondary" style="font-size: 10px;">${escapeHtml(version)}</span>
-            </div>
           </div>
           <div class="chart-legend-container">
+            <div class="protection-group">
+              <span class="server-version-capsule">${escapeHtml(version)}</span>
+              <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}">
+                  <span class="protection-icon">...</span>
+              </button>
+            </div>
             <div class="chart-legend">
               <div class="legend-item">
                 <span class="legend-dot allow"></span>
@@ -571,7 +519,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               </div>
               <div class="legend-item">
                 <span class="legend-dot inactive"></span>
-                <span class="legend-text">Inactive</span>
+                <span class="legend-text">Inac</span>
               </div>
             </div>
             <div class="donut-chart-container">
@@ -601,6 +549,16 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             });
           }
 
+          // Re-attach Protection Button
+          const srvProtectionBtn = serverCard.querySelector('.protection-btn');
+          if (srvProtectionBtn) {
+            setupProtectionButton(srvProtectionBtn, server.id);
+            // Update state based on fetched result
+            if (protectionResult) {
+              updateProtectionButtonState(srvProtectionBtn, protectionResult.enabled);
+            }
+          }
+
           // Add group badge click handlers
           serverCard.querySelectorAll('.group-badge-inline').forEach(badge => {
             badge.addEventListener('click', (e) => {
@@ -624,12 +582,11 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           const errorHtml = `
           <div class="server-info">
             <div class="server-name">
-              <span class="server-icon-large">🖥️</span>
+              <span class="server-icon-large">
+                🖥️
+                <span class="status-dot-overlay offline"></span>
+              </span>
               ${escapeHtml(server.name)}
-            </div>
-            <div class="server-version">
-              <span class="status-indicator status-offline"></span>
-              <span class="text-xs text-tertiary">Offline</span>
             </div>
           </div>
           <div class="donut-chart-container">
@@ -669,3 +626,64 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
 
 
+
+// Helper: Setup protection button click listener
+function setupProtectionButton(btn, serverId) {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+
+    // Determine new state (toggle)
+    const isCurrentlyEnabled = btn.classList.contains('protection-on');
+    const newState = !isCurrentlyEnabled;
+
+    // Show loading
+    btn.classList.remove('protection-on', 'protection-off');
+    btn.classList.add('protection-loading');
+    btn.disabled = true;
+
+    try {
+      const result = await window.app.sendMessage('toggleProtection', {
+        serverId,
+        enabled: newState
+      });
+
+      if (result.success) {
+        // Update all affected server buttons
+        result.affectedServers.forEach(affectedServer => {
+          const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
+          if (affectedBtn) {
+            if (affectedServer.error) {
+              // Error for this specific server
+              affectedBtn.classList.remove('protection-loading');
+              affectedBtn.classList.add('protection-off');
+              const icon = affectedBtn.querySelector('.protection-icon');
+              if (icon) icon.textContent = 'OFF';
+              window.app.showToast(`Error for ${affectedServer.id}: ${affectedServer.error}`, 'error');
+            } else {
+              updateProtectionButtonState(affectedBtn, newState);
+            }
+          }
+        });
+
+        const successCount = result.affectedServers.filter(s => !s.error).length;
+        window.app.showToast(
+          `Protection ${newState ? 'enabled' : 'disabled'} for ${successCount} server(s)`,
+          'success'
+        );
+      }
+    } catch (error) {
+      Logger.error('Failed to toggle protection:', error);
+      updateProtectionButtonState(btn, !newState); // Revert visual
+      window.app.showToast('Failed to toggle protection: ' + error.message, 'error');
+    }
+  });
+}
+
+// Helper: Update protection button visual state
+function updateProtectionButtonState(btn, isEnabled) {
+  btn.classList.remove('protection-loading', 'protection-on', 'protection-off');
+  btn.classList.add(isEnabled ? 'protection-on' : 'protection-off');
+  const icon = btn.querySelector('.protection-icon');
+  if (icon) icon.textContent = isEnabled ? 'ON' : 'OFF';
+  btn.disabled = false;
+}

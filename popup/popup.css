@@ -307,6 +307,8 @@ p {
     margin-right: var(--space-2);
     font-size: var(--font-size-lg);
     opacity: 0.9;
+    position: relative;
+    display: inline-block;
 }
 
 /* ============================================================================
@@ -776,7 +778,7 @@ p {
 }
 
 .view-header {
-    padding: var(--space-4);
+    padding: var(--space-2) var(--space-4);
     background-color: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
     display: flex;
@@ -1755,12 +1757,14 @@ opacity: 0.3;
 
 .protection-icon {
     display: block;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.5px;
 }
 
 .protection-btn {
+    width: 48px;
+    height: 26px;
     border: 1px solid;
     transition: all 0.15s ease;
     margin-right: 4px;
@@ -1849,4 +1853,34 @@ opacity: 0.3;
     align-self: center;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+/* ============================================================================
+   ALERT BOXES
+   ============================================================================ */
+
+.alert-box {
+    background: var(--color-accent-light);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.alert-box-title {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-accent);
+    margin-bottom: var(--space-2);
+}
+
+.alert-box-content {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-normal);
+}
+
+.alert-box-strong {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
 }

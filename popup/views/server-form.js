@@ -69,11 +69,11 @@ export async function renderServerForm(container, data = {}) {
         
         ${mode === 'add' ? `
         <!-- Connection Security Info - Only shown when adding new server -->
-        <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;padding:12px;margin-bottom:16px;">
-          <div style="font-size:11px;font-weight:600;color:rgba(76,175,80,1);margin-bottom:6px;">ℹ️ Connection Security for Home Networks</div>
-          <div style="font-size:10px;color:#b0b3b8;line-height:1.5;">
-            <strong style="color:#fff;">HTTP is fine for local networks</strong> (192.168.x.x, 10.x.x.x) when AdGuard Home runs on your private network.<br><br>
-            <strong style="color:#fff;">Use self-signed certificates?</strong> Enable "Bypass SSL Validation" below for HTTPS connections with self-signed certs.
+        <div class="alert-box">
+          <div class="alert-box-title">ℹ️ Connection Security for Home Networks</div>
+          <div class="alert-box-content">
+            <strong class="alert-box-strong">HTTP is fine for local networks</strong> (192.168.x.x, 10.x.x.x) when AdGuard Home runs on your private network.<br><br>
+            <strong class="alert-box-strong">Use self-signed certificates?</strong> Enable "Bypass SSL Validation" below for HTTPS connections with self-signed certs.
           </div>
         </div>
         ` : ''}
