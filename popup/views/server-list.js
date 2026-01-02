@@ -464,10 +464,31 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   });
 
   // Fetch data for each server progressively (even if we have cache, update it)
-  // Skip fetching only if we have complete cached data
   const shouldFetch = !cachedServerData || Object.keys(cachedServerData).length === 0;
 
+  // ALWAYS fetch protection status for all servers (even with cached data)
+  // Load from cache first for instant display
+  for (const server of servers) {
+    window.app.sendMessage('getProtectionStatus', { serverId: server.id })
+      .then(result => {
+        const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
+        if (protectionBtn && result.success) {
+          protectionBtn.classList.remove('protection-loading');
+          protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
+          const icon = protectionBtn.querySelector('.protection-icon');
+          if (icon) icon.textContent = result.enabled ? 'ON' : 'OFF';
+          protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
+          Logger.debug(`${server.name} protection: ${result.enabled ? 'ON' : 'OFF'}${result.fromCache ? ' (cached)' : ''}`);
+        }
+      })
+      .catch(err => {
+        Logger.error(`Failed to get protection for ${server.name}:`, err);
+      });
+  }
+
   if (shouldFetch) {
+    Logger.info('[Performance] Fetching fresh server data');
+    const serverDataMap = {};
     const serverDataMap = {};
 
     // Use for...of instead of forEach to properly await async operations
