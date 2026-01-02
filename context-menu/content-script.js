@@ -162,12 +162,17 @@
 
     function showModal(url) {
         const existing = document.getElementById('adguard-modal-container');
-        if (existing) existing.remove();
+        if (existing) {
+            // Try to close gracefully first to clean up classes
+            if (existing.close) existing.close();
+            else existing.remove();
+        }
 
         const container = document.createElement('div');
         container.id = 'adguard-modal-container';
         container.className = 'adguard-modal-overlay';
 
+        // NOTE: New Custom Dropdown Structure
         container.innerHTML = `
             <div class="adguard-modal" role="dialog" aria-labelledby="adguard-modal-title" aria-modal="true">
                 <div class="adguard-modal-header">
@@ -175,17 +180,47 @@
                 </div>
                 <div class="adguard-modal-body">
                     <div class="adguard-url-display" aria-label="URL to filter">${escapeHtml(url)}</div>
+                    
                     <div id="adguard-error-container" role="alert" aria-live="polite"></div>
+                    
                     <div id="adguard-form-container">
+                        <!-- Modern Segmented Control -->
                         <div class="adguard-toggle-group" role="group" aria-label="Rule type selection">
-                            <button class="adguard-toggle-btn active" id="adguard-block-btn" aria-pressed="true">🚫 Block</button>
-                            <button class="adguard-toggle-btn allow" id="adguard-allow-btn" aria-pressed="false">✅ Allow</button>
+                            <button class="adguard-toggle-btn active" id="adguard-block-btn" aria-pressed="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM5.16565 7.0982C4.16278 8.49075 3.57143 10.1804 3.57143 12C3.57143 16.6549 7.34509 20.4286 12 20.4286C13.8196 20.4286 15.5093 19.8372 16.9018 18.8344L5.16565 7.0982ZM18.8344 16.9018C19.8372 15.5093 20.4286 13.8196 20.4286 12C20.4286 7.34509 16.6549 3.57143 12 3.57143C10.1804 3.57143 8.49075 4.16278 7.0982 5.16565L18.8344 16.9018Z"/>
+                                </svg>
+                                Block
+                            </button>
+                            <button class="adguard-toggle-btn allow" id="adguard-allow-btn" aria-pressed="false">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 8.29289C17.0976 8.68342 17.0976 9.31658 16.7071 9.70711L10.7071 15.7071C10.3166 16.0976 9.68342 16.0976 9.29289 15.7071L7.29289 13.7071C6.90237 13.3166 6.90237 12.6834 7.29289 12.2929C7.68342 11.9024 8.31658 11.9024 8.70711 12.2929L10 13.5858L15.2929 8.29289C15.6834 7.90237 16.3166 7.90237 16.7071 8.29289Z"/>
+                                </svg>
+                                Allow
+                            </button>
                         </div>
-                        <label class="adguard-form-label" for="adguard-target-selector">Add to:</label>
-                        <select id="adguard-target-selector" class="adguard-select" aria-label="Select target server or group">
-                            <option value="">Loading...</option>
-                        </select>
+                        
+                        <label class="adguard-form-label">Add to:</label>
+                        
+                        <!-- CUSTOM DROPDOWN -->
+                        <div class="adguard-custom-select" id="adguard-custom-dropdown">
+                            <!-- Trigger Area -->
+                            <div class="adguard-select-trigger" id="adguard-select-trigger" tabindex="0">
+                                <span id="adguard-select-label">Loading...</span>
+                                <span class="adguard-select-arrow">▼</span>
+                            </div>
+                            
+                            <!-- Hidden Select for form logic compatibility -->
+                            <input type="hidden" id="adguard-target-value" value="">
+                            
+                            <!-- Dropdown Menu -->
+                            <div class="adguard-select-options" id="adguard-select-options">
+                                <!-- Options injected via JS -->
+                            </div>
+                        </div>
+
                         <div class="adguard-rule-preview" id="adguard-rule-preview" role="status" aria-live="polite">||example.com^</div>
+                        
                         <div class="adguard-actions">
                             <button class="adguard-btn adguard-btn-secondary" id="adguard-cancel-btn" aria-label="Cancel and close">Cancel</button>
                             <button class="adguard-btn adguard-btn-primary" id="adguard-add-btn" aria-label="Add filtering rule">Add Rule</button>
@@ -196,16 +231,32 @@
         `;
 
         document.body.appendChild(container);
+
+        // Disable body scroll - Class based approach (More robust)
+        document.documentElement.classList.add('adguard-no-scroll');
+        document.body.classList.add('adguard-no-scroll');
+
         initializeModal(url, container);
 
+        function closeModal() {
+            container.remove();
+            // Restore scroll
+            document.documentElement.classList.remove('adguard-no-scroll');
+            document.body.classList.remove('adguard-no-scroll');
+            document.removeEventListener('keydown', escapeHandler);
+        }
+
+        // Expose close function
+        container.close = closeModal;
+
+        // Close on background click
         container.addEventListener('click', (e) => {
-            if (e.target === container) container.remove();
+            if (e.target === container) closeModal();
         });
 
         const escapeHandler = (e) => {
             if (e.key === 'Escape') {
-                container.remove();
-                document.removeEventListener('keydown', escapeHandler);
+                closeModal();
             }
         };
         document.addEventListener('keydown', escapeHandler);
@@ -214,13 +265,20 @@
     async function initializeModal(url, container) {
         const blockBtn = container.querySelector('#adguard-block-btn');
         const allowBtn = container.querySelector('#adguard-allow-btn');
-        const targetSelector = container.querySelector('#adguard-target-selector');
+
+        // Custom Dropdown Elements
+        const dropdown = container.querySelector('#adguard-custom-dropdown');
+        const trigger = container.querySelector('#adguard-select-trigger');
+        const optionsContainer = container.querySelector('#adguard-select-options');
+        const hiddenInput = container.querySelector('#adguard-target-value');
+        const triggerLabel = container.querySelector('#adguard-select-label');
+
         const rulePreview = container.querySelector('#adguard-rule-preview');
         const cancelBtn = container.querySelector('#adguard-cancel-btn');
         const addBtn = container.querySelector('#adguard-add-btn');
         const errorContainer = container.querySelector('#adguard-error-container');
 
-        // Reset button state (in case it was stuck in "Adding..." state)
+        // Reset button state
         if (addBtn) {
             addBtn.disabled = false;
             addBtn.textContent = 'Add Rule';
@@ -228,13 +286,64 @@
 
         let selectedAction = 'block';
 
-        await loadTargets(targetSelector, errorContainer);
+        // Load targets (now populates custom dropdown)
+        await loadTargets(optionsContainer, hiddenInput, triggerLabel, errorContainer);
+
+        // --- Custom Dropdown Logic ---
+
+        // Toggle Dropdown
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = optionsContainer.classList.contains('open');
+
+            // Close all others if any (not needed here but good practice)
+
+            if (isOpen) {
+                optionsContainer.classList.remove('open');
+                trigger.classList.remove('open');
+            } else {
+                optionsContainer.classList.add('open');
+                trigger.classList.add('open');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        container.addEventListener('click', () => {
+            optionsContainer.classList.remove('open');
+            trigger.classList.remove('open');
+        });
+
+        // Handle Option Click (Delegation)
+        optionsContainer.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent closing immediately
+            const optionDiv = e.target.closest('.adguard-select-option');
+            if (!optionDiv) return;
+
+            // Remove selected class from all
+            optionsContainer.querySelectorAll('.adguard-select-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Set State
+            const value = optionDiv.dataset.value;
+            const labelHtml = optionDiv.innerHTML;
+
+            hiddenInput.value = value;
+            triggerLabel.innerHTML = labelHtml;
+            optionDiv.classList.add('selected');
+
+            // Close Dropdown
+            optionsContainer.classList.remove('open');
+            trigger.classList.remove('open');
+
+            // Trigger Update
+            updatePreview();
+        });
+
+        // -----------------------------
 
         function setAction(action) {
             selectedAction = action;
             blockBtn.classList.toggle('active', action === 'block');
             allowBtn.classList.toggle('active', action === 'allow');
-            // Update ARIA pressed states
             blockBtn.setAttribute('aria-pressed', action === 'block');
             allowBtn.setAttribute('aria-pressed', action === 'allow');
             updatePreview();
@@ -248,6 +357,8 @@
                     rulePreview.className = 'adguard-rule-preview error';
                     return;
                 }
+                // Check if target is selected (optional logic)
+
                 const rule = generateRule(hostname, selectedAction === 'block', false);
                 rulePreview.textContent = rule;
                 rulePreview.className = 'adguard-rule-preview ' + (selectedAction === 'block' ? '' : 'allow');
@@ -259,14 +370,22 @@
 
         blockBtn.addEventListener('click', () => setAction('block'));
         allowBtn.addEventListener('click', () => setAction('allow'));
-        targetSelector.addEventListener('change', updatePreview);
-        cancelBtn.addEventListener('click', () => container.remove());
-        addBtn.addEventListener('click', () => handleAddRule(url, targetSelector.value, selectedAction, addBtn, errorContainer));
+
+        // Listen to hidden input changes?? No, we call updatePreview directly on option click.
+
+        // Use the new close method that handles scroll restoration
+        cancelBtn.addEventListener('click', () => {
+            if (container.close) container.close();
+            else container.remove();
+        });
+
+        // Pass the HIDDEN input value
+        addBtn.addEventListener('click', () => handleAddRule(url, hiddenInput.value, selectedAction, addBtn, errorContainer, container));
 
         updatePreview();
     }
 
-    async function handleAddRule(url, target, action, addBtn, errorContainer) {
+    async function handleAddRule(url, target, action, addBtn, errorContainer, container) {
         if (!target) {
             showError(errorContainer, 'Please select a target');
             return;
@@ -329,7 +448,7 @@
             // Handle exact duplicate
             if (hasExactDuplicate) {
                 showSuccess(errorContainer, `Rule already exists`);
-                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
+                setTimeout(() => container.close(), 1500);
                 addBtn.disabled = false;
                 addBtn.textContent = 'Add Rule';
                 return;
@@ -337,12 +456,12 @@
 
             // Handle domain conflict - show confirmation
             if (hasDomainConflict) {
-                const shouldReplace = await showConfirmationDialog(hostname, conflictingRule, rule, serverIds.length, errorContainer);
+                const shouldReplace = await showConfirmationDialog(hostname, conflictingRule, rule, serverIds.length, errorContainer, container);
 
                 if (!shouldReplace) {
-                    showError(errorContainer, 'Operation cancelled');
-                    addBtn.disabled = false;
-                    addBtn.textContent = 'Add Rule';
+                    // showError(errorContainer, 'Operation cancelled'); // Not needed as cancellation now closes the modal
+                    // addBtn.disabled = false;
+                    // addBtn.textContent = 'Add Rule';
                     return;
                 }
 
@@ -360,7 +479,7 @@
                 }
 
                 showSuccess(errorContainer, `Rule replaced on ${successCount}/${serverIds.length} server(s)`);
-                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
+                setTimeout(() => container.close(), 1500);
                 addBtn.disabled = false;
                 addBtn.textContent = 'Add Rule';
                 return;
@@ -382,7 +501,7 @@
             if (successCount > 0) {
                 const ruleType = action === 'block' ? 'Block' : 'Allow';
                 showSuccess(errorContainer, `${ruleType} rule added to ${successCount}/${serverIds.length} server(s)`);
-                setTimeout(() => document.getElementById('adguard-modal-container').remove(), 1500);
+                setTimeout(() => container.close(), 1500);
             } else {
                 throw new Error('Failed to add rule to any server');
             }
@@ -413,42 +532,77 @@
         return div.textContent;
     }
 
-    async function loadTargets(selector, errorContainer) {
+    async function loadTargets(optionsContainer, hiddenInput, triggerLabel, errorContainer) {
         try {
             const servers = await window.app.sendMessage('getServers') || [];
             const groups = await window.app.sendMessage('getGroups') || [];
 
-            selector.innerHTML = '<option value="">None</option>';
+            optionsContainer.innerHTML = '';
+
+            // NOTE: We do not set "None" here because we want to force a selection or default to first available
+
+            // Track if we selected a default
+            let firstValue = null;
+            let firstLabel = null;
 
             if (groups.length > 0) {
-                const groupOptgroup = document.createElement('optgroup');
-                groupOptgroup.label = 'Groups';
+                const groupLabel = document.createElement('div');
+                groupLabel.className = 'adguard-optgroup-label';
+                groupLabel.textContent = 'Groups';
+                optionsContainer.appendChild(groupLabel);
+
                 groups.forEach(group => {
-                    const option = document.createElement('option');
-                    option.value = `group:${sanitizeText(group.id)}`;
-                    // Sanitize group name to prevent XSS
-                    option.textContent = `📁 ${sanitizeText(group.name)}`;
-                    groupOptgroup.appendChild(option);
+                    const option = document.createElement('div');
+                    option.className = 'adguard-select-option';
+                    option.dataset.value = `group:${escapeHtml(group.id)}`;
+                    // Use innerHTML to render Emoji/Icon
+                    option.innerHTML = `<span style="font-size: 16px;">📁</span> ${escapeHtml(group.name)}`;
+
+                    optionsContainer.appendChild(option);
+
+                    if (!firstValue) {
+                        firstValue = option.dataset.value;
+                        firstLabel = option.innerHTML;
+                    }
                 });
-                selector.appendChild(groupOptgroup);
             }
 
             if (servers.length > 0) {
-                const serverOptgroup = document.createElement('optgroup');
-                serverOptgroup.label = 'Servers';
+                const serverLabel = document.createElement('div');
+                serverLabel.className = 'adguard-optgroup-label';
+                serverLabel.textContent = 'Servers';
+                optionsContainer.appendChild(serverLabel);
+
                 servers.forEach(server => {
-                    const option = document.createElement('option');
-                    option.value = `server:${sanitizeText(server.id)}`;
-                    // Sanitize server name to prevent XSS
-                    option.textContent = `🖥️ ${sanitizeText(server.name)}`;
-                    serverOptgroup.appendChild(option);
+                    const option = document.createElement('div');
+                    option.className = 'adguard-select-option';
+                    option.dataset.value = `server:${escapeHtml(server.id)}`;
+
+                    // Use innerHTML to render Emoji/Icon
+                    option.innerHTML = `<span style="font-size: 16px;">🖥️</span> ${escapeHtml(server.name)}`;
+
+                    optionsContainer.appendChild(option);
+
+                    if (!firstValue) {
+                        firstValue = option.dataset.value;
+                        firstLabel = option.innerHTML;
+                    }
                 });
-                selector.appendChild(serverOptgroup);
             }
 
-            if (servers.length === 0) {
+            if (servers.length === 0 && groups.length === 0) {
                 showError(errorContainer, 'No servers configured. Please add a server first.');
+                triggerLabel.textContent = "No servers found";
+            } else {
+                // Auto-select the first item
+                if (firstValue) {
+                    hiddenInput.value = firstValue;
+                    triggerLabel.innerHTML = firstLabel;
+                } else {
+                    triggerLabel.textContent = "Select target...";
+                }
             }
+
         } catch (error) {
             console.error('Load targets error:', error);
             showError(errorContainer, 'Failed to load servers: ' + error.message);
@@ -482,14 +636,14 @@
     }
 
     // Show confirmation dialog within modal
-    async function showConfirmationDialog(domain, existingRule, newRule, serverCount, errorContainer) {
+    async function showConfirmationDialog(domain, existingRule, newRule, serverCount, errorContainer, container) {
         return new Promise((resolve) => {
             const existingType = getRuleType(existingRule);
             const newType = getRuleType(newRule);
 
             // Store original form HTML to restore on cancel
             const formContainer = document.getElementById('adguard-form-container');
-            const originalFormHTML = formContainer.innerHTML;
+            // const originalFormHTML = formContainer.innerHTML; // Removing complex restore logic
 
             // Replace entire modal content with compact, dark confirmation dialog
             formContainer.innerHTML = `
@@ -536,14 +690,10 @@
             const confirmCancelBtn = formContainer.querySelector('#confirm-cancel');
             const replaceBtn = formContainer.querySelector('#confirm-replace');
 
-            // Cancel - restore form to allow selecting different target
+            // Cancel - Just close the modal. Simpler and safer than trying to restore state.
             confirmCancelBtn.addEventListener('click', () => {
-                formContainer.innerHTML = originalFormHTML;
-                errorContainer.innerHTML = '';
-                // Re-initialize modal to restore all event listeners and allow retrying with different target
-                const container = document.getElementById('adguard-modal-container');
-                const url = container.querySelector('.adguard-url-display').textContent;
-                initializeModal(url, container);
+                if (container.close) container.close();
+                else container.remove();
                 resolve(false);
             });
 
@@ -554,8 +704,6 @@
                 replaceBtn.disabled = true;
                 replaceBtn.textContent = 'Replacing...';
 
-                // Don't restore form - let the button stay in "Adding..." state while processing
-                // Just clear the confirmation dialog and let handleAddRule continue
                 errorContainer.innerHTML = '';
                 resolve(true);
             });
