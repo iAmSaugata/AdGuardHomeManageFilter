@@ -1740,57 +1740,71 @@ opacity: 0.3;
 
 /* Protection Toggle Button - Smaller, Push-button style */
 .btn-icon {
-    padding: 2px;
-    width: 20px;
+    padding: 2px 4px;
+    min-width: 28px;
     height: 20px;
-    border-radius: 50%;
-    font-size: 12px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    line-height: 1;
+}
+
+.protection-icon {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .protection-btn {
-    border: 2px solid;
-    transition: all 0.2s ease;
+    border: 1.5px solid;
+    transition: all 0.15s ease;
     margin-right: 6px;
 }
 
 /* Green = ON (Released, raised button) */
 .protection-btn.protection-on {
     background: linear-gradient(145deg, #66BB6A, #4CAF50);
-    border-color: #4CAF50;
+    border-color: #2E7D32;
     color: #fff;
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3), inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(76, 175, 80, 0.4), inset 0 -1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .protection-btn.protection-on:hover:not(:disabled) {
     background: linear-gradient(145deg, #76CB7A, #5CBF60);
-    box-shadow: 0 3px 6px rgba(76, 175, 80, 0.4), inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.5), inset 0 -1px 1px rgba(0, 0, 0, 0.2);
+    transform: translateY(-0.5px);
 }
 
 /* Red = OFF (Pushed, pressed button) */
 .protection-btn.protection-off {
     background: linear-gradient(145deg, #C62828, #E53935);
-    border-color: #D32F2F;
+    border-color: #B71C1C;
     color: #fff;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(244, 67, 54, 0.2);
-    transform: translateY(1px);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(244, 67, 54, 0.2);
+    transform: translateY(0.5px);
 }
 
 .protection-btn.protection-off:hover:not(:disabled) {
     background: linear-gradient(145deg, #D32F2F, #F44336);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(244, 67, 54, 0.3);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(244, 67, 54, 0.3);
 }
 
+/* Loading state */
 .protection-btn.protection-loading {
     background: linear-gradient(145deg, #555, #666);
     border-color: #666;
     color: #999;
     cursor: wait;
     animation: pulse 1.5s ease-in-out infinite;
+}
+
+.protection-btn.protection-loading .protection-icon {
+    animation: ellipsis 1.5s infinite;
 }
 
 @keyframes pulse {
@@ -1805,9 +1819,26 @@ opacity: 0.3;
     }
 }
 
+@keyframes ellipsis {
+
+    0%,
+    20% {
+        content: '.';
+    }
+
+    40% {
+        content: '..';
+    }
+
+    60%,
+    100% {
+        content: '...';
+    }
+}
+
 /* Chart legend container - flex layout for button + legend + chart */
 .chart-legend-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
