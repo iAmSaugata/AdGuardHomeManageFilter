@@ -247,6 +247,8 @@ async function saveUISnapshot(servers, groups, serverData) {
   }
 }
 
+function renderEmptyState(container) {
+  container.innerHTML = `
     <div class="view-header">
       <h1 class="view-title">Servers</h1>
       <button class="btn btn-primary btn-sm" id="add-server-btn">
@@ -296,13 +298,12 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
     const groupBadgesHtml = serverGroups.length > 0 ? `
   < div class="server-groups-inline" >
-    ${
-  serverGroups.map(group => `
+    ${serverGroups.map(group => `
           <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
             📁 ${escapeHtml(group.name)}
           </span>
         `).join('')
-}
+      }
       </div >
   ` : '';
 
@@ -412,10 +413,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               if (affectedServer.error) {
                 // Error for this specific server
                 affectedBtn.classList.add('protection-off');
-                affectedBtn.title = `Protection toggle failed: ${ affectedServer.error } `;
+                affectedBtn.title = `Protection toggle failed: ${affectedServer.error} `;
               } else {
                 affectedBtn.classList.add(newState ? 'protection-on' : 'protection-off');
-                affectedBtn.title = `Protection ${ newState ? 'enabled' : 'disabled' }. Click to ${ newState ? 'disable' : 'enable' }.`;
+                affectedBtn.title = `Protection ${newState ? 'enabled' : 'disabled'}. Click to ${newState ? 'disable' : 'enable'}.`;
               }
               affectedBtn.disabled = false;
             }
@@ -423,7 +424,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
           const successCount = result.affectedServers.filter(s => !s.error).length;
           window.app.showToast(
-            `Protection ${ newState ? 'enabled' : 'disabled' } for ${ successCount } server(s)`,
+            `Protection ${newState ? 'enabled' : 'disabled'} for ${successCount} server(s)`,
             'success'
           );
         }
@@ -481,25 +482,24 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
         // Store server data for change detection
         serverDataMap[server.id] = { rules, counts, version, isOnline };
-        Logger.debug(`${ server.name }: ${ rules.length } rules, counts: `, counts);
-        Logger.debug(`${ server.name } rulesResult: `, rulesResult);
+        Logger.debug(`${server.name}: ${rules.length} rules, counts: `, counts);
+        Logger.debug(`${server.name} rulesResult: `, rulesResult);
 
         // Find groups this server belongs to
         const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
         const groupBadgesHtml = serverGroups.length > 0 ? `
   < div class="server-groups-inline" >
-    ${
-  serverGroups.map(group => `
+    ${serverGroups.map(group => `
             <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
               📁 ${escapeHtml(group.name)}
             </span>
           `).join('')
-}
+          }
         </div >
   ` : '';
 
         // Update the server card
-        const serverCard = document.getElementById(`server - ${ server.id } `);
+        const serverCard = document.getElementById(`server - ${server.id} `);
         if (serverCard) {
           const chartHtml = createDonutChart(counts);
 
@@ -572,10 +572,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           }
         }
       } catch (error) {
-        Logger.error(`Failed to fetch data for ${ server.name }: `, error);
+        Logger.error(`Failed to fetch data for ${server.name}: `, error);
 
         // Update with error state
-        const serverCard = document.getElementById(`server - ${ server.id } `);
+        const serverCard = document.getElementById(`server - ${server.id} `);
         if (serverCard) {
           const errorHtml = `
   < div class="server-info" >
@@ -622,23 +622,23 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   // **ALWAYS fetch protection status for all servers** (regardless of cache state)
   Logger.info('[Protection] Fetching protection status for all servers...');
   for (const server of servers) {
-    Logger.debug(`[Protection] Fetching status for ${ server.name }(${ server.id })`);
-    
+    Logger.debug(`[Protection] Fetching status for ${server.name}(${server.id})`);
+
     window.app.sendMessage('getProtectionStatus', { serverId: server.id })
       .then(result => {
-        Logger.debug(`[Protection] Status received for ${ server.name }: `, result);
+        Logger.debug(`[Protection] Status received for ${server.name}: `, result);
         const protectionBtn = document.querySelector(`.protection - btn[data - server - id="${server.id}"]`);
         if (protectionBtn && result.success) {
           protectionBtn.classList.remove('protection-loading');
           protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
-          protectionBtn.title = `Protection ${ result.enabled ? 'enabled' : 'disabled' }. Click to ${ result.enabled ? 'disable' : 'enable' }.`;
-          Logger.info(`[Protection] ${ server.name }: ${ result.enabled ? 'ON' : 'OFF' }${ result.fromCache ? ' (cached)' : '' } `);
+          protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
+          Logger.info(`[Protection] ${server.name}: ${result.enabled ? 'ON' : 'OFF'}${result.fromCache ? ' (cached)' : ''} `);
         } else {
-          Logger.warn(`[Protection] Button not found or result failed for ${ server.name }`);
+          Logger.warn(`[Protection] Button not found or result failed for ${server.name}`);
         }
       })
       .catch(err => {
-        Logger.error(`[Protection] Failed to get status for ${ server.name }: `, err);
+        Logger.error(`[Protection] Failed to get status for ${server.name}: `, err);
         const protectionBtn = document.querySelector(`.protection - btn[data - server - id="${server.id}"]`);
         if (protectionBtn) {
           protectionBtn.classList.remove('protection-loading');
