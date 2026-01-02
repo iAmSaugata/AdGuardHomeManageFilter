@@ -1738,13 +1738,13 @@ opacity: 0.3;
     font-style: italic;
 }
 
-/* Protection Toggle Button - Ultra Compact */
+/* Protection Toggle Button - Compact & Readable */
 .btn-icon {
-    padding: 1px 3px;
-    min-width: 24px;
-    height: 16px;
+    padding: 2px 4px;
+    min-width: 26px;
+    height: 18px;
     border-radius: 3px;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
@@ -1755,9 +1755,9 @@ opacity: 0.3;
 
 .protection-icon {
     display: block;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
 }
 
 .protection-btn {

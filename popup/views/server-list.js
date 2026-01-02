@@ -408,7 +408,8 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           result.affectedServers.forEach(affectedServer => {
             const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
             if (affectedBtn) {
-              affectedBtn.classList.remove('protection-loading');
+              // Remove ALL state classes first
+              affectedBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
               const icon = affectedBtn.querySelector('.protection-icon');
               if (affectedServer.error) {
                 // Error for this specific server
@@ -473,7 +474,8 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       .then(result => {
         const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
         if (protectionBtn && result.success) {
-          protectionBtn.classList.remove('protection-loading');
+          // Remove ALL state classes first
+          protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
           protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
           const icon = protectionBtn.querySelector('.protection-icon');
           if (icon) icon.textContent = result.enabled ? 'ON' : 'OFF';
@@ -516,7 +518,8 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         if (protectionResult) {
           const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
           if (protectionBtn) {
-            protectionBtn.classList.remove('protection-loading');
+            // Remove ALL state classes first
+            protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
             protectionBtn.classList.add(protectionResult.enabled ? 'protection-on' : 'protection-off');
             const icon = protectionBtn.querySelector('.protection-icon');
             if (icon) icon.textContent = protectionResult.enabled ? 'ON' : 'OFF';
