@@ -27,29 +27,88 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: flex-start;
+    /* Align left */
     gap: 2px;
 }
 
+.server-name {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    /* Stack vertically! */
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+}
+
+.server-name-text {
+    line-height: 1.2;
+}
+
+.server-icon-large {
+    width: 20px;
+    /* Reduced size for SVG */
+    height: 20px;
+    color: var(--color-text-tertiary);
+    /* Icon color */
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.server-icon-large svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Status Dot attached to icon */
 .status-dot-overlay {
     position: absolute;
-    bottom: -1px;
+    bottom: -2px;
     right: -2px;
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     border: 2px solid var(--color-bg-secondary);
+    z-index: 2;
 }
 
 .status-dot-overlay.online {
     background-color: var(--color-accent);
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
 }
 
 .status-dot-overlay.offline {
     background-color: var(--color-danger);
 }
 
-/* Protection Group - Vertical Stack */
+/* Version Capsule - Moved & Refined */
+.server-version-capsule {
+    position: static;
+    font-size: 8px;
+    /* Tiny */
+    font-weight: var(--font-weight-medium);
+    color: #94a3b8;
+    /* Slate 400 - unique but not too bright */
+    background: rgba(30, 41, 59, 0.5);
+    /* Slate 800 with opacity */
+    padding: 1px 6px;
+    border-radius: 99px;
+    /* Full capsule */
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    /* Slate 600 border */
+    white-space: nowrap;
+    margin-top: 4px;
+    line-height: 1.1;
+    align-self: flex-start;
+    /* Align left under name */
+}
+
+/* Protection Group */
 .protection-group {
     display: flex;
     flex-direction: column;
@@ -62,60 +121,81 @@
     margin-top: 0;
 }
 
-.server-version-capsule {
-    position: absolute;
-    top: -2px;
-    font-size: 9px;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-tertiary);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 1px 6px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    white-space: nowrap;
-}
 
-.server-name {
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
+
+/* Protection Button - Power Toggle */
+.protection-btn {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    border-radius: 6px;
+    border: none !important;
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    cursor: pointer;
+    background-color: var(--color-bg-tertiary);
+    margin-top: auto;
 }
 
-.server-icon-large {
-    font-size: 21px;
+.protection-btn svg {
+    width: 60%;
+    height: 60%;
+    fill: #000000;
+    display: block;
+}
+
+.protection-btn.protection-on {
+    background-color: var(--color-accent) !important;
+}
+
+.protection-btn.protection-off {
+    background-color: var(--color-danger) !important;
+}
+
+.protection-btn:hover {
     opacity: 0.9;
-    position: relative;
-    display: inline-flex;
+    transform: scale(1.05);
 }
 
-.server-version {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
+.protection-btn:active {
+    transform: scale(0.95);
 }
 
-.server-status {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-1);
+/* Loading State */
+.protection-btn.protection-loading {
+    opacity: 0.7;
+    cursor: wait;
+    background-color: var(--color-bg-tertiary) !important;
 }
 
-/* Chart and Legend Container */
+.protection-btn.protection-loading svg {
+    fill: var(--color-text-disabled);
+    animation: pulse-opacity 1s infinite alternate;
+}
+
+@keyframes pulse-opacity {
+    from {
+        opacity: 0.4;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Chart and Legend */
 .chart-legend-container {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: 16px;
+    /* Increased gap between Power and Legend (was space-2/8px) */
     margin-left: auto;
+    margin-right: 12px;
+    /* Push away from Right edge/Gear icon to move "little left" */
 }
 
-/* Donut Chart - Interactive */
 .donut-chart-container {
     position: relative;
     width: 84px;
@@ -134,7 +214,6 @@
     cursor: help;
 }
 
-/* SVG Pie slices */
 .pie-slice {
     cursor: pointer;
     transition: opacity 0.2s ease, transform 0.2s ease;
@@ -165,15 +244,6 @@
     pointer-events: none;
 }
 
-.donut-label {
-    font-size: 10px;
-    color: var(--color-text-tertiary);
-    text-transform: uppercase;
-    margin-top: 1px;
-    display: none;
-}
-
-/* Chart Legend - Compact beside chart */
 .chart-legend {
     display: flex;
     flex-direction: column;
@@ -184,7 +254,8 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: 11px;
+    /* Slightly smaller legend to fit 'Disabled' */
 }
 
 .legend-dot {
@@ -216,48 +287,51 @@
     min-width: 45px;
 }
 
-.legend-value {
-    margin-left: auto;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
-    min-width: 20px;
-    text-align: right;
-    display: none;
-}
-
-/* Server Actions */
+/* Server Actions - Edit Button */
 .server-actions {
     display: flex;
     gap: var(--space-1);
     align-items: center;
 }
 
-/* Loading State for Charts */
-.chart-loading {
-    width: 84px;
-    height: 84px;
+/* Edit Server Button - Reduced Container Size to match icon ratio */
+.edit-server-btn {
+    width: 28px !important;
+    /* Reduced from 40px */
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
     border-radius: 50%;
-    background: conic-gradient(var(--color-bg-tertiary) 0deg 360deg);
+    background: rgba(255, 255, 255, 0.03);
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color 0.2s ease;
 }
 
-.chart-loading-text {
-    font-size: 11px;
-    color: var(--color-text-tertiary);
+.edit-server-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Group badges - inline with server name */
+/* Edit Server Button Icon - Reduced Size */
+.edit-server-btn .icon-gear-svg {
+    width: 16px !important;
+    height: 16px !important;
+    stroke-width: 2 !important;
+}
+
+/* Group badges */
 .server-groups-inline {
     display: inline-flex;
     gap: 4px;
     align-items: center;
+    flex-wrap: wrap;
+    /* Allow wrapping if name is long */
 }
 
 .group-badge-inline {
-    font-size: 10px !important;
-    padding: 2px 6px !important;
+    font-size: 9px !important;
+    padding: 1px 5px !important;
     border-radius: 3px;
     background: rgba(34, 197, 94, 0.15);
     border: 1px solid rgba(34, 197, 94, 0.5);

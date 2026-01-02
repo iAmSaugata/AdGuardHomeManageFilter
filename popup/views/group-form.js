@@ -50,15 +50,18 @@ export async function renderGroupForm(container, data = {}) {
     container.innerHTML = `
         <div class="view-container">
             <div class="view-header">
-                <button class="btn btn-ghost btn-sm" id="back-btn">
-                    ← Back
+                <button class="header-back-btn" id="back-btn">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    <span>Back</span>
                 </button>
                 <h1 class="view-title">${isEdit ? 'Edit' : 'Create'} Group</h1>
-                ${isEdit ? `
-                    <button class="btn btn-ghost btn-sm" id="delete-group-btn" title="Delete Group">
-                        🗑️
-                    </button>
-                ` : '<div style="width: 40px;"></div>'}
+                <div class="header-action-area">
+                    ${isEdit ? `
+                        <button class="header-icon-btn btn-delete" id="delete-group-btn" title="Delete Group">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        </button>
+                    ` : ''}
+                </div>
             </div>
             <div class="view-body">
                 <div class="form-group">

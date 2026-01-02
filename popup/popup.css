@@ -131,19 +131,301 @@ body {
     padding: var(--space-3) var(--space-4);
     background-color: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.app-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(33, 150, 243, 0.2));
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .app-icon {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
+    font-size: 22px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    animation: pulse-glow 3s infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from {
+        filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.4));
+        transform: scale(1);
+    }
+
+    to {
+        filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.8));
+        transform: scale(1.05);
+    }
 }
 
 .app-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
+    font-size: 15px;
+    font-weight: 800;
     margin: 0;
+    background: linear-gradient(90deg, #ffffff, #81c784, #4caf50);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    flex-grow: 1;
+    text-align: center;
+}
+
+/* ============================================================================
+   UNIFIED VIEW HEADER SYSTEM - FABULOUS EDITION
+   ============================================================================ */
+
+.view-header {
+    height: 50px;
+    /* Slightly taller for grandeur */
+    padding: 0 var(--space-4);
+    background: linear-gradient(to bottom, rgba(35, 38, 46, 0.95), rgba(35, 38, 46, 0.8));
+    backdrop-filter: blur(10px);
+    /* Glassmorphism */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    /* Deep shadow */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.view-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 15px;
+    /* Match app-title */
+    font-weight: 800;
+    /* Match app-title */
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    /* Compact like app-title */
+    background: linear-gradient(90deg, #ffffff, #81c784, #4caf50);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: nowrap;
+    z-index: 1;
+    pointer-events: none;
+    text-shadow: 0 2px 10px rgba(76, 175, 80, 0.2);
+}
+
+.view-title.left-aligned {
+    position: static;
+    transform: none;
+    left: auto;
+    text-align: left;
+    flex-grow: 1;
+    padding-left: 8px;
+    /* Just a bit of spacing */
+}
+
+/* Fabulous Back Button - Compact Square */
+.header-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 8px;
+    height: 28px;
+    /* Compact height */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    /* Small rounded corners */
+    font-size: 10px;
+    font-weight: 900;
+    /* Extra bold */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Gradient Text for Back Button */
+.header-back-btn span {
+    background: linear-gradient(90deg, #ffffff, #81c784, #4caf50);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* SVG Icon Coloring */
+.header-back-btn svg {
+    stroke: #81c784;
+    /* Matching the mid-tone of gradient */
+    filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.3));
+}
+
+.header-back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(76, 175, 80, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.header-back-btn:active {
+    transform: scale(0.96);
+}
+
+.header-action-area {
+    z-index: 2;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Awesome Header Icon Buttons (Refresh/Delete) */
+.header-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    /* Square with rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: white;
+}
+
+.header-icon-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.5;
+    stroke: currentColor;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.header-icon-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.header-icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* Blue Refresh Button */
+.header-icon-btn.btn-refresh {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.8), rgba(33, 150, 243, 0.6));
+    border-color: rgba(33, 150, 243, 0.5);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.header-icon-btn.btn-refresh:hover {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 1), rgba(33, 150, 243, 0.8));
+    box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+}
+
+/* Red Delete Button */
+.header-icon-btn.btn-delete {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.8), rgba(244, 67, 54, 0.6));
+    border-color: rgba(244, 67, 54, 0.5);
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.header-icon-btn.btn-delete:hover {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 1), rgba(244, 67, 54, 0.8));
+    box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+}
+
+/* Custom Settings Button (Header) */
+.settings-btn-custom {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    background: transparent !important;
+    border: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.settings-btn-custom .icon-gear-svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--color-text-secondary);
+    stroke-width: 1.5;
+    transition: stroke 0.2s ease;
+}
+
+.settings-btn-custom:hover {
+    opacity: 1;
+    transform: none;
+    /* Removed rotation */
+}
+
+.settings-btn-custom:hover .icon-gear-svg {
+    stroke: var(--color-accent);
+    filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.4));
+}
+
+/* Generic SVG Gear Icon */
+.icon-gear-svg {
+    width: 20px;
+    /* Default size */
+    height: 20px;
+}
+
+/* Rotation for Header Settings Gear */
+#settings-btn:hover .gear-icon {
+    transform: rotate(180deg);
+}
+
+/* Server Card Edit Button specific */
+.edit-server-btn {
+    padding: 0 !important;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    /* Circular touch target */
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.edit-server-btn .icon-gear-svg {
+    width: 28px;
+    height: 28px;
+    /* Bigger to match header */
+    stroke: var(--color-text-secondary);
+    stroke-width: 1.5;
+    transition: stroke 0.2s ease;
+}
+
+.edit-server-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: none;
+    /* Removed rotation */
+}
+
+.edit-server-btn:hover .icon-gear-svg {
+    stroke: var(--color-info);
+    /* Blue hover for server edit */
 }
 
 /* ============================================================================
@@ -1155,17 +1437,83 @@ opacity: 0.3;
    GROUP FORM
    ============================================================================ */
 
-.server-checkboxes {
+/* Standardized Icon Buttons (Like Rule Listing) */
+.action-icon-btn {
+    width: 28px;
+    height: 28px;
     display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    background-color: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    max-height: 120px;
-    overflow-y: auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    /* Slightly rounded square */
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
 }
+
+.action-icon-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    stroke: currentColor;
+    fill: none;
+}
+
+/* Ghost Variant (e.g. Edit) */
+.action-icon-btn.ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+.action-icon-btn.ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}
+
+/* Danger Variant (e.g. Delete) */
+.action-icon-btn.danger {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.8), rgba(244, 67, 54, 0.6));
+    border-color: rgba(244, 67, 54, 0.5);
+    color: white;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.2);
+}
+
+.action-icon-btn.danger:hover {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 1), rgba(244, 67, 54, 0.8));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+/* Primary Variant (e.g. Refresh/Tools) */
+.action-icon-btn.primary {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.8), rgba(33, 150, 243, 0.6));
+    border-color: rgba(33, 150, 243, 0.5);
+    color: white;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.action-icon-btn.primary:hover {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 1), rgba(33, 150, 243, 0.8));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Success/Accent Variant */
+.action-icon-btn.accent {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0.6));
+    border-color: rgba(76, 175, 80, 0.5);
+    color: white;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+}
+
+.action-icon-btn.accent:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 1), rgba(76, 175, 80, 0.8));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
 
 .checkbox-label {
     display: flex;

@@ -109,10 +109,12 @@ export async function renderServerList(container) {
     Logger.info('[Performance] No cache, fetching fresh data');
     container.innerHTML = `
       <div class="view-header">
-        <h1 class="view-title">Servers</h1>
-        <button class="btn btn-primary btn-sm" id="add-server-btn">
-          Add Server
-        </button>
+        <h1 class="view-title left-aligned">Servers</h1>
+        <div class="header-action-area">
+          <button class="btn btn-primary btn-sm" id="add-server-btn">
+            Add Server
+          </button>
+        </div>
       </div>
       <div class="view-body">
         <div class="skeleton skeleton-title"></div>
@@ -311,20 +313,20 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         <div class="server-info">
           <div class="server-name">
             <span class="server-icon-large">
-                🖥️
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
                 ${cached?.isOnline !== undefined ?
         `<span class="status-dot-overlay ${cached.isOnline ? 'online' : 'offline'}"></span>` :
         ''}
             </span>
-            ${escapeHtml(server.name)}
+            <span class="server-name-text">${escapeHtml(server.name)}</span>
             ${groupBadgesHtml}
+            <span class="server-version-capsule">${escapeHtml(cached?.version || 'v...')}</span>
           </div>
         </div>
         <div class="chart-legend-container">
           <div class="protection-group">
-            <span class="server-version-capsule">${escapeHtml(cached?.version || 'v...')}</span>
-            <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}">
-              <span class="protection-icon">...</span>
+            <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Loading status...">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
             </button>
           </div>
           <div class="chart-legend">
@@ -338,7 +340,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             </div>
             <div class="legend-item">
               <span class="legend-dot inactive"></span>
-              <span class="legend-text">Inac</span>
+              <span class="legend-text">Disabled</span>
             </div>
           </div>
           <div class="donut-chart-container">
@@ -347,7 +349,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         </div>
         <div class="server-actions">
           <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
-            ⚙️
+            <svg viewBox="0 0 24 24" class="icon-gear-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
           </button>
         </div>
       </div>
@@ -356,10 +361,12 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
   container.innerHTML = `
       <div class="view-header">
-        <h1 class="view-title">Servers</h1>
-        <button class="btn btn-primary btn-sm" id="add-server-btn">
-          Add Server
-        </button>
+        <h1 class="view-title left-aligned">Servers</h1>
+        <div class="header-action-area">
+          <button class="btn btn-primary btn-sm" id="add-server-btn">
+            Add Server
+          </button>
+        </div>
       </div>
       <div class="view-body">
         <div class="list">
@@ -420,8 +427,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           // Remove ALL state classes first
           protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
           protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
-          const icon = protectionBtn.querySelector('.protection-icon');
-          if (icon) icon.textContent = result.enabled ? 'ON' : 'OFF';
+          // Icon is static SVG, no text update needed
           protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
           Logger.debug(`${server.name} protection: ${result.enabled ? 'ON' : 'OFF'}${result.fromCache ? ' (cached)' : ''}`);
         }
@@ -464,8 +470,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             // Remove ALL state classes first
             protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
             protectionBtn.classList.add(protectionResult.enabled ? 'protection-on' : 'protection-off');
-            const icon = protectionBtn.querySelector('.protection-icon');
-            if (icon) icon.textContent = protectionResult.enabled ? 'ON' : 'OFF';
+            // Icon is static SVG, no text update needed
             protectionBtn.title = `Protection ${protectionResult.enabled ? 'enabled' : 'disabled'}. Click to ${protectionResult.enabled ? 'disable' : 'enable'}.`;
             Logger.debug(`${server.name} protection status: ${protectionResult.enabled ? 'ON' : 'OFF'}${protectionResult.fromCache ? ' (cached)' : ''}`);
           }
@@ -494,18 +499,18 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           <div class="server-info">
             <div class="server-name">
               <span class="server-icon-large">
-                🖥️
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
                 <span class="status-dot-overlay ${isOnline ? 'online' : 'offline'}"></span>
               </span>
-              ${escapeHtml(server.name)}
+              <span class="server-name-text">${escapeHtml(server.name)}</span>
               ${groupBadgesHtml}
+              <span class="server-version-capsule">${escapeHtml(version)}</span>
             </div>
           </div>
           <div class="chart-legend-container">
             <div class="protection-group">
-              <span class="server-version-capsule">${escapeHtml(version)}</span>
-              <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}">
-                  <span class="protection-icon">...</span>
+              <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Loading status...">
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
               </button>
             </div>
             <div class="chart-legend">
@@ -519,7 +524,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               </div>
               <div class="legend-item">
                 <span class="legend-dot inactive"></span>
-                <span class="legend-text">Inac</span>
+                <span class="legend-text">Disabled</span>
               </div>
             </div>
             <div class="donut-chart-container">
@@ -528,7 +533,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           </div>
           <div class="server-actions">
             <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
-              ⚙️
+              <svg viewBox="0 0 24 24" class="icon-gear-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
             </button>
           </div>
         `;
@@ -597,7 +605,10 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           <div class="server-actions">
             <span class="badge badge-danger">Error</span>
             <button class="btn btn-sm btn-ghost edit-server-btn" data-server-id="${server.id}" title="Edit server">
-              ⚙️
+              <svg viewBox="0 0 24 24" class="icon-gear-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
             </button>
           </div>
         `;

@@ -32,11 +32,12 @@ export async function renderServerForm(container, data = {}) {
   // Render form
   container.innerHTML = `
     <div class="view-header">
-      <button class="btn btn-ghost btn-sm" id="back-btn">
-        ← Back
+      <button class="header-back-btn" id="back-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Back</span>
       </button>
       <h1 class="view-title">${isEdit ? 'Edit Server' : 'Add Server'}</h1>
-      <div style="width: 60px;"></div>
+      <div class="header-action-area"></div>
     </div>
     <div class="view-body">
       <form id="server-form" data-mode="${isEdit ? 'edit' : 'add'}" ${isEdit && serverId ? `data-server-id="${serverId}"` : ''}>

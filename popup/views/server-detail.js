@@ -23,10 +23,11 @@ export async function renderServerDetail(container, data = {}) {
   // Show loading state
   container.innerHTML = `
     <div class="view-header">
-      <button class="btn btn-ghost btn-sm" id="back-btn">
-        ← Back
+      <button class="header-back-btn" id="back-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Back</span>
       </button>
-      <div class="flex-1"></div>
+      <div class="header-action-area"></div>
     </div>
     <div class="view-body">
       <div class="skeleton skeleton-title"></div>
@@ -105,18 +106,19 @@ function renderServerDetailView(container, server, version, rules, fromCache, wa
   container.innerHTML = `
     <div class="view-container">
       <div class="view-header">
-        <button class="btn btn-ghost btn-sm" id="back-btn">
-          ← Back
+        <button class="header-back-btn" id="back-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span>Back</span>
         </button>
-        <div class="flex-1 text-center">
-          <div class="view-title">${escapeHtml(server.name)}</div>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn btn-ghost btn-sm" id="refresh-btn" title="Refresh rules">
-            ↻
+        <div class="view-title">${escapeHtml(server.name)}</div>
+        <div class="header-action-area">
+          <!-- Awesome Refresh Button -->
+          <button class="header-icon-btn btn-refresh" id="refresh-btn" title="Refresh rules">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           </button>
-          <button class="btn btn-danger btn-sm" id="delete-server-btn" title="Delete server">
-            ✕
+          <!-- Awesome Delete Button -->
+          <button class="header-icon-btn btn-delete" id="delete-server-btn" title="Delete server">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           </button>
         </div>
       </div>
