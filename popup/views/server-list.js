@@ -247,8 +247,6 @@ async function saveUISnapshot(servers, groups, serverData) {
   }
 }
 
-function renderEmptyState(container) {
-  container.innerHTML = `
     <div class="view-header">
       <h1 class="view-title">Servers</h1>
       <button class="btn btn-primary btn-sm" id="add-server-btn">
@@ -265,7 +263,7 @@ function renderEmptyState(container) {
         Add Your First Server
       </button>
     </div>
-  `;
+`;
 
   // Attach event listeners AFTER rendering
   const addServerBtn = document.getElementById('add-server-btn');
@@ -289,25 +287,27 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     // Check if we have cached data for this server
     const cached = cachedServerData?.[server.id];
     const chartHtml = cached?.counts ? createDonutChart(cached.counts) : `
-      <div class="chart-loading">
-        <span class="chart-loading-text">Loading</span>
-      </div>
-    `;
+  < div class="chart-loading" >
+    <span class="chart-loading-text">Loading</span>
+      </div >
+  `;
 
     // Find groups this server belongs to (for initial render)
     const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
     const groupBadgesHtml = serverGroups.length > 0 ? `
-      <div class="server-groups-inline">
-        ${serverGroups.map(group => `
+  < div class="server-groups-inline" >
+    ${
+  serverGroups.map(group => `
           <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
             📁 ${escapeHtml(group.name)}
           </span>
-        `).join('')}
-      </div>
-    ` : '';
+        `).join('')
+}
+      </div >
+  ` : '';
 
     return `
-      <div class="server-card" data-server-id="${server.id}" id="server-${server.id}">
+  < div class="server-card" data - server - id="${server.id}" id = "server-${server.id}" >
         <div class="server-info">
           <div class="server-name">
             <span class="server-icon-large">🖥️</span>
@@ -324,7 +324,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         </div>
         <div class="chart-legend-container">
           <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Toggle protection (loading...)">
-            ⏻
+            ●
           </button>
           <div class="chart-legend">
             <div class="legend-item">
@@ -349,23 +349,23 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             ⚙️
           </button>
         </div>
-      </div>
-    `;
+      </div >
+  `;
   }).join('');
 
   container.innerHTML = `
-      <div class="view-header">
+  < div class="view-header" >
         <h1 class="view-title">Servers</h1>
         <button class="btn btn-primary btn-sm" id="add-server-btn">
           Add Server
         </button>
-      </div>
-      <div class="view-body">
-        <div class="list">
-          ${initialServerItems}
-        </div>
-      </div>
-    `;
+      </div >
+  <div class="view-body">
+    <div class="list">
+      ${initialServerItems}
+    </div>
+  </div>
+`;
 
   // Event listeners
   document.getElementById('add-server-btn').addEventListener('click', () => {
@@ -406,16 +406,16 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         if (result.success) {
           // Update all affected server buttons
           result.affectedServers.forEach(affectedServer => {
-            const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
+            const affectedBtn = document.querySelector(`.protection - btn[data - server - id="${affectedServer.id}"]`);
             if (affectedBtn) {
               affectedBtn.classList.remove('protection-loading');
               if (affectedServer.error) {
                 // Error for this specific server
                 affectedBtn.classList.add('protection-off');
-                affectedBtn.title = `Protection toggle failed: ${affectedServer.error}`;
+                affectedBtn.title = `Protection toggle failed: ${ affectedServer.error } `;
               } else {
                 affectedBtn.classList.add(newState ? 'protection-on' : 'protection-off');
-                affectedBtn.title = `Protection ${newState ? 'enabled' : 'disabled'}. Click to ${newState ? 'disable' : 'enable'}.`;
+                affectedBtn.title = `Protection ${ newState ? 'enabled' : 'disabled' }. Click to ${ newState ? 'disable' : 'enable' }.`;
               }
               affectedBtn.disabled = false;
             }
@@ -423,7 +423,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
           const successCount = result.affectedServers.filter(s => !s.error).length;
           window.app.showToast(
-            `Protection ${newState ? 'enabled' : 'disabled'} for ${successCount} server(s)`,
+            `Protection ${ newState ? 'enabled' : 'disabled' } for ${ successCount } server(s)`,
             'success'
           );
         }
@@ -481,48 +481,30 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
         // Store server data for change detection
         serverDataMap[server.id] = { rules, counts, version, isOnline };
-        Logger.debug(`${server.name}: ${rules.length} rules, counts:`, counts);
-        Logger.debug(`${server.name} rulesResult:`, rulesResult);
-
-        // Fetch protection status (async, don't wait)
-        window.app.sendMessage('getProtectionStatus', { serverId: server.id })
-          .then(result => {
-            const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
-            if (protectionBtn && result.success) {
-              protectionBtn.classList.remove('protection-loading');
-              protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
-              protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
-            }
-          })
-          .catch(err => {
-            Logger.error(`Failed to get protection status for ${server.name}:`, err);
-            const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
-            if (protectionBtn) {
-              protectionBtn.classList.remove('protection-loading');
-              protectionBtn.classList.add('protection-off');
-              protectionBtn.title = 'Failed to load protection status';
-            }
-          });
+        Logger.debug(`${ server.name }: ${ rules.length } rules, counts: `, counts);
+        Logger.debug(`${ server.name } rulesResult: `, rulesResult);
 
         // Find groups this server belongs to
         const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
         const groupBadgesHtml = serverGroups.length > 0 ? `
-        <div class="server-groups-inline">
-          ${serverGroups.map(group => `
+  < div class="server-groups-inline" >
+    ${
+  serverGroups.map(group => `
             <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
               📁 ${escapeHtml(group.name)}
             </span>
-          `).join('')}
-        </div>
-      ` : '';
+          `).join('')
+}
+        </div >
+  ` : '';
 
         // Update the server card
-        const serverCard = document.getElementById(`server-${server.id}`);
+        const serverCard = document.getElementById(`server - ${ server.id } `);
         if (serverCard) {
           const chartHtml = createDonutChart(counts);
 
           const statusHtml = `
-          <div class="server-info">
+  < div class="server-info" >
             <div class="server-name">
               <span class="server-icon-large">🖥️</span>
               ${escapeHtml(server.name)}
@@ -532,7 +514,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></span>
               <span class="badge badge-secondary" style="font-size: 10px;">${escapeHtml(version)}</span>
             </div>
-          </div>
+          </div >
           <div class="chart-legend-container">
             <div class="chart-legend">
               <div class="legend-item">
@@ -557,7 +539,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               ⚙️
             </button>
           </div>
-        `;
+`;
           serverCard.innerHTML = statusHtml;
 
           // Re-attach click handler
@@ -590,13 +572,13 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           }
         }
       } catch (error) {
-        Logger.error(`Failed to fetch data for ${server.name}:`, error);
+        Logger.error(`Failed to fetch data for ${ server.name }: `, error);
 
         // Update with error state
-        const serverCard = document.getElementById(`server-${server.id}`);
+        const serverCard = document.getElementById(`server - ${ server.id } `);
         if (serverCard) {
           const errorHtml = `
-          <div class="server-info">
+  < div class="server-info" >
             <div class="server-name">
               <span class="server-icon-large">🖥️</span>
               ${escapeHtml(server.name)}
@@ -605,7 +587,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               <span class="status-indicator status-offline"></span>
               <span class="text-xs text-tertiary">Offline</span>
             </div>
-          </div>
+          </div >
           <div class="donut-chart-container">
             <div class="chart-loading">
               <span class="chart-loading-text">Error</span>
@@ -617,7 +599,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               ⚙️
             </button>
           </div>
-        `;
+`;
           serverCard.innerHTML = errorHtml;
 
           // Re-attach event listeners
@@ -635,6 +617,35 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     // Save snapshot after all servers are loaded
     Logger.debug('Saving snapshot. serverDataMap:', serverDataMap);
     await saveUISnapshot(servers, groups, serverDataMap);
+  }
+
+  // **ALWAYS fetch protection status for all servers** (regardless of cache state)
+  Logger.info('[Protection] Fetching protection status for all servers...');
+  for (const server of servers) {
+    Logger.debug(`[Protection] Fetching status for ${ server.name }(${ server.id })`);
+    
+    window.app.sendMessage('getProtectionStatus', { serverId: server.id })
+      .then(result => {
+        Logger.debug(`[Protection] Status received for ${ server.name }: `, result);
+        const protectionBtn = document.querySelector(`.protection - btn[data - server - id="${server.id}"]`);
+        if (protectionBtn && result.success) {
+          protectionBtn.classList.remove('protection-loading');
+          protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
+          protectionBtn.title = `Protection ${ result.enabled ? 'enabled' : 'disabled' }. Click to ${ result.enabled ? 'disable' : 'enable' }.`;
+          Logger.info(`[Protection] ${ server.name }: ${ result.enabled ? 'ON' : 'OFF' }${ result.fromCache ? ' (cached)' : '' } `);
+        } else {
+          Logger.warn(`[Protection] Button not found or result failed for ${ server.name }`);
+        }
+      })
+      .catch(err => {
+        Logger.error(`[Protection] Failed to get status for ${ server.name }: `, err);
+        const protectionBtn = document.querySelector(`.protection - btn[data - server - id="${server.id}"]`);
+        if (protectionBtn) {
+          protectionBtn.classList.remove('protection-loading');
+          protectionBtn.classList.add('protection-off');
+          protectionBtn.title = 'Failed to load protection status';
+        }
+      });
   }
 }
 
