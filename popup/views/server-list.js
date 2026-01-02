@@ -489,7 +489,6 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   if (shouldFetch) {
     Logger.info('[Performance] Fetching fresh server data');
     const serverDataMap = {};
-    const serverDataMap = {};
 
     // Use for...of instead of forEach to properly await async operations
     for (const server of servers) {
