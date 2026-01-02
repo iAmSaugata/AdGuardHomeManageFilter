@@ -1841,4 +1841,12 @@ opacity: 0.3;
     display: flex;
     align-items: center;
     gap: 4px;
+    min-height: 0;
+}
+
+/* Ensure button doesn't add vertical space */
+.chart-legend-container .protection-btn {
+    align-self: center;
+    margin-top: 0;
+    margin-bottom: 0;
 }
