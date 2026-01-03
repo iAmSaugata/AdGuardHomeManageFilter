@@ -193,7 +193,13 @@ const messageHandlers = {
         if (!server) {
             throw new Error('Server not found');
         }
-        return await apiClient.setRules(server, rules);
+        const result = await apiClient.setRules(server, rules);
+
+        // Clear cache after rules update to ensure fresh data on next load
+        // This handles: individual rule changes, group create/update operations
+        await storage.clearCache(serverId);
+
+        return result;
     },
 
     async getUserRules({ serverId }) {

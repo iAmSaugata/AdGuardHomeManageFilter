@@ -96,72 +96,94 @@
 }
 
 /* Toggle Group (Block/Allow) */
-/* Toggle Group (Block/Allow) */
+/* Toggle Group (Block/Allow) - Ported from add-rule.css */
 .adguard-toggle-group {
     display: flex;
     gap: 12px;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 24px;
-    background: transparent;
-    padding: 0;
+}
+
+.adguard-toggle-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.adguard-toggle-wrapper input[type="checkbox"] {
+    position: relative;
+    width: 38px;
+    height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #22c55e;
+    /* Green */
+    outline: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
     border: none;
 }
 
-.adguard-toggle-btn {
-    flex: 1;
-    padding: 12px 16px;
-    border: 1px solid #334155;
-    background: #0f172a;
-    color: #94a3b8;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
+/* Block Toggle (Checked = Block = Red) */
+.adguard-toggle-wrapper input[type="checkbox"]:checked {
+    background-color: #ef4444;
 }
 
-.adguard-toggle-btn:hover {
-    border-color: #475569;
-    color: #e2e8f0;
-    background: #1e293b;
+/* Importance Toggle (Checked = Green) */
+.adguard-toggle-wrapper input[type="checkbox"].adguard-importance {
+    background-color: #6b7280;
+    /* Gray */
 }
 
-.adguard-toggle-btn.active {
-    background: #dc2626;
-    border-color: #dc2626;
-    color: white;
-    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+.adguard-toggle-wrapper input[type="checkbox"].adguard-importance:checked {
+    background-color: #22c55e;
 }
 
-.adguard-toggle-btn.allow.active {
-    background: #16a34a;
-    border-color: #16a34a;
-    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);
-}
-
-/* Add a subtle glow/shine effect for active state */
-.adguard-toggle-btn.active::after {
+.adguard-toggle-wrapper input[type="checkbox"]::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.2);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background-color: white;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
+
+.adguard-toggle-wrapper input[type="checkbox"]:checked::before {
+    transform: translateX(18px);
+}
+
+.adguard-toggle-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.adguard-toggle-text.block {
+    color: #ef4444;
+}
+
+.adguard-toggle-text.allow {
+    color: #22c55e;
+}
+
 
 /* Form Elements */
 .adguard-form-label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-weight: 600;
     color: #cbd5e1;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 /* CUSTOM DROPDOWN (Replacing Select) */
@@ -177,7 +199,7 @@
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     color: #f1f5f9;
     cursor: pointer;
     display: flex;
@@ -190,10 +212,13 @@
     border-color: #475569;
 }
 
+/* When open (Upwards) */
 .adguard-select-trigger.open {
     border-color: #4caf50;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 .adguard-select-arrow {
@@ -208,20 +233,22 @@
 
 .adguard-select-options {
     position: absolute;
-    top: 100%;
+    top: auto;
+    bottom: 100%;
+    /* Put ABOVE */
     left: 0;
     right: 0;
     background: #1e293b;
     border: 1px solid #334155;
-    border-top: none;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-    max-height: 140px;
-    /* Reduced to prevent cutoff */
+    border-bottom: none;
+    /* No bottom border */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    max-height: 180px;
     overflow-y: auto;
     z-index: 10;
     display: none;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .adguard-select-options.open {
@@ -231,14 +258,12 @@
 
 .adguard-select-option {
     padding: 8px 12px;
-    /* Reduced padding */
     color: #cbd5e1;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    /* Smaller font */
     transition: background 0.15s;
 }
 
@@ -255,9 +280,7 @@
 
 .adguard-optgroup-label {
     padding: 6px 10px;
-    /* Reduced padding */
     font-size: 10px;
-    /* Smaller font */
     font-weight: 700;
     color: #64748b;
     text-transform: uppercase;

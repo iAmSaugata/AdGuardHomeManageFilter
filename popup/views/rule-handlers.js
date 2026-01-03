@@ -284,6 +284,12 @@ async function performDeleteRule(ruleItem, serverId, allRules, ruleIndex) {
             setTimeout(() => {
                 ruleItem.remove();
 
+                // Re-index all remaining rules to match the updated array
+                const remainingRules = document.querySelectorAll('.rule-item');
+                remainingRules.forEach((item, newIndex) => {
+                    item.dataset.ruleIndex = newIndex;
+                });
+
                 // Update counts
                 const counts = getRuleCounts(allRules);
                 document.querySelector('.badge-success').textContent = `${counts.allow} Allow`;

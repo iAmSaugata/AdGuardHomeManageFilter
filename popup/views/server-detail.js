@@ -3,9 +3,12 @@
 
 import { escapeHtml, classifyRule, getRuleCounts, showConfirmDialog } from '../utils.js';
 import { handleEditRule, handleDeleteRule } from './rule-handlers.js';
+import { Logger } from '../utils/logger.js';
 
 export async function renderServerDetail(container, data = {}) {
   const { serverId } = data;
+  const startTime = performance.now();
+  Logger.info(`[Performance] Server detail view started for ${serverId}`);
 
   if (!serverId) {
     container.innerHTML = `
@@ -21,6 +24,7 @@ export async function renderServerDetail(container, data = {}) {
   }
 
   // Show loading state
+  const loadingStartTime = performance.now();
   container.innerHTML = `
     <div class="view-header">
       <button class="header-back-btn" id="back-btn">
@@ -35,6 +39,7 @@ export async function renderServerDetail(container, data = {}) {
       <div class="skeleton skeleton-text"></div>
     </div>
   `;
+  Logger.debug(`[Performance] Loading skeleton rendered in ${(performance.now() - loadingStartTime).toFixed(2)}ms`);
 
   // Set up back button immediately
   document.getElementById('back-btn').addEventListener('click', () => {
@@ -43,7 +48,9 @@ export async function renderServerDetail(container, data = {}) {
 
   try {
     // Fetch server info and rules
+    const getServerStartTime = performance.now();
     const server = await window.app.sendMessage('getServer', { id: serverId });
+    Logger.debug(`[Performance] getServer completed in ${(performance.now() - getServerStartTime).toFixed(2)}ms`);
 
     if (!server) {
       throw new Error('Server not found');
@@ -56,17 +63,48 @@ export async function renderServerDetail(container, data = {}) {
     let warning = null;
 
     try {
-      [serverInfo, rulesResult] = await Promise.all([
-        window.app.sendMessage('getServerInfo', { serverId }).catch(() => null),
-        window.app.sendMessage('getServerRules', { serverId })
-      ]);
+      const fetchStartTime = performance.now();
+      Logger.info(`[Performance] Starting parallel fetch for serverInfo and rules...`);
+
+      // Try to get cached version from UI snapshot first
+      const snapshot = await window.app.sendMessage('getUISnapshot');
+      const cachedVersion = snapshot?.serverData?.[serverId]?.version;
+
+      if (cachedVersion) {
+        Logger.info(`[Performance] Using cached version: ${cachedVersion}`);
+        serverInfo = { version: cachedVersion };
+
+        // Only fetch rules (skip slow serverInfo API call)
+        rulesResult = await window.app.sendMessage('getServerRules', { serverId });
+      } else {
+        Logger.warn(`[Performance] No cached version, fetching from network...`);
+        // No cache - fetch both (fallback to network)
+        [serverInfo, rulesResult] = await Promise.all([
+          window.app.sendMessage('getServerInfo', { serverId }).catch(() => null),
+          window.app.sendMessage('getServerRules', { serverId })
+        ]);
+      }
+
+      const fetchDuration = performance.now() - fetchStartTime;
+      Logger.info(`[Performance] Parallel fetch completed in ${fetchDuration.toFixed(2)}ms`);
+      Logger.debug(`[Performance] - serverInfo: ${serverInfo ? 'success' : 'null'}`);
+      Logger.debug(`[Performance] - rulesResult fromCache: ${rulesResult.fromCache || false}`);
+      Logger.debug(`[Performance] - rules count: ${rulesResult.data?.rules?.length || 0}`);
 
       fromCache = rulesResult.fromCache || false;
       warning = rulesResult.warning || null;
+
+      if (fromCache) {
+        Logger.info(`[Performance] ✅ Rules loaded from CACHE (instant)`);
+      } else {
+        Logger.warn(`[Performance] ⚠️ Rules loaded from NETWORK (slow) - Duration: ${fetchDuration.toFixed(2)}ms`);
+      }
     } catch (error) {
       // If fetch fails, try cache
-      console.error('Failed to fetch rules:', error);
+      Logger.error('[Performance] Failed to fetch rules:', error);
+      const cacheStartTime = performance.now();
       const cached = await window.app.sendMessage('getCache', { serverId });
+      Logger.debug(`[Performance] Cache fallback took ${(performance.now() - cacheStartTime).toFixed(2)}ms`);
 
       if (cached && cached.rules) {
         rulesResult = { success: true, data: cached };
@@ -81,10 +119,20 @@ export async function renderServerDetail(container, data = {}) {
     const version = serverInfo?.version || 'Unknown';
 
     // Render the view
+    const renderStartTime = performance.now();
     renderServerDetailView(container, server, version, rules, fromCache, warning, serverId);
+    const renderDuration = performance.now() - renderStartTime;
+    Logger.debug(`[Performance] View rendered in ${renderDuration.toFixed(2)}ms`);
+
+    const totalDuration = performance.now() - startTime;
+    Logger.info(`[Performance] ⏱️ TOTAL server detail load: ${totalDuration.toFixed(2)}ms`);
+
+    if (totalDuration > 500) {
+      Logger.warn(`[Performance] ⚠️ SLOW LOAD detected (${totalDuration.toFixed(2)}ms > 500ms)`);
+    }
 
   } catch (error) {
-    console.error('Failed to load server detail:', error);
+    Logger.error('Failed to load server detail:', error);
     window.app.showToast('Failed to load server: ' + error.message, 'error');
 
     container.innerHTML = `

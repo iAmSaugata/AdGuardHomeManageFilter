@@ -82,10 +82,12 @@ describe('Helpers Module', () => {
             expect(result).toEqual(['||z.com^', '||a.com^']);
         });
 
-        it('should keep all comments even if duplicate', () => {
+        it('should deduplicate comments like other rules', () => {
             const rules = ['!comment1', '||a.com^', '!comment1'];
             const result = dedupRules(rules);
-            expect(result.filter(r => r.startsWith('!'))).toHaveLength(2);
+            // Comments are now deduplicated correctly to prevent double counting
+            expect(result.filter(r => r.startsWith('!'))).toHaveLength(1);
+            expect(result).toEqual(['!comment1', '||a.com^']);
         });
 
         it('should skip empty rules', () => {
@@ -162,9 +164,16 @@ describe('Helpers Module', () => {
 
     describe('classifyRule()', () => {
         it('should classify block rules', () => {
+            // GOLDEN RULE: Only || prefix = block
             expect(classifyRule('||example.com^')).toBe('block');
-            expect(classifyRule('|https://example.com')).toBe('block');
-            expect(classifyRule('example.com')).toBe('block');
+            expect(classifyRule('||ads.com^$third-party')).toBe('block');
+        });
+
+        it('should classify single pipe and plain domains as disabled per GOLDEN RULE', () => {
+            // Single pipe is NOT block per GOLDEN RULE
+            expect(classifyRule('|https://example.com')).toBe('disabled');
+            // Plain domain is NOT block per GOLDEN RULE
+            expect(classifyRule('example.com')).toBe('disabled');
         });
 
         it('should classify allow rules', () => {

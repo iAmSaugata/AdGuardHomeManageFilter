@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add to AdGuard Home</title>
     <link rel="stylesheet" href="../popup/popup.css">
+    <link rel="stylesheet" href="../popup/add-rule.css">
     <style>
         body {
             width: 320px;
@@ -117,46 +118,90 @@
             margin-bottom: var(--space-3);
             font-size: var(--font-size-sm);
         }
+
+        /* Override dropdown to open upwards properly */
+        .dropdown-options {
+            position: absolute !important;
+            top: auto !important;
+            bottom: 100% !important;
+            margin-bottom: -1px;
+            /* Overlap border */
+            width: 100%;
+            z-index: 1000;
+
+            /* Rounded TOP, Flat Bottom */
+            border-bottom: none !important;
+            border-top: 1px solid var(--color-border) !important;
+            border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Adjust selected border for upward opening */
+        .dropdown-selected.open {
+            /* Flat TOP, Rounded Bottom */
+            border-top-left-radius: 0 !important;
+            border-top-right-radius: 0 !important;
+            border-bottom-left-radius: var(--radius-md) !important;
+            border-bottom-right-radius: var(--radius-md) !important;
+            border-color: var(--color-accent) !important;
+        }
+
+        /* Hide scrollbar on body if dropdown is large */
+        body {
+            overflow: visible;
+        }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <div class="dialog-header">
-            <h1 class="dialog-title">Add to AdGuard Home</h1>
-            <div class="url-display" id="url-display">Loading...</div>
-        </div>
+        <div class="view-body" style="margin-top: 1px;">
+            <div class="add-rule-card" id="form-container" style="display: none;">
+                <div class="add-rule-header">
+                    <h2>ADD TO ADGUARD HOME</h2>
+                </div>
+                <div class="add-rule-body">
+                    <!-- URL Display (Readonly Input to match Add Rule style) -->
+                    <input type="text" id="url-display" class="add-rule-input" readonly />
 
-        <div id="error-container"></div>
+                    <!-- Custom Dropdown Structure -->
+                    <div class="custom-dropdown" id="rule-target-dropdown">
+                        <div class="dropdown-selected" id="dropdown-selected">
+                            <span class="dropdown-text">None</span>
+                            <svg class="dropdown-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="dropdown-options" id="dropdown-options">
+                            <!-- Options populated by JS -->
+                        </div>
+                    </div>
 
-        <div id="form-container" style="display: none;">
-            <div class="form-section">
-                <div class="toggle-group">
-                    <button class="toggle-btn active" id="block-btn" data-action="block">
-                        🚫 Block
-                    </button>
-                    <button class="toggle-btn allow" id="allow-btn" data-action="allow">
-                        ✅ Allow
-                    </button>
+                    <div class="add-rule-toggles">
+                        <label class="toggle-wrapper toggle-left">
+                            <input type="checkbox" id="block-toggle" checked>
+                            <span id="block-label" class="toggle-text block">BLOCK</span>
+                        </label>
+
+                        <label class="toggle-wrapper toggle-right">
+                            <span id="importance-label" class="toggle-text">IMPORTANCE</span>
+                            <input type="checkbox" id="importance-toggle" disabled>
+                        </label>
+                    </div>
+
+                    <div id="error-container"></div>
+
+                    <button id="add-btn" class="btn btn-primary" style="width: 100%;">ADD TO RULES</button>
+                    <button id="cancel-btn" class="btn btn-secondary"
+                        style="width: 100%; margin-top: 8px;">CANCEL</button>
                 </div>
             </div>
 
-            <div class="form-section">
-                <label class="form-label">Add to:</label>
-                <select id="target-selector">
-                    <option value="">Select target...</option>
-                </select>
+            <div id="loading-container" class="loading">
+                <div class="spinner"></div>
+                <p>Loading...</p>
             </div>
-
-            <div class="actions">
-                <button class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                <button class="btn btn-primary" id="add-btn">Add Rule</button>
-            </div>
-        </div>
-
-        <div id="loading-container" class="loading">
-            <div class="spinner"></div>
-            <p>Loading...</p>
         </div>
     </div>
 

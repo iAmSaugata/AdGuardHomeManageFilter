@@ -12,8 +12,8 @@ const STORAGE_KEYS = {
 
 const DEFAULT_SETTINGS = {
   autoSync: true,
-  preferLatest: true,
-  cacheTTLMinutes: 30,
+  preferLatest: false, // Use cache first for instant popup loading, update in background
+  cacheTTLMinutes: 43200, // 30 days (default high TTL, relies on SWR background sync)
   theme: 'dark',
   logLevel: 0 // 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG (production default: ERROR only)
 };
@@ -171,7 +171,18 @@ export async function deleteGroup(id) {
 
 export async function getSettings() {
   const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
-  return { ...DEFAULT_SETTINGS, ...result[STORAGE_KEYS.SETTINGS] };
+  let savedSettings = result[STORAGE_KEYS.SETTINGS] || {};
+
+  // Migration: Ensure preferLatest is FALSE for SWR performance (Stale-While-Revalidate)
+  // We want instant load (cache) + background sync
+  if (savedSettings.preferLatest === true) {
+    console.log('[Migration] Optimizing for SWR: Setting preferLatest to false');
+    savedSettings.preferLatest = false;
+    await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: savedSettings });
+  }
+
+  // Merge with defaults (defaults provide fallback for missing keys)
+  return { ...DEFAULT_SETTINGS, ...savedSettings };
 }
 
 export async function updateSettings(updates) {

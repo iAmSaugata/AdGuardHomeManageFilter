@@ -238,7 +238,6 @@ async function updatePreview() {
 
         // DEBUG: Log deduplication details
         Logger.debug('[Group Merge] Total rules before dedup:', normalized.length);
-        Logger.debug('[Group Merge] Sample rules:', normalized.slice(0, 5));
 
         const deduped = dedupRules(normalized);
 
@@ -249,10 +248,7 @@ async function updatePreview() {
 
         Logger.debug('[Group Merge] Merged counts:', mergedCounts);
 
-        // DEBUG: Show all disabled rules to identify why count is wrong
-        const disabledRules = deduped.filter(r => classifyRule(r) === 'disabled');
-        Logger.debug('[Group Merge] All disabled rules:', disabledRules);
-        Logger.debug('[Group Merge] Disabled count:', disabledRules.length);
+
 
 
         // Display warnings

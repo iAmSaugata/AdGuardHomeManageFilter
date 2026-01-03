@@ -184,20 +184,18 @@
                     <div id="adguard-error-container" role="alert" aria-live="polite"></div>
                     
                     <div id="adguard-form-container">
-                        <!-- Modern Segmented Control -->
-                        <div class="adguard-toggle-group" role="group" aria-label="Rule type selection">
-                            <button class="adguard-toggle-btn active" id="adguard-block-btn" aria-pressed="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM5.16565 7.0982C4.16278 8.49075 3.57143 10.1804 3.57143 12C3.57143 16.6549 7.34509 20.4286 12 20.4286C13.8196 20.4286 15.5093 19.8372 16.9018 18.8344L5.16565 7.0982ZM18.8344 16.9018C19.8372 15.5093 20.4286 13.8196 20.4286 12C20.4286 7.34509 16.6549 3.57143 12 3.57143C10.1804 3.57143 8.49075 4.16278 7.0982 5.16565L18.8344 16.9018Z"/>
-                                </svg>
-                                Block
-                            </button>
-                            <button class="adguard-toggle-btn allow" id="adguard-allow-btn" aria-pressed="false">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 8.29289C17.0976 8.68342 17.0976 9.31658 16.7071 9.70711L10.7071 15.7071C10.3166 16.0976 9.68342 16.0976 9.29289 15.7071L7.29289 13.7071C6.90237 13.3166 6.90237 12.6834 7.29289 12.2929C7.68342 11.9024 8.31658 11.9024 8.70711 12.2929L10 13.5858L15.2929 8.29289C15.6834 7.90237 16.3166 7.90237 16.7071 8.29289Z"/>
-                                </svg>
-                                Allow
-                            </button>
+                        <div id="adguard-form-content">
+                        <!-- Toggles: Block/Allow & Importance -->
+                        <div class="adguard-toggle-group">
+                            <label class="adguard-toggle-wrapper">
+                                <input type="checkbox" id="adguard-block-toggle" checked>
+                                <span class="adguard-toggle-text block" id="adguard-block-label">BLOCK</span>
+                            </label>
+
+                            <label class="adguard-toggle-wrapper">
+                                <span class="adguard-toggle-text important">IMPORTANCE</span>
+                                <input type="checkbox" id="adguard-importance-toggle" class="adguard-importance">
+                            </label>
                         </div>
                         
                         <label class="adguard-form-label">Add to:</label>
@@ -207,13 +205,15 @@
                             <!-- Trigger Area -->
                             <div class="adguard-select-trigger" id="adguard-select-trigger" tabindex="0">
                                 <span id="adguard-select-label">Loading...</span>
-                                <span class="adguard-select-arrow">▼</span>
+                                <svg class="adguard-select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
                             </div>
                             
                             <!-- Hidden Select for form logic compatibility -->
                             <input type="hidden" id="adguard-target-value" value="">
                             
-                            <!-- Dropdown Menu -->
+                            <!-- Dropdown Menu (Opens Upward via CSS) -->
                             <div class="adguard-select-options" id="adguard-select-options">
                                 <!-- Options injected via JS -->
                             </div>
@@ -224,6 +224,7 @@
                         <div class="adguard-actions">
                             <button class="adguard-btn adguard-btn-secondary" id="adguard-cancel-btn" aria-label="Cancel and close">Cancel</button>
                             <button class="adguard-btn adguard-btn-primary" id="adguard-add-btn" aria-label="Add filtering rule">Add Rule</button>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -263,8 +264,9 @@
     }
 
     async function initializeModal(url, container) {
-        const blockBtn = container.querySelector('#adguard-block-btn');
-        const allowBtn = container.querySelector('#adguard-allow-btn');
+        const blockToggle = container.querySelector('#adguard-block-toggle');
+        const blockLabel = container.querySelector('#adguard-block-label');
+        const importanceToggle = container.querySelector('#adguard-importance-toggle');
 
         // Custom Dropdown Elements
         const dropdown = container.querySelector('#adguard-custom-dropdown');
@@ -340,15 +342,6 @@
 
         // -----------------------------
 
-        function setAction(action) {
-            selectedAction = action;
-            blockBtn.classList.toggle('active', action === 'block');
-            allowBtn.classList.toggle('active', action === 'allow');
-            blockBtn.setAttribute('aria-pressed', action === 'block');
-            allowBtn.setAttribute('aria-pressed', action === 'allow');
-            updatePreview();
-        }
-
         function updatePreview() {
             try {
                 const { hostname, error } = parseInput(url);
@@ -359,17 +352,35 @@
                 }
                 // Check if target is selected (optional logic)
 
-                const rule = generateRule(hostname, selectedAction === 'block', false);
+                const isBlock = blockToggle.checked;
+                const isImportant = importanceToggle.checked;
+                const rule = generateRule(hostname, isBlock, isImportant);
+
                 rulePreview.textContent = rule;
-                rulePreview.className = 'adguard-rule-preview ' + (selectedAction === 'block' ? '' : 'allow');
+                rulePreview.className = 'adguard-rule-preview ' + (isBlock ? '' : 'allow');
+
+                // Update label text
+                blockLabel.textContent = isBlock ? 'BLOCK' : 'ALLOW';
+                // Also update class for color? CSS handles label color via sibling selector?
+                // No, CSS uses .toggle-text.block (red) / .allow (green).
+                // We need to toggle the class on the span label.
+                if (isBlock) {
+                    blockLabel.classList.add('block');
+                    blockLabel.classList.remove('allow');
+                } else {
+                    blockLabel.classList.add('allow');
+                    blockLabel.classList.remove('block');
+                }
+
+                selectedAction = isBlock ? 'block' : 'allow'; // Update global state for Add Button
             } catch (error) {
                 rulePreview.textContent = error.message;
                 rulePreview.className = 'adguard-rule-preview error';
             }
         }
 
-        blockBtn.addEventListener('click', () => setAction('block'));
-        allowBtn.addEventListener('click', () => setAction('allow'));
+        blockToggle.addEventListener('change', updatePreview);
+        importanceToggle.addEventListener('change', updatePreview);
 
         // Listen to hidden input changes?? No, we call updatePreview directly on option click.
 
@@ -380,12 +391,12 @@
         });
 
         // Pass the HIDDEN input value
-        addBtn.addEventListener('click', () => handleAddRule(url, hiddenInput.value, selectedAction, addBtn, errorContainer, container));
+        addBtn.addEventListener('click', () => handleAddRule(url, hiddenInput.value, selectedAction, importanceToggle.checked, addBtn, errorContainer, container));
 
         updatePreview();
     }
 
-    async function handleAddRule(url, target, action, addBtn, errorContainer, container) {
+    async function handleAddRule(url, target, action, isImportant, addBtn, errorContainer, container) {
         if (!target) {
             showError(errorContainer, 'Please select a target');
             return;
@@ -398,7 +409,7 @@
             const { hostname, error } = parseInput(url);
             if (error) throw new Error(error);
 
-            const rule = generateRule(hostname, action === 'block', false);
+            const rule = generateRule(hostname, action === 'block', isImportant);
             const [type, id] = target.split(':');
             let serverIds = [];
 
@@ -459,9 +470,8 @@
                 const shouldReplace = await showConfirmationDialog(hostname, conflictingRule, rule, serverIds.length, errorContainer, container);
 
                 if (!shouldReplace) {
-                    // showError(errorContainer, 'Operation cancelled'); // Not needed as cancellation now closes the modal
-                    // addBtn.disabled = false;
-                    // addBtn.textContent = 'Add Rule';
+                    addBtn.disabled = false;
+                    addBtn.textContent = 'Add Rule';
                     return;
                 }
 
@@ -555,8 +565,13 @@
                     const option = document.createElement('div');
                     option.className = 'adguard-select-option';
                     option.dataset.value = `group:${escapeHtml(group.id)}`;
-                    // Use innerHTML to render Emoji/Icon
-                    option.innerHTML = `<span style="font-size: 16px;">📁</span> ${escapeHtml(group.name)}`;
+                    // Use SVG Icon (Group - Orange)
+                    option.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="flex-shrink: 0;">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        ${escapeHtml(group.name)}
+                    `;
 
                     optionsContainer.appendChild(option);
 
@@ -578,8 +593,19 @@
                     option.className = 'adguard-select-option';
                     option.dataset.value = `server:${escapeHtml(server.id)}`;
 
-                    // Use innerHTML to render Emoji/Icon
-                    option.innerHTML = `<span style="font-size: 16px;">🖥️</span> ${escapeHtml(server.name)}`;
+                    // Use SVG Icon (Server - Blue)
+                    option.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#42A5F5" stroke="#1976D2" stroke-width="2" style="flex-shrink: 0;">
+                            <rect x="2" y="4" width="13" height="10" rx="2"></rect>
+                            <line x1="8.5" y1="14" x2="8.5" y2="17"></line>
+                            <line x1="4.5" y1="17" x2="12.5" y2="17"></line>
+                            <rect x="17" y="4" width="5" height="13" rx="1"></rect>
+                            <circle cx="19.5" cy="7" r="1" fill="#42A5F5" stroke="none"></circle>
+                            <line x1="18.5" y1="12" x2="20.5" y2="12"></line>
+                            <line x1="18.5" y1="14" x2="20.5" y2="14"></line>
+                        </svg>
+                        ${escapeHtml(server.name)}
+                    `;
 
                     optionsContainer.appendChild(option);
 
@@ -636,17 +662,23 @@
     }
 
     // Show confirmation dialog within modal
+    // Show confirmation dialog within modal
     async function showConfirmationDialog(domain, existingRule, newRule, serverCount, errorContainer, container) {
         return new Promise((resolve) => {
             const existingType = getRuleType(existingRule);
             const newType = getRuleType(newRule);
 
-            // Store original form HTML to restore on cancel
-            const formContainer = document.getElementById('adguard-form-container');
-            // const originalFormHTML = formContainer.innerHTML; // Removing complex restore logic
+            const formContainer = container.querySelector('#adguard-form-container');
+            const formContent = container.querySelector('#adguard-form-content');
 
-            // Replace entire modal content with compact, dark confirmation dialog
-            formContainer.innerHTML = `
+            // Hide original form content (preserves listeners)
+            formContent.style.display = 'none';
+
+            // Create confirmation dialog wrapper
+            const confirmWrapper = document.createElement('div');
+            confirmWrapper.id = 'adguard-confirmation-dialog';
+
+            confirmWrapper.innerHTML = `
                 <div role="alertdialog" aria-labelledby="conflict-title" aria-describedby="conflict-description" style="position: relative; padding: 8px;">
                     <!-- Background card layer for depth -->
                     <div style="position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; background: #1a1d24; border-radius: 8px; border: 1px solid #23262e; opacity: 0.7;"></div>
@@ -686,25 +718,35 @@
             `;
 
             errorContainer.innerHTML = '';
+            formContainer.appendChild(confirmWrapper);
 
-            const confirmCancelBtn = formContainer.querySelector('#confirm-cancel');
-            const replaceBtn = formContainer.querySelector('#confirm-replace');
+            const confirmCancelBtn = confirmWrapper.querySelector('#confirm-cancel');
+            const replaceBtn = confirmWrapper.querySelector('#confirm-replace');
 
-            // Cancel - Just close the modal. Simpler and safer than trying to restore state.
+            // Cancel - Remove dialog, show form, resolve false
             confirmCancelBtn.addEventListener('click', () => {
-                if (container.close) container.close();
-                else container.remove();
+                confirmWrapper.remove();
+                formContent.style.display = 'block';
                 resolve(false);
             });
 
             // Replace All
             replaceBtn.addEventListener('click', () => {
-                // Disable both buttons immediately to prevent duplicate clicks
                 confirmCancelBtn.disabled = true;
                 replaceBtn.disabled = true;
                 replaceBtn.textContent = 'Replacing...';
-
                 errorContainer.innerHTML = '';
+
+                // Keep the confirmation dialog visible while replacing? 
+                // Or remove it? The logic below updates rules.
+                // Let's remove it effectively after processing completes in handleAddRule, 
+                // but handleAddRule doesn't call back.
+
+                // For simplified UX, we'll remove it now, implying "Working..."
+                // But handleAddRule will show success message in errorContainer.
+                confirmWrapper.remove();
+                formContent.style.display = 'block';
+
                 resolve(true);
             });
         });

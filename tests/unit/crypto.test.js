@@ -15,7 +15,7 @@ describe('Crypto Module', () => {
             expect(encrypted).toHaveProperty('version');
             expect(typeof encrypted.ciphertext).toBe('string');
             expect(typeof encrypted.iv).toBe('string');
-            expect(encrypted.version).toBe(1);
+            expect(encrypted.version).toBe(2); // Version bumped for enhanced key derivation
         });
 
         it('should generate unique IVs for same plaintext', async () => {

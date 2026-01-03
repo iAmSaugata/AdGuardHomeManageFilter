@@ -109,10 +109,20 @@ export async function renderServerList(container) {
     Logger.info('[Performance] No cache, fetching fresh data');
     container.innerHTML = `
       <div class="view-header">
-        <h1 class="view-title left-aligned">Servers</h1>
+        <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+        <h1 class="view-title">Servers</h1>
         <div class="header-action-area">
-          <button class="btn btn-primary btn-sm" id="add-server-btn">
-            Add Server
+          <button class="header-icon-btn btn-add" id="add-server-btn" title="Add Server">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </button>
         </div>
       </div>
@@ -243,6 +253,14 @@ async function detectRuleChanges(servers, groups, cachedServerData) {
 // Save UI snapshot for next popup open
 async function saveUISnapshot(servers, groups, serverData) {
   try {
+    // Include protection status in snapshot for instant render
+    const protectionStatus = await chrome.storage.local.get('protectionStatus');
+
+    // Add protection status to each server's data
+    for (const serverId of Object.keys(serverData)) {
+      serverData[serverId].protectionEnabled = protectionStatus.protectionStatus?.[serverId];
+    }
+
     await window.app.sendMessage('setUISnapshot', { servers, groups, serverData });
   } catch (error) {
     Logger.error('Failed to save UI snapshot:', error);
@@ -252,13 +270,33 @@ async function saveUISnapshot(servers, groups, serverData) {
 function renderEmptyState(container) {
   container.innerHTML = `
     <div class="view-header">
+      <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </button>
       <h1 class="view-title">Servers</h1>
-      <button class="btn btn-primary btn-sm" id="add-server-btn">
-        Add Server
+      <button class="header-icon-btn btn-add" id="add-server-btn" title="Add Server">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
       </button>
     </div>
     <div class="empty-state">
-      <div class="empty-state-icon">🖥️</div>
+      <div class="empty-state-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#42A5F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="13" height="10" rx="2"></rect>
+          <line x1="8.5" y1="14" x2="8.5" y2="17"></line>
+          <line x1="4.5" y1="17" x2="12.5" y2="17"></line>
+          <rect x="17" y="4" width="5" height="13" rx="1"></rect>
+          <circle cx="19.5" cy="7" r="1" fill="#42A5F5" stroke="none"></circle>
+          <line x1="18.5" y1="12" x2="20.5" y2="12"></line>
+          <line x1="18.5" y1="14" x2="20.5" y2="14"></line>
+        </svg>
+      </div>
       <div class="empty-state-title">No Servers Yet</div>
       <div class="empty-state-text">
         Add your first AdGuard Home server to get started.
@@ -274,6 +312,13 @@ function renderEmptyState(container) {
   if (addServerBtn) {
     addServerBtn.addEventListener('click', () => {
       window.app.navigateTo('server-form', { mode: 'add' });
+    });
+  }
+
+  const aboutBtn = document.getElementById('about-btn');
+  if (aboutBtn) {
+    aboutBtn.addEventListener('click', () => {
+      window.app.navigateTo('about');
     });
   }
 
@@ -302,7 +347,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       <div class="server-groups-inline">
         ${serverGroups.map(group => `
           <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
-            📁 ${escapeHtml(group.name)}
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name)}
           </span>
         `).join('')}
       </div>
@@ -313,7 +358,15 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         <div class="server-info">
           <div class="server-name">
             <span class="server-icon-large">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="13" height="10" rx="2"></rect>
+                    <line x1="8.5" y1="14" x2="8.5" y2="17"></line>
+                    <line x1="4.5" y1="17" x2="12.5" y2="17"></line>
+                    <rect x="17" y="4" width="5" height="13" rx="1"></rect>
+                    <circle cx="19.5" cy="7" r="1" fill="currentColor" stroke="none"></circle>
+                    <line x1="18.5" y1="12" x2="20.5" y2="12"></line>
+                    <line x1="18.5" y1="14" x2="20.5" y2="14"></line>
+                </svg>
                 ${cached?.isOnline !== undefined ?
         `<span class="status-dot-overlay ${cached.isOnline ? 'online' : 'offline'}"></span>` :
         ''}
@@ -325,7 +378,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         </div>
         <div class="chart-legend-container">
           <div class="protection-group">
-            <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Loading status...">
+            <button class="btn btn-icon protection-btn ${cached?.protectionEnabled !== undefined ? (cached.protectionEnabled ? 'protection-on' : 'protection-off') : 'protection-loading'}" data-server-id="${server.id}" title="${cached?.protectionEnabled !== undefined ? `Protection ${cached.protectionEnabled ? 'enabled' : 'disabled'}. Click to ${cached.protectionEnabled ? 'disable' : 'enable'}.` : 'Loading status...'}">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
             </button>
           </div>
@@ -361,10 +414,20 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
   container.innerHTML = `
       <div class="view-header">
-        <h1 class="view-title left-aligned">Servers</h1>
+        <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+        <h1 class="view-title">Servers</h1>
         <div class="header-action-area">
-          <button class="btn btn-primary btn-sm" id="add-server-btn">
-            Add Server
+          <button class="header-icon-btn btn-add" id="add-server-btn" title="Add Server">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </button>
         </div>
       </div>
@@ -379,6 +442,13 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   document.getElementById('add-server-btn').addEventListener('click', () => {
     window.app.navigateTo('server-form', { mode: 'add' });
   });
+
+  const aboutBtn = document.getElementById('about-btn');
+  if (aboutBtn) {
+    aboutBtn.addEventListener('click', () => {
+      window.app.navigateTo('about');
+    });
+  }
 
   // Edit buttons
   document.querySelectorAll('.edit-server-btn').forEach(btn => {
@@ -417,25 +487,31 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   // Fetch data for each server progressively (even if we have cache, update it)
   const shouldFetch = !cachedServerData || Object.keys(cachedServerData).length === 0;
 
-  // ALWAYS fetch protection status for all servers (even with cached data)
-  // Load from cache first for instant display
-  for (const server of servers) {
+  // Fetch protection status for all servers in parallel
+  // This updates buttons after initial cache render
+  const protectionPromises = servers.map(server =>
     window.app.sendMessage('getProtectionStatus', { serverId: server.id })
-      .then(result => {
-        const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
-        if (protectionBtn && result.success) {
-          // Remove ALL state classes first
-          protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
-          protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
-          // Icon is static SVG, no text update needed
-          protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
-          Logger.debug(`${server.name} protection: ${result.enabled ? 'ON' : 'OFF'}${result.fromCache ? ' (cached)' : ''}`);
-        }
-      })
-      .catch(err => {
-        Logger.error(`Failed to get protection for ${server.name}:`, err);
-      });
-  }
+      .then(result => ({ serverId: server.id, serverName: server.name, result }))
+      .catch(error => ({ serverId: server.id, serverName: server.name, error }))
+  );
+
+  Promise.all(protectionPromises).then(results => {
+    results.forEach(({ serverId, serverName, result, error }) => {
+      if (error) {
+        Logger.error(`Failed to get protection for ${serverName}:`, error);
+        return;
+      }
+
+      const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${serverId}"]`);
+      if (protectionBtn && result.success) {
+        // Remove ALL state classes first
+        protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
+        protectionBtn.classList.add(result.enabled ? 'protection-on' : 'protection-off');
+        protectionBtn.title = `Protection ${result.enabled ? 'enabled' : 'disabled'}. Click to ${result.enabled ? 'disable' : 'enable'}.`;
+        Logger.debug(`${serverName} protection: ${result.enabled ? 'ON' : 'OFF'}${result.fromCache ? ' (cached)' : ''}`);
+      }
+    });
+  });
 
   if (shouldFetch) {
     Logger.info('[Performance] Fetching fresh server data');
@@ -460,19 +536,17 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         const isOnline = serverInfo !== null;
 
         // Store server data for change detection
-        serverDataMap[server.id] = { rules, counts, version, isOnline };
+        serverDataMap[server.id] = { rules, counts, version, isOnline, protectionEnabled: protectionResult?.enabled };
         Logger.debug(`${server.name}: ${rules.length} rules, counts:`, counts);
 
         // Update protection button immediately if we got status
         if (protectionResult) {
+          // Render protection button with cached status if available
           const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
-          if (protectionBtn) {
-            // Remove ALL state classes first
+          if (protectionBtn && cachedServerData?.[server.id]?.protectionEnabled !== undefined) {
             protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
-            protectionBtn.classList.add(protectionResult.enabled ? 'protection-on' : 'protection-off');
-            // Icon is static SVG, no text update needed
-            protectionBtn.title = `Protection ${protectionResult.enabled ? 'enabled' : 'disabled'}. Click to ${protectionResult.enabled ? 'disable' : 'enable'}.`;
-            Logger.debug(`${server.name} protection status: ${protectionResult.enabled ? 'ON' : 'OFF'}${protectionResult.fromCache ? ' (cached)' : ''}`);
+            protectionBtn.classList.add(cachedServerData[server.id].protectionEnabled ? 'protection-on' : 'protection-off');
+            protectionBtn.title = `Protection ${cachedServerData[server.id].protectionEnabled ? 'enabled' : 'disabled'}. Click to ${cachedServerData[server.id].protectionEnabled ? 'disable' : 'enable'}.`;
           }
         } else {
           Logger.warn(`${server.name}: No protection status received`);
@@ -484,7 +558,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         <div class="server-groups-inline">
           ${serverGroups.map(group => `
             <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
-              📁 ${escapeHtml(group.name)}
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name)}
             </span>
           `).join('')}
         </div>

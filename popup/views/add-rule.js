@@ -76,19 +76,46 @@ export async function renderAddRuleSection(container) {
                         placeholder="example.com or ||example.com^"
                     />
                     
-                    <select id="rule-target" class="add-rule-select">
-                        <option value="">None</option>
-                        ${hasGroups ? `
-                            <optgroup label="Groups">
-                                ${groups.map(g => `<option value="group:${g.id}">📁 ${escapeHtml(g.name)}</option>`).join('')}
-                            </optgroup>
-                        ` : ''}
-                        ${hasServers ? `
-                            <optgroup label="Servers">
-                                ${servers.map(s => `<option value="server:${s.id}">🖥️ ${escapeHtml(s.name)}</option>`).join('')}
-                            </optgroup>
-                        ` : ''}
-                    </select>
+                    <!-- Custom Dropdown with SVG Support -->
+                    <div class="custom-dropdown" id="rule-target-dropdown">
+                        <div class="dropdown-selected" id="dropdown-selected">
+                            <span class="dropdown-text">None</span>
+                            <svg class="dropdown-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="dropdown-options" id="dropdown-options">
+                            <!-- 'None' option removed by user request -->
+                            ${hasGroups ? `
+                                <div class="dropdown-label">Groups</div>
+                                ${groups.map(g => `
+                                    <div class="dropdown-option" data-value="group:${g.id}">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#FFA726" stroke="#F57C00" stroke-width="2">
+                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        <span>${escapeHtml(g.name)}</span>
+                                    </div>
+                                `).join('')}
+                            ` : ''}
+                            ${hasServers ? `
+                                <div class="dropdown-label">Servers</div>
+                                ${servers.map(s => `
+                                    <div class="dropdown-option" data-value="server:${s.id}">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#42A5F5" stroke="#1976D2" stroke-width="2">
+                                            <rect x="2" y="4" width="13" height="10" rx="2"></rect>
+                                            <line x1="8.5" y1="14" x2="8.5" y2="17"></line>
+                                            <line x1="4.5" y1="17" x2="12.5" y2="17"></line>
+                                            <rect x="17" y="4" width="5" height="13" rx="1"></rect>
+                                            <circle cx="19.5" cy="7" r="1" fill="#42A5F5" stroke="none"></circle>
+                                            <line x1="18.5" y1="12" x2="20.5" y2="12"></line>
+                                            <line x1="18.5" y1="14" x2="20.5" y2="14"></line>
+                                        </svg>
+                                        <span>${escapeHtml(s.name)}</span>
+                                    </div>
+                                `).join('')}
+                            ` : ''}
+                        </div>
+                    </div>
                     
                     <div class="add-rule-toggles">
                         <label class="toggle-wrapper toggle-left">
@@ -115,13 +142,131 @@ export async function renderAddRuleSection(container) {
 
 function setupEventListeners() {
     const input = document.getElementById('rule-input');
-    const target = document.getElementById('rule-target');
     const blockToggle = document.getElementById('block-toggle');
     const blockLabel = document.getElementById('block-label');
     const importanceToggle = document.getElementById('importance-toggle');
     const importanceLabel = document.getElementById('importance-label');
     const preview = document.getElementById('rule-preview');
     const btn = document.getElementById('add-sync-btn');
+
+    // Custom dropdown elements
+    const dropdown = document.getElementById('rule-target-dropdown');
+    const dropdownSelected = document.getElementById('dropdown-selected');
+    const dropdownOptions = document.getElementById('dropdown-options');
+    let selectedValue = '';
+    let selectedText = 'Select Target';
+
+    // Auto-select first option if available
+    const firstOption = dropdownOptions.querySelector('.dropdown-option[data-value]');
+    if (firstOption) {
+        selectedValue = firstOption.dataset.value;
+        const span = firstOption.querySelector('span');
+        selectedText = span ? span.textContent : firstOption.textContent.trim();
+
+        // Update UI to match
+        const svgClone = firstOption.querySelector('svg')?.cloneNode(true);
+        const dropdownText = dropdownSelected.querySelector('.dropdown-text');
+
+        if (svgClone) {
+            dropdownText.innerHTML = '';
+            svgClone.style.marginRight = '6px';
+            dropdownText.appendChild(svgClone);
+            const textSpan = document.createElement('span');
+            textSpan.textContent = selectedText;
+            dropdownText.appendChild(textSpan);
+        } else {
+            dropdownText.textContent = selectedText;
+        }
+
+        firstOption.classList.add('selected');
+    }
+
+
+    // Toggle dropdown open/close
+    dropdownSelected.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdownOptions.classList.contains('show');
+
+        if (isOpen) {
+            dropdownOptions.classList.remove('show');
+            dropdownSelected.classList.remove('open');
+            dropdownSelected.classList.remove('open-upward');
+            dropdownOptions.classList.remove('open-upward');
+        } else {
+            // Get position for fixed positioning
+            const rect = dropdownSelected.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            const dropdownHeight = 180;
+
+            // Position dropdown
+            dropdownOptions.style.left = rect.left + 'px';
+            dropdownOptions.style.width = rect.width + 'px';
+
+            // Open upward if not enough space below
+            if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                dropdownOptions.style.top = 'auto';
+                dropdownOptions.style.bottom = (window.innerHeight - rect.top) + 'px';
+                dropdownOptions.classList.add('open-upward');
+                dropdownSelected.classList.add('open-upward');
+            } else {
+                dropdownOptions.style.top = rect.bottom + 'px';
+                dropdownOptions.style.bottom = 'auto';
+                dropdownOptions.classList.remove('open-upward');
+                dropdownSelected.classList.remove('open-upward');
+            }
+
+            dropdownOptions.classList.add('show');
+            dropdownSelected.classList.add('open');
+        }
+    });
+
+    // Handle option selection
+    dropdownOptions.addEventListener('click', (e) => {
+        const option = e.target.closest('.dropdown-option');
+        if (!option) return;
+
+        // Remove previous selection
+        document.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+
+        // Set new selection
+        option.classList.add('selected');
+        selectedValue = option.dataset.value;
+
+        // Get the text content (skip SVG)
+        const textContent = option.querySelector('span')?.textContent || option.textContent.trim();
+        selectedText = textContent;
+
+        // Update displayed text (with icon if applicable)
+        const svgClone = option.querySelector('svg')?.cloneNode(true);
+        const dropdownText = dropdownSelected.querySelector('.dropdown-text');
+
+        if (svgClone) {
+            dropdownText.innerHTML = '';
+            svgClone.style.marginRight = '6px';
+            dropdownText.appendChild(svgClone);
+            const textSpan = document.createElement('span');
+            textSpan.textContent = textContent;
+            dropdownText.appendChild(textSpan);
+        } else {
+            dropdownText.textContent = textContent;
+        }
+
+        // Close dropdown
+        dropdownOptions.classList.remove('show');
+        dropdownSelected.classList.remove('open');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) {
+            dropdownOptions.classList.remove('show');
+            dropdownSelected.classList.remove('open');
+        }
+    });
+
+    // Helper function to get dropdown value
+    const getTargetValue = () => selectedValue;
 
     function updatePreview() {
         const inputValue = input.value.trim();
@@ -163,7 +308,7 @@ function setupEventListeners() {
 
     btn.addEventListener('click', async () => {
         const inputValue = input.value.trim();
-        const targetValue = target.value;
+        const targetValue = getTargetValue(); // Use custom dropdown getter
         const isBlock = blockToggle.checked;
         const isImportant = importanceToggle.checked;
 

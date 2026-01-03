@@ -9,6 +9,7 @@ import { renderServerDetail } from './views/server-detail.js';
 import { renderSettings } from './views/settings.js';
 import { renderGroupForm } from './views/group-form.js';
 import { renderAddRuleSection } from './views/add-rule.js';
+import { renderAbout } from './views/about.js';
 import { initializeKeyboardHandler, focusFirstElement, storeFocus, restoreFocus } from './shared/keyboard-handler.js';
 import { announceNavigation, announceLoading, initializeAnnouncer } from './shared/announcer.js';
 
@@ -175,6 +176,11 @@ function renderCurrentView() {
             renderGroupForm(mainContent, state.viewData);
             break;
 
+        case 'about':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderAbout(mainContent);
+            break;
+
         default:
             mainContent.innerHTML = `
         <div class="empty-state">
@@ -227,5 +233,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Listen for Auto-Repair notifications from background
+    chrome.runtime.onMessage.addListener((message) => {
+        if (message.action === 'repairNotification' && message.data) {
+            const { serverName, ruleCount } = message.data;
+            Logger.info(`[Popup] Received repair notification for ${serverName}`);
+            showToast(`Auto-Repaired ${serverName} with ${ruleCount} rules`, 'success');
+        }
+    });
+
     renderCurrentView();
+
+    // SWR Strategy: Trigger background sync after initial render
+    // This allows instant load from cache (if preferLatest=false) but ensures data stays fresh
+    Logger.debug('[Popup] Triggering background sync...');
+    sendMessage('refreshAllServers', { force: true, background: true }, 0)
+        .then(result => {
+            if (result && result.success) {
+                Logger.debug('[Popup] Background sync completed, refreshing view if needed');
+                // If data changed, we could auto-refresh, but let's avoid jarring jumps
+                // Ideally, we'd check if currently viewed server data changed
+                // For now, logging is sufficient as re-opening popup will show fresh data
+                // OR we can silently update if user is just looking at list
+                if (state.currentView === 'server-list') {
+                    renderCurrentView();
+                }
+            }
+        })
+        .catch(err => Logger.warn('[Popup] Background sync failed:', err));
 });

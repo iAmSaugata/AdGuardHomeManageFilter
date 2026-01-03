@@ -493,7 +493,7 @@ export async function checkHost(server, name) {
  */
 export async function getProtectionStatus(server) {
     const normalizedHost = normalizeHost(server.host);
-    const endpoint = `${normalizedHost}/control/dns_config`;
+    const endpoint = `${normalizedHost}/control/status`;
     const authHeader = createAuthHeader(server.username, server.password);
 
     Logger.debug('Getting protection status:', sanitizeServerForLog(server));
@@ -507,7 +507,7 @@ export async function getProtectionStatus(server) {
         }, server.bypassSSL);
     }, DEFAULT_RETRIES);
 
-    const config = await result.json();
+    const config = result;
     return config.protection_enabled === true;
 }
 
