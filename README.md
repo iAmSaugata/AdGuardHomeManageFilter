@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](manifest.json)
 ![Status](https://img.shields.io/badge/Status-Stable-success)
 
-> **The ultimate power-tool for managing multiple AdGuard Home instances directly from your release.**
+> **The ultimate power-tool for managing multiple AdGuard Home instances directly from your Chrome browser.**
 
 AdGuard Home Central Manager transforms your Chrome browser into a centralized command center. Manage rules, sync settings, and monitor protection status across **unlimited** AdGuard Home servers—without ever leaving your current tab.
 
@@ -44,18 +44,65 @@ Your mission control center.
 -   **Quick Actions**: Toggle protection ON/OFF or jump to settings with one click.
 -   **Status Dots**: Instant Red/Green indicators show if a server is online.
 
-![No Server State](screenshots/no-server.png) *Empty state helps you get started quickly.*
+![Home Screen](screenshots/no-server.png) *Empty state helps you get started quickly.*
 
 ---
 
-## �️ Advanced Features
+## 🔒 Security & Privacy Architecture
+
+Security is our top priority. We use a military-grade "Trust No One" architecture.
+
+### 🛡️ Local-Only Storage Strategy
+-   **Zero Telemetry**: We collect **zero** data. We don't track your IP, your servers, your rules, or your usage patterns.
+-   **Sandboxed Storage**: All data is stored exclusively in `chrome.storage.local`. This data never leaves your device unless it is being sent directly to *your* AdGuard Home server.
+
+### 🔐 Multi-Layered Encryption (AES-GCM)
+We don't just "scramble" passwords; we encrypt them using the Web Crypto API.
+
+1.  **Device-Specific Secret**: On installation, the extension generates a random 32-byte secret (`_deviceSecret`) unique to your browser installation.
+2.  **Key Derivation (PBKDF2)**: We combine this secret with your browser's internal ID and derive a 256-bit encryption key using **PBKDF2** (Password-Based Key Derivation Function 2) with 100,000 iterations.
+3.  **AES-GCM Encryption**: Credentials are encrypted using **AES-GCM** (Advanced Encryption Standard in Galois/Counter Mode). This ensures both confidentiality and integrity.
+4.  **Unique IVs**: Every encryption operation uses a unique Initialization Vector (IV), ensuring that encrypting the same password twice yields different ciphertexts.
+
+*Result: Even if an attacker copies your raw Chrome storage files, they cannot decrypt your passwords on another machine.*
+
+### 🌐 Direct & Sanitized Communication
+-   **No Middleman:** The extension communicates **directly** with your AdGuard Home API endpoints. There are no proxy servers or relay services.
+-   **Header Sanitization:** API requests are stripped of potentially leaking headers (like `Referer`) to maintain privacy.
+-   **Bypass SSL Option:** We support self-signed certificates for local setups (e.g., `https://192.168.x.x`) by strictly scoping the insecure flag only to your explicit requests.
+
+---
+
+## ⚡ Performance & Caching
+
+AdGuard Home Central Manager is engineered for speed, ensuring 0ms UI latency.
+
+### 🏎️ Stale-While-Revalidate (SWR) Strategy
+Traditional extensions show a "Loading..." spinner every time you open them. We don't.
+1.  **Instant Render:** As soon as you click the icon, we render the *last known state* from the local cache. The UI appears instantly.
+2.  **Silent Update:** In the background, a service worker wakes up and fetches fresh data from your servers.
+3.  **Reactivity:** If the server data has changed (e.g., a rule added elsewhere), the UI updates automatically. If not, the background operation finishes silently.
+
+### � Smart Cache Management
+To respect your server's resources and your network bandwidth, we implement intelligent caching layers:
+-   **Rule Deduplication:** We cache the *content* of your rule lists, not just the raw response. Duplicate rules are stripped before caching, reducing storage size.
+-   **Configurable TTL:** You define the "Time-To-Live" for cached data (default: 60 minutes). During this window, we won't hit your server API unless you explicitly click "Refresh".
+-   **Prefer Latest Mode:** Critical users can enable "Prefer Latest" in settings to force a fresh network fetch on every interaction, bypassing the cache at the cost of milliseconds.
+
+### 📉 Bandwidth Optimization
+-   **Small Payloads:** We only fetch what we need. For server status checks, we use lightweight endpoints.
+-   **Sequential Sync:** When syncing a group, updates are processed sequentially (one after another) rather than in parallel chunks. This prevents flooding your server or network with simultaneous requests.
+
+---
+
+## ️ Advanced Usage
 
 ### 📦 Group Management & Sync
 Power users often have multiple servers (e.g., Primary & Backup).
 1.  Navigate to **Settings** -> **Groups**.
 2.  **Create Group**: Name it (e.g., `PROD`) and select your servers.
 3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
-4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group sequentially.
+4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group.
 
 ![Create Group](screenshots/Create%20Group.png)
 
@@ -68,54 +115,6 @@ Block ads as you see them.
 5.  Select the target **Server** or **Group**.
 
 ![Context Menu](screenshots/context-rule.png)
-
-**Smart Conflict Handling**:
-If you try to block a domain that is already allowed, the system warns you immediately. It prioritizes functionality (Allow rules) over blocking to prevent breaking websites.
-
-![Conflict Detection](screenshots/context-rule-add-domain-conflict.png)
-
-### 📝 Rule Management
-View and manage your custom filtering rules.
--   **Search**: Instantly filter through hundreds of rules.
--   **Syntax Highlighting**: Rules are color-coded (Green for Allow `@@`, Red for Block `||`, Grey for Comments `!`).
--   **Validation**: Invalid rules are rejected before being sent to the server.
-
-![Rules Page](screenshots/Rules-Page.png)
-
----
-
-## 🔒 Security & Privacy Architecture
-
-We built this with a "Trust No One" (even us) philosophy.
-
-### 🛡️ Local-Only Storage
--   **Zero Telemetry**: We do not track your usage, servers, or rules.
--   **Chrome Storage**: All configuration is stored strictly within your browser's `chrome.storage.local` sandbox.
-
-### 🔐 AES-GCM Encryption
-Your passwords are **never** stored in plain text.
--   **Algorithm**: AES-GCM (Galois/Counter Mode) - the gold standard for authenticated encryption.
--   **Key Derivation**: A unique 256-bit key is generated using PBKDF2 derived from a device-specific secret.
--   **Isolation**: Even if someone copies your storage file, they cannot decrypt it on another machine.
-
-### 🌐 Direct API Communication
--   The extension talks **directly** to your AdGuard Home instance.
--   No proxy servers, no relay servers, no cloud middleware.
--   Requests use standard `fetch` APIs with sanitized headers.
-
----
-
-## ⚡ Performance
-
-### Stale-While-Revalidate (SWR)
-To ensure the popup opens **instantly** (0ms delay):
-1.  **Snapshot Render**: The UI immediately draws the last known state from local cache.
-2.  **Background Sync**: A service worker silently fetches fresh data.
-3.  **Seamless Update**: If data changed, the UI updates automatically. If not, it stays static.
-
-### Smart Caching
--   Rule lists are cached locally to minimize bandwidth/API load on your servers.
--   Cache validity is managed via `ETag` logic and customizable TTL (Time-To-Live).
 
 ---
 
