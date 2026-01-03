@@ -8,7 +8,7 @@
 
 AdGuard Home Central Manager transforms your Chrome browser into a centralized command center. Manage rules, sync settings, and monitor protection status across **unlimited** AdGuard Home servers—without ever leaving your current tab.
 
-![Home Screen](screenshots/Home-With-Server.png)
+![Home Screen](screenshots/no-server.png)
 
 ---
 
@@ -44,7 +44,31 @@ Your mission control center.
 -   **Quick Actions**: Toggle protection ON/OFF or jump to settings with one click.
 -   **Status Dots**: Instant Red/Green indicators show if a server is online.
 
-![Home Screen](screenshots/no-server.png) *Empty state helps you get started quickly.*
+![Home Screen](screenshots/home-screen.png)
+
+---
+
+## ️ Advanced Usage
+
+### 📦 Group Management & Sync
+Power users often have multiple servers (e.g., Primary & Backup).
+1.  Navigate to **Settings** -> **Groups**.
+2.  **Create Group**: Name it (e.g., `PROD`) and select your servers.
+3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
+4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group.
+
+![Create Group](screenshots/Create%20Group.png)
+
+### 🖱️ Context Menu (Web Integration)
+Block ads as you see them.
+1.  Right-click anywhere on a webpage.
+2.  Select **"Add to AdGuard Home"**.
+3.  A modal appears *on the page* (no popup needed).
+4.  Choose to **Block** or **Allow** the domain.
+5.  Select the target **Server** or **Group**.
+
+![Context Menu](screenshots/context-rule.png)
+
 
 ---
 
@@ -92,29 +116,6 @@ To respect your server's resources and your network bandwidth, we implement inte
 ### 📉 Bandwidth Optimization
 -   **Small Payloads:** We only fetch what we need. For server status checks, we use lightweight endpoints.
 -   **Sequential Sync:** When syncing a group, updates are processed sequentially (one after another) rather than in parallel chunks. This prevents flooding your server or network with simultaneous requests.
-
----
-
-## ️ Advanced Usage
-
-### 📦 Group Management & Sync
-Power users often have multiple servers (e.g., Primary & Backup).
-1.  Navigate to **Settings** -> **Groups**.
-2.  **Create Group**: Name it (e.g., `PROD`) and select your servers.
-3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
-4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group.
-
-![Create Group](screenshots/Create%20Group.png)
-
-### 🖱️ Context Menu (Web Integration)
-Block ads as you see them.
-1.  Right-click anywhere on a webpage.
-2.  Select **"Add to AdGuard Home"**.
-3.  A modal appears *on the page* (no popup needed).
-4.  Choose to **Block** or **Allow** the domain.
-5.  Select the target **Server** or **Group**.
-
-![Context Menu](screenshots/context-rule.png)
 
 ---
 
