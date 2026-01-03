@@ -44,7 +44,7 @@ Your mission control center.
 -   **Quick Actions**: Toggle protection ON/OFF or jump to settings with one click.
 -   **Status Dots**: Instant Red/Green indicators show if a server is online.
 
-![Home Screen](screenshots/home-screen.png)
+![Home Screen](screenshots/home-with-server.png)
 
 ---
 
@@ -59,22 +59,28 @@ Power users often have multiple servers (e.g., Primary & Backup).
 
 ![Create Group](screenshots/Create%20Group.png)
 
+![Update Group](screenshots/Group-update.png)
+
 ### 🖱️ Context Menu (Web Integration)
 Block ads as you see them.
-1.  Right-click anywhere on a webpage.
+1.  Right-click aon any hyper link or select any text URL and right-click on a webpage.
 2.  Select **"Add to AdGuard Home"**.
-3.  A modal appears *on the page* (no popup needed).
-4.  Choose to **Block** or **Allow** the domain.
-5.  Select the target **Server** or **Group**.
 
 ![Context Menu](screenshots/context-rule.png)
 
+3.  A modal appears *on the page* (no popup needed).
+4.  Choose to **Block** or **Allow** the domain.
+5.  Select the target **Server** or **Group**.
+6.  Conflict on domain validation **Server** or **Group**.
+
+![Context Menu](screenshots/context-rule-add-domain-conflict.png)
 
 ---
 
 ## 🔒 Security & Privacy Architecture
 
 Security is our top priority. We use a military-grade "Trust No One" architecture.
+Check our our privacy policy for more details: [Privacy Policy](privacy-policy.md)
 
 ### 🛡️ Local-Only Storage Strategy
 -   **Zero Telemetry**: We collect **zero** data. We don't track your IP, your servers, your rules, or your usage patterns.
