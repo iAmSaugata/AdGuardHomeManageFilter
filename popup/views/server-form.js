@@ -42,7 +42,10 @@ export async function renderServerForm(container, data = {}) {
     <div class="view-body">
       <form id="server-form" data-mode="${isEdit ? 'edit' : 'add'}" ${isEdit && serverId ? `data-server-id="${serverId}"` : ''}>
         <div class="form-group">
-          <label class="form-label" for="server-name">Server Name</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+            <label class="form-label" for="server-name" style="margin-bottom: 0;">Server Name</label>
+            <span class="text-tertiary text-xs">Visible as 7-char tag</span>
+          </div>
           <input
             type="text"
             id="server-name"

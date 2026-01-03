@@ -109,11 +109,11 @@ export async function renderServerList(container) {
     Logger.info('[Performance] No cache, fetching fresh data');
     container.innerHTML = `
       <div class="view-header">
-        <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+        <button class="header-icon-btn btn-about" id="about-btn" title="About">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
           </svg>
         </button>
         <h1 class="view-title">Servers</h1>
@@ -270,11 +270,11 @@ async function saveUISnapshot(servers, groups, serverData) {
 function renderEmptyState(container) {
   container.innerHTML = `
     <div class="view-header">
-      <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+      <button class="header-icon-btn btn-about" id="about-btn" title="About">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M12 8v4"></path>
+          <path d="M12 16h.01"></path>
         </svg>
       </button>
       <h1 class="view-title">Servers</h1>
@@ -347,7 +347,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
       <div class="server-groups-inline">
         ${serverGroups.map(group => `
           <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name)}
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name.substring(0, 4).toUpperCase())}
           </span>
         `).join('')}
       </div>
@@ -371,7 +371,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         `<span class="status-dot-overlay ${cached.isOnline ? 'online' : 'offline'}"></span>` :
         ''}
             </span>
-            <span class="server-name-text">${escapeHtml(server.name)}</span>
+            <span class="server-name-text" title="${escapeHtml(server.name)}">${escapeHtml(server.name.substring(0, 7))}</span>
             ${groupBadgesHtml}
             <span class="server-version-capsule">${escapeHtml(cached?.version || 'v...')}</span>
           </div>
@@ -414,11 +414,11 @@ async function renderServersList(container, servers, groups, cachedServerData = 
 
   container.innerHTML = `
       <div class="view-header">
-        <button class="header-icon-btn btn-ghost" id="about-btn" title="About">
+      <button class="header-icon-btn btn-about" id="about-btn" title="About">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
           </svg>
         </button>
         <h1 class="view-title">Servers</h1>
@@ -558,7 +558,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         <div class="server-groups-inline">
           ${serverGroups.map(group => `
             <span class="group-badge-inline" data-group-id="${group.id}" title="Click to edit group: ${escapeHtml(group.name)}">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name)}
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="#FFA726" stroke="#F57C00" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(group.name.substring(0, 4).toUpperCase())}
             </span>
           `).join('')}
         </div>

@@ -87,10 +87,14 @@ function dedupedRequest(cacheKey, requestFn) {
 
 /**
  * Create Basic Auth header
+ * Uses classic UTF-8 safe encoding (unescape + encodeURIComponent) for maximum compatibility
  */
 function createAuthHeader(username, password) {
-    const credentials = btoa(`${username}:${password}`);
-    return `Basic ${credentials}`;
+    // FIX: Use UTF-8 encoding so special characters don't break authentication
+    const str = `${username}:${password}`;
+    const bytes = new TextEncoder().encode(str);
+    const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+    return `Basic ${btoa(binString)}`;
 }
 
 /**
@@ -185,8 +189,8 @@ export async function testConnection(host, username, password) {
         await apiRequest(url, {
             method: 'GET',
             headers: {
-                'Authorization': authHeader,
-                'Content-Type': 'application/json'
+                'Authorization': authHeader
+                // Removed Content-Type for GET request
             }
         });
 

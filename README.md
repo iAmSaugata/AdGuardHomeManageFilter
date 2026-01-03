@@ -1,182 +1,132 @@
-# AdGuard Home Central Manager
+# 🛡️ AdGuard Home Central Manager
 
-A Chrome extension for centrally managing AdGuard Home servers and filtering rules.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](manifest.json)
+![Status](https://img.shields.io/badge/Status-Stable-success)
 
-## Features
+> **The ultimate power-tool for managing multiple AdGuard Home instances directly from your release.**
 
-### Core Features
-- **Server Management**: Add, edit, and delete AdGuard Home servers
-- **Group Management**: Organize servers into groups with merged rule lists
-- **Rule Management**: Add, edit, and classify filtering rules (block/allow)
-- **Connection Testing**: Validate server credentials before saving
-- **Live Rule Preview**: Real-time preview of generated AdGuard rules
+AdGuard Home Central Manager transforms your Chrome browser into a centralized command center. Manage rules, sync settings, and monitor protection status across **unlimited** AdGuard Home servers—without ever leaving your current tab.
 
-### Security Features (v0.2.0)
-- **🔐 Encrypted Credentials**: Passwords encrypted using AES-GCM (256-bit)
-- **🛡️ XSS Protection**: Comprehensive HTML escaping across all views
-- **🔒 Privacy-First Permissions**: Optional host permissions requested on-demand
-- **🔄 Automatic Migration**: Seamless upgrade from plaintext to encrypted passwords
+![Home Screen](screenshots/Home-With-Server.png)
 
-### UI/UX
-- **Modern Dark Theme**: Premium Bitwarden-like design system
-- **Responsive Layout**: Optimized 350×600px popup interface
-- **Toast Notifications**: User-friendly feedback system
-- **Smart Caching**: TTL-based caching with network fallback
+---
 
-## Installation (Development)
+## ✨ Features at a Glance
 
-1. Clone this repository or download the source code
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" (toggle in top-right corner)
-4. Click "Load unpacked"
-5. Select the extension directory (`AdGuardHomeManageFilter`)
-6. The extension icon should appear in your toolbar
+| Feature | Description |
+| :--- | :--- |
+| **Multi-Server Dashboard** | Visual status of all your servers in one compact view. |
+| **Group Sync** | Sync rules across `Home`, `Office`, or `Cloud` server groups instantly. |
+| **Context Menu** | Block/Allow domains right from the webpage you are browsing. |
+| **Smart Encryption** | AES-GCM local encryption for your credentials. Zero cloud data. |
+| **Conflict Resolution** | Auto-detects and resolves conflicting rules (Block vs. Allow). |
 
-## Usage
+---
 
-### Adding a Server
+## 🚀 Getting Started
 
-1. Click the extension icon to open the popup
-2. Click "Add Server" or "Add Your First Server"
-3. Fill in the server details:
-   - **Server Name**: A friendly name for your server (e.g., "Home Server")
-   - **Server URL**: The full URL including protocol (e.g., `https://192.168.1.1`)
-   - **Username**: Your AdGuard Home admin username
-   - **Password**: Your AdGuard Home admin password
-4. Click "Test Connection" to verify the credentials
-5. Click "Add Server" to save
+### 1. Adding Your First Server
+Connecting is simple and secure.
+1.  Click the **Plus (+)** icon on the home screen.
+2.  **Server Name**: Enter a friendly name (auto-truncated to a **7-char tag** like `HOME-01`).
+3.  **URL**: Full address including protocol (e.g., `http://192.168.1.5` or `https://dns.mysite.com`).
+4.  **Credentials**: Enter your AdGuard Home username/password.
+5.  **Test Connection**: Verify access before saving.
 
-### Editing a Server
+> **Tip**: If using a self-signed certificate, enable **"Bypass SSL Validation"**.
 
-1. Click the extension icon to open the popup
-2. Click "Edit" on the server you want to modify
-3. Update the fields as needed
-4. Click "Test Connection" to verify changes (optional)
-5. Click "Save Changes"
+![Add Server](screenshots/add-server.png)
 
-### Deleting a Server
+### 2. The Dashboard
+Your mission control center.
+-   **Visual Stats**: Donut charts show the ratio of **Allowed** (Green), **Blocked** (Red), and **Disabled** (Orange) rules.
+-   **Quick Actions**: Toggle protection ON/OFF or jump to settings with one click.
+-   **Status Dots**: Instant Red/Green indicators show if a server is online.
 
-1. Click the extension icon to open the popup
-2. Click "Edit" on the server you want to delete
-3. Scroll down and click "Delete Server"
-4. Confirm the deletion
+![No Server State](screenshots/no-server.png) *Empty state helps you get started quickly.*
 
-## Architecture
+---
 
-### Background Service Worker
-- **service-worker.js**: Main background script, message passing coordinator
-- **storage.js**: Chrome storage wrapper with schema management
-- **api-client.js**: AdGuard Home API client with Basic Auth
-- **sync-engine.js**: Rule synchronization and caching logic
-- **helpers.js**: Utility functions for rule processing and validation
+## �️ Advanced Features
 
-### Popup Application
-- **popup.html/css/js**: Main popup application with view routing
-- **views/server-list.js**: Server list view
-- **views/server-form.js**: Server add/edit form
+### 📦 Group Management & Sync
+Power users often have multiple servers (e.g., Primary & Backup).
+1.  Navigate to **Settings** -> **Groups**.
+2.  **Create Group**: Name it (e.g., `PROD`) and select your servers.
+3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
+4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group sequentially.
 
-## API Endpoints Used
+![Create Group](screenshots/Create%20Group.png)
 
-Based on AdGuard Home OpenAPI specification:
+### 🖱️ Context Menu (Web Integration)
+Block ads as you see them.
+1.  Right-click anywhere on a webpage.
+2.  Select **"Add to AdGuard Home"**.
+3.  A modal appears *on the page* (no popup needed).
+4.  Choose to **Block** or **Allow** the domain.
+5.  Select the target **Server** or **Group**.
 
-- `GET /control/filtering/status` - Get filtering status and user rules
-- `POST /control/filtering/set_rules` - Set user-defined filtering rules
+![Context Menu](screenshots/context-rule.png)
 
-## Security
+**Smart Conflict Handling**:
+If you try to block a domain that is already allowed, the system warns you immediately. It prioritizes functionality (Allow rules) over blocking to prevent breaking websites.
 
-### Credential Protection (v0.2.0+)
-- **AES-GCM Encryption**: All passwords encrypted using 256-bit AES-GCM before storage
-- **PBKDF2 Key Derivation**: Encryption key derived from Chrome runtime ID (100,000 iterations)
-- **Automatic Migration**: Existing plaintext passwords automatically encrypted on first access
-- **No Plaintext Storage**: Zero plaintext passwords stored in chrome.storage.local
+![Conflict Detection](screenshots/context-rule-add-domain-conflict.png)
 
-### Privacy
-- **Optional Permissions**: Extension only requests access to specific server hosts
-- **User Control**: Explicit permission prompts before accessing any server
-- **No Tracking**: Zero analytics, telemetry, or external requests
+### 📝 Rule Management
+View and manage your custom filtering rules.
+-   **Search**: Instantly filter through hundreds of rules.
+-   **Syntax Highlighting**: Rules are color-coded (Green for Allow `@@`, Red for Block `||`, Grey for Comments `!`).
+-   **Validation**: Invalid rules are rejected before being sent to the server.
 
-### Best Practices
-- **Secure Logging**: No secrets ever logged to console (sanitized logging only)
-- **URL Safety**: Basic Auth credentials never exposed in URLs
-- **HTTPS Recommended**: Use HTTPS for all AdGuard Home servers
-- **XSS Protection**: All user input properly escaped in UI
+![Rules Page](screenshots/Rules-Page.png)
 
-### Encryption Details
-```
-Algorithm: AES-GCM
-Key Length: 256-bit
-IV Length: 96-bit (12 bytes, randomly generated per encryption)
-Key Derivation: PBKDF2 with SHA-256 (100,000 iterations)
-Base Material: chrome.runtime.id (unique per extension install)
-```
+---
 
-## Future Phases
+## 🔒 Security & Privacy Architecture
 
-- **Phase 1**: Group management and bulk operations
-- **Phase 2**: Rule management UI (add, edit, delete rules)
-- **Phase 3**: Rule synchronization across servers
-- **Phase 4**: Advanced features (search, filters, analytics)
+We built this with a "Trust No One" (even us) philosophy.
 
-## Development
+### 🛡️ Local-Only Storage
+-   **Zero Telemetry**: We do not track your usage, servers, or rules.
+-   **Chrome Storage**: All configuration is stored strictly within your browser's `chrome.storage.local` sandbox.
 
-### File Structure
+### 🔐 AES-GCM Encryption
+Your passwords are **never** stored in plain text.
+-   **Algorithm**: AES-GCM (Galois/Counter Mode) - the gold standard for authenticated encryption.
+-   **Key Derivation**: A unique 256-bit key is generated using PBKDF2 derived from a device-specific secret.
+-   **Isolation**: Even if someone copies your storage file, they cannot decrypt it on another machine.
 
-```
-AdGuardHomeManageFilter/
-├── manifest.json
-├── background/
-│   ├── service-worker.js
-│   ├── storage.js
-│   ├── api-client.js
-│   ├── sync-engine.js
-│   └── helpers.js
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   ├── popup.js
-│   └── views/
-│       ├── server-list.js
-│       └── server-form.js
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md
-```
+### 🌐 Direct API Communication
+-   The extension talks **directly** to your AdGuard Home instance.
+-   No proxy servers, no relay servers, no cloud middleware.
+-   Requests use standard `fetch` APIs with sanitized headers.
 
-### Technologies
+---
 
-- **Manifest V3**: Latest Chrome extension standard
-- **ES6 Modules**: Modern JavaScript with import/export
-- **Chrome Storage API**: Persistent local storage
-- **Fetch API**: HTTP requests with timeout and retry logic
+## ⚡ Performance
 
-## Troubleshooting
+### Stale-While-Revalidate (SWR)
+To ensure the popup opens **instantly** (0ms delay):
+1.  **Snapshot Render**: The UI immediately draws the last known state from local cache.
+2.  **Background Sync**: A service worker silently fetches fresh data.
+3.  **Seamless Update**: If data changed, the UI updates automatically. If not, it stays static.
 
-### Extension won't load
-- Check Chrome console for errors
-- Ensure all files are present
-- Verify manifest.json is valid JSON
+### Smart Caching
+-   Rule lists are cached locally to minimize bandwidth/API load on your servers.
+-   Cache validity is managed via `ETag` logic and customizable TTL (Time-To-Live).
 
-### Connection test fails
-- Verify server URL includes protocol (http:// or https://)
-- Check username and password are correct
-- Ensure server is accessible from your network
-- Check for CORS issues (AdGuard Home should allow extension origin)
+---
 
-### Servers not persisting
-- Check Chrome storage quota
-- Verify extension has storage permission
-- Check browser console for storage errors
+## 📝 License
 
-## License
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-MIT License - See LICENSE file for details
+---
 
-## Contributing
-
-This is a personal project. Contributions are welcome via pull requests.
-
-## Support
-
-For issues or questions, please open an issue on the GitHub repository.
+<div align="center">
+  <sub>Built with ❤️ for the AdGuard Community</sub>
+  <br>
+  <sub>Not affiliated with AdGuard Software Ltd.</sub>
+</div>

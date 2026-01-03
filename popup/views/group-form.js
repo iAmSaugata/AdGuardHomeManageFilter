@@ -65,7 +65,10 @@ export async function renderGroupForm(container, data = {}) {
             </div>
             <div class="view-body">
                 <div class="form-group">
-                    <label class="form-label" for="group-name">Group Name</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+                        <label class="form-label" for="group-name" style="margin-bottom: 0;">Group Name</label>
+                        <span class="text-tertiary text-xs">Visible as 4-char tag (e.g., TEST)</span>
+                    </div>
                     <input
                         type="text"
                         id="group-name"
