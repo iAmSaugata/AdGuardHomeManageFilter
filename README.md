@@ -44,7 +44,7 @@ Your mission control center.
 -   **Quick Actions**: Toggle protection ON/OFF or jump to settings with one click.
 -   **Status Dots**: Instant Red/Green indicators show if a server is online.
 
-![Home Screen](screenshots/home-with-server.png)
+![Dash Board](screenshots/Home-With-Server.png)
 
 ---
 
@@ -54,10 +54,11 @@ Your mission control center.
 Power users often have multiple servers (e.g., Primary & Backup).
 1.  Navigate to **Settings** -> **Groups**.
 2.  **Create Group**: Name it (e.g., `PROD`) and select your servers.
-3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
-4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group.
 
 ![Create Group](screenshots/Create%20Group.png)
+
+3.  **Auto-Merge**: The extension intelligently merges rules from all selected servers into a **Master List**.
+4.  **One-Click Sync**: Any change to the group effectively updates *all* servers in that group.
 
 ![Update Group](screenshots/Group-update.png)
 
