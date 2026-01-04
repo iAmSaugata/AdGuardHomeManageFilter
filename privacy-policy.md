@@ -105,7 +105,10 @@ You have complete control over your data:
 ## Data Retention
 
 - **Local Storage**: Data persists until you uninstall the extension or clear browser data
-- **Cache**: Rule cache respects TTL settings (default: 30 minutes)
+- **Rule Cache**: We use a **Stale-While-Revalidate** strategy. Rules are temporarily cached locally to ensure instant UI loading. This cache is:
+    - Strictly local (never shared)
+    - Automatically refreshed in the background
+    - Cleared based on your configured TTL (Time-To-Live)
 - **Logs**: Console logs are session-only (cleared when browser closes)
 
 ## Children's Privacy

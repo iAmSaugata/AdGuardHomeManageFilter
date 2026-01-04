@@ -37,7 +37,13 @@ export async function renderServerForm(container, data = {}) {
         <span>Back</span>
       </button>
       <h1 class="view-title">${isEdit ? 'Edit Server' : 'Add Server'}</h1>
-      <div class="header-action-area"></div>
+      <div class="header-action-area">
+        ${isEdit ? `
+          <button class="header-icon-btn btn-delete" id="delete-server-btn" title="Delete Server">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+          </button>
+        ` : ''}
+      </div>
     </div>
     <div class="view-body">
       <form id="server-form" data-mode="${isEdit ? 'edit' : 'add'}" ${isEdit && serverId ? `data-server-id="${serverId}"` : ''}>
@@ -122,6 +128,18 @@ export async function renderServerForm(container, data = {}) {
           <div class="text-xs text-tertiary mt-1">Enable for self-signed certificates</div>
         </div>
         
+        ${isEdit ? `
+        <div class="alert-box" style="margin-top: var(--space-3); margin-bottom: var(--space-3); background-color: rgba(33, 150, 243, 0.1); border-color: rgba(33, 150, 243, 0.3);">
+            <div class="alert-box-title" style="color: #2196f3; display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Secure Local Storage
+            </div>
+            <div class="alert-box-content" style="color: var(--color-text-secondary); font-size: 11px;">
+                Your password is <strong>encrypted locally</strong> (AES-GCM) and never leaves your device. We use industry-standard encryption to verify your identity directly with your server.
+            </div>
+        </div>
+        ` : ''}
+        
         <div id="form-errors" class="form-error hidden"></div>
         
         <div>
@@ -134,13 +152,7 @@ export async function renderServerForm(container, data = {}) {
             </button>
           </div>
           
-          ${isEdit ? `
-            <div class="mt-3">
-              <button type="button" class="btn btn-danger btn-block" id="delete-server-btn">
-                Delete Server
-              </button>
-            </div>
-          ` : ''}
+
         </div>
       </form>
     </div>

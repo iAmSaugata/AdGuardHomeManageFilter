@@ -20,3 +20,8 @@ coverage/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Build Artifacts
+*.zip
+submission_assets/
+

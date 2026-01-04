@@ -1,5 +1,5 @@
 /* ============================================================================
-   BITWARDEN-LIKE DARK THEME - DESIGN SYSTEM
+   MODERN DARK THEME - DESIGN SYSTEM
    ============================================================================ */
 
 /* CSS Custom Properties (Design Tokens) */
@@ -1420,6 +1420,48 @@ opacity: 0.3;
 /* ============================================================================
    STATUS INDICATORS
    ============================================================================ */
+
+.server-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    max-height: 80px;
+    /* Limit height to approx 2.2 items to force scroll */
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    padding-right: 4px;
+    /* Space for scrollbar */
+    border: 1px solid var(--color-border);
+    /* Add border to define the scroll area */
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    background-color: rgba(0, 0, 0, 0.1);
+    /* Slight background to distinguish */
+    /* Force children to not shrink, ensuring they take up full height */
+}
+
+.server-checkboxes>* {
+    flex-shrink: 0;
+}
+
+/* Custom Scrollbar for Server Checkboxes */
+.server-checkboxes::-webkit-scrollbar {
+    width: 6px;
+}
+
+.server-checkboxes::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.server-checkboxes::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 20px;
+}
+
+.server-checkboxes::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-tertiary);
+}
 
 .server-version {
     display: flex;

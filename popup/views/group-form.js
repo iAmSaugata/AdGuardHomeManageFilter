@@ -91,7 +91,7 @@ export async function renderGroupForm(container, data = {}) {
                             ⚠️ All servers are already in other groups
                         </div>
                     `}
-                    <div class="server-checkboxes">
+                    <div class="server-checkboxes" style="max-height: 68px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-2); background-color: rgba(0,0,0,0.1);">
                         ${availableServers.map(server => `
                             <label class="toggle-label">
                                 <input
