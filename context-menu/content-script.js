@@ -146,17 +146,28 @@
 
     /**
      * [SECURITY] Validate URL format and protocol
-     * Only allows http: and https: protocols
+     * Allows http/https protocols or valid domain names
      * @param {string} url - URL to validate
      * @returns {boolean} - true if valid, false otherwise
      */
     function isValidURL(url) {
         try {
+            // Check if it's already a full URL
             const parsed = new URL(url);
-            // Only allow http/https protocols (prevent javascript:, data:, file:, etc.)
             return ['http:', 'https:'].includes(parsed.protocol);
         } catch {
-            return false;
+            // If failed, try treating it as a domain by prepending protocol
+            try {
+                // Basic check to ensure it looks like a domain (e.g. example.com)
+                // Must have at least one dot and no illegal characters
+                if (!url.includes('.') || url.includes(' ') || url.match(/[<>"'()]/)) {
+                    return false;
+                }
+                const parsedWithProto = new URL('https://' + url);
+                return !!parsedWithProto.hostname;
+            } catch {
+                return false;
+            }
         }
     }
 

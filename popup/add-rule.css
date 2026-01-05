@@ -332,7 +332,7 @@
 }
 
 .rule-preview {
-    padding: 6px 8px;
+    padding: 4px 8px;
     background-color: var(--color-bg-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -340,13 +340,14 @@
     font-size: 11px;
     color: var(--color-text-secondary);
     min-height: 28px;
-    max-height: 60px;
+
     display: flex;
     align-items: center;
 
-    /* Single line with vertical scroll */
-    overflow-x: auto;
-    overflow-y: auto;
+    /* Always show scrollbar track to prevent layout shift */
+    /* Padding reduced (6px->4px) to compensate for 4px scrollbar height */
+    overflow-x: scroll;
+    overflow-y: hidden;
     white-space: nowrap;
 }
 
