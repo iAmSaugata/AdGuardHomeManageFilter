@@ -198,6 +198,7 @@
                                     id="adguard-client-input" 
                                     class="adguard-form-input adguard-compact-client-input adguard-hidden" 
                                     placeholder="IP / Client ID / Name" 
+                                    title="Use | to separate multiple clients (e.g. ipad|iphone)"
                                 />
                                 <label class="adguard-client-switch-wrapper">
                                     <span id="adguard-client-label" class="adguard-toggle-text">CLIENT</span>
@@ -370,7 +371,10 @@
                 let rule = generateRule(hostname, isBlock, null); // Base rule
 
                 if (isClientSpecific && clientValue) {
-                    rule += `$client='${clientValue}'`;
+                    const formattedClients = clientValue.split('|')
+                        .map(c => `'${c.trim()}'`)
+                        .join('|');
+                    rule += `$client=${formattedClients}`;
                 }
 
                 rulePreview.textContent = rule;
@@ -446,8 +450,26 @@
             if (error) throw new Error(error);
 
             // Pass resolved clientValue (only if toggle is ON and value exists)
-            const finalClientValue = isClientSpecific ? clientValue : null;
-            const rule = generateRule(hostname, action === 'block', finalClientValue);
+            let finalClientValue = null;
+            if (isClientSpecific && clientValue) {
+                finalClientValue = clientValue.split('|')
+                    .map(c => `'${c.trim()}'`)
+                    .join('|');
+            }
+            // Note: We modify generateRule call below to handle pre-formatted string or null
+            // Actually generateRule inside here expects raw value and wraps it. 
+            // We should bypass the wrapping inside generateRule if we format it here, OR update generateRule.
+            // Let's look at generateRule at line 65: rule += `$client='${clientValue.trim()}'`;
+            // It blindly wraps in single quotes.
+            // PROPOSAL: Update generateRule to accept raw string and NOT wrap it if it looks framed?
+            // BETTER: Don't use the 'clientValue' param of generateRule, append manually like in add-rule.js
+
+            const ruleBase = generateRule(hostname, action === 'block', null);
+            let rule = ruleBase;
+
+            if (finalClientValue) {
+                rule += `$client=${finalClientValue}`;
+            }
             const [type, id] = target.split(':');
             let serverIds = [];
 

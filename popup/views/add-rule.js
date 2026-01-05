@@ -85,6 +85,7 @@ export async function renderAddRuleSection(container) {
                                 id="client-input" 
                                 class="add-rule-input compact-client-input hidden" 
                                 placeholder="IP / Client ID / Name" 
+                                title="Use | to separate multiple clients (e.g. ipad|iphone)"
                             />
                             <label class="client-switch-wrapper">
                                 <span id="client-label" class="toggle-text">CLIENT</span>
@@ -257,9 +258,12 @@ function setupEventListeners() {
 
         let rule = generateRule(hostname, isBlock, false); // generateRule handles basic syntax
 
-        // Manual append for Client Logic (since generateRule doesn't know about clients yet)
+        // Manual append for Client Logic (multi-client support via pipe)
         if (isClientSpecific && clientValue) {
-            rule += `$client='${clientValue}'`;
+            const formattedClients = clientValue.split('|')
+                .map(c => `'${c.trim()}'`)
+                .join('|');
+            rule += `$client=${formattedClients}`;
         }
 
         preview.textContent = rule;
@@ -323,7 +327,10 @@ function setupEventListeners() {
 
         let rule = generateRule(hostname, isBlock, false);
         if (isClientSpecific && clientValue) {
-            rule += `$client='${clientValue}'`;
+            const formattedClients = clientValue.split('|')
+                .map(c => `'${c.trim()}'`)
+                .join('|');
+            rule += `$client=${formattedClients}`;
         }
 
         btn.disabled = true;

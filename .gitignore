@@ -18,9 +18,11 @@
 # 3. Allow Specific Root Files
 !LICENSE
 !manifest.json
+!README.md
 !privacy-policy.md
 !privacy_justifications.md
 !.gitignore
+!AdGuardHomeCentralManager_v1.1.2.zip
 
 # 4. Explicitly re-ignore junk that might slip in through folder allows
 node_modules/

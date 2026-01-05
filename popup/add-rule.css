@@ -350,8 +350,29 @@
     white-space: nowrap;
 }
 
+/* Custom Scrollbar for Rule Preview */
+.rule-preview::-webkit-scrollbar {
+    height: 4px;
+    /* Thin horizontal scrollbar */
+    width: 4px;
+    /* Thin vertical scrollbar */
+}
+
+.rule-preview::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.rule-preview::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.rule-preview::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+}
+
 .rule-preview.block {
-    color: #ef4444;
+    color: #ffb4a2;
     font-weight: 600;
 }
 
