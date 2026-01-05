@@ -248,8 +248,87 @@
     color: #22c55e;
 }
 
-.toggle-text.important {
-    color: #f59e0b;
+/* Client Specific Toggle - Compact Inline */
+.client-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 20px;
+    /* Force height match with toggles */
+}
+
+.client-switch-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.compact-client-input {
+    width: 153px;
+    /* Reduced from 160px */
+    height: 22px;
+    /* Slim height */
+    padding: 2px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    border: 1px solid #22c55e;
+    border-radius: 4px;
+    background-color: rgba(34, 197, 94, 0.05);
+    outline: none;
+    transition: width 0.2s, opacity 0.2s;
+}
+
+.compact-client-input:focus {
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* Client Toggle Colors */
+#client-toggle {
+    background-color: #6b7280;
+    /* Gray when OFF */
+}
+
+#client-toggle:checked {
+    background-color: #22c55e;
+    /* Green when ON */
+}
+
+/* Visibility Utilities */
+.hidden {
+    display: none !important;
+}
+
+/* Client Specific Toggle */
+.client-input-wrapper {
+    overflow: hidden;
+    max-height: 40px;
+    opacity: 1;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    margin-top: -5px;
+    /* Pull closer to toggles */
+}
+
+.client-input-wrapper.hidden {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.add-rule-input.client-input {
+    font-family: 'Courier New', monospace;
+    border-color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.05);
+}
+
+.add-rule-input.client-input:focus {
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.toggle-text.client-active {
+    color: #22c55e;
 }
 
 .rule-preview {

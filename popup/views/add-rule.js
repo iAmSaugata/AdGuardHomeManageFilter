@@ -16,50 +16,6 @@ export async function renderAddRuleSection(container) {
     // Check if there are any servers or groups
     const hasServers = servers && servers.length > 0;
     const hasGroups = groups && groups.length > 0;
-    const hasAnyTarget = hasServers || hasGroups;
-
-    // If no servers at all, render disabled state
-    if (!hasServers) {
-        container.innerHTML = `
-            <div class="view-body" style="margin-top: 1px;">
-                <div class="add-rule-card" style="opacity: 0.5; pointer-events: none;">
-                    <div class="add-rule-header">
-                        <h2>ADD RULE</h2>
-                    </div>
-                    <div class="add-rule-body">
-                        <input 
-                            type="text" 
-                            id="rule-input" 
-                            class="add-rule-input" 
-                            placeholder="example.com or ||example.com^"
-                            disabled
-                        />
-                        
-                        <select id="rule-target" class="add-rule-select" disabled>
-                            <option value="">No servers available</option>
-                        </select>
-                        
-                        <div class="add-rule-toggles">
-                            <label class="toggle-wrapper toggle-left">
-                                <input type="checkbox" id="block-toggle" checked disabled>
-                                <span id="block-label" class="toggle-text block">BLOCK</span>
-                            </label>
-                            
-                            <label class="toggle-wrapper toggle-right">
-                                <span id="importance-label" class="toggle-text">IMPORTANCE</span>
-                                <input type="checkbox" id="importance-toggle" disabled>
-                            </label>
-                        </div>
-                        
-                        <div id="rule-preview" class="rule-preview">Add a server first</div>
-                        
-                        <button id="add-sync-btn" class="btn btn-primary" disabled>ADD TO RULES</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        return; // Exit early
-    }
 
     // Normal rendering when servers exist
     container.innerHTML = `
@@ -123,10 +79,18 @@ export async function renderAddRuleSection(container) {
                             <span id="block-label" class="toggle-text block">BLOCK</span>
                         </label>
                         
-                        <label class="toggle-wrapper toggle-right">
-                            <span id="importance-label" class="toggle-text">IMPORTANCE</span>
-                            <input type="checkbox" id="importance-toggle">
-                        </label>
+                        <div class="toggle-wrapper toggle-right client-toggle-container">
+                            <input 
+                                type="text" 
+                                id="client-input" 
+                                class="add-rule-input compact-client-input hidden" 
+                                placeholder="IP / Client ID / Name" 
+                            />
+                            <label class="client-switch-wrapper">
+                                <span id="client-label" class="toggle-text">CLIENT</span>
+                                <input type="checkbox" id="client-toggle">
+                            </label>
+                        </div>
                     </div>
                     
                     <div id="rule-preview" class="rule-preview">||example.com^</div>
@@ -144,8 +108,12 @@ function setupEventListeners() {
     const input = document.getElementById('rule-input');
     const blockToggle = document.getElementById('block-toggle');
     const blockLabel = document.getElementById('block-label');
-    const importanceToggle = document.getElementById('importance-toggle');
-    const importanceLabel = document.getElementById('importance-label');
+
+    // Client Specific Logic
+    const clientToggle = document.getElementById('client-toggle');
+    const clientLabel = document.getElementById('client-label');
+    const clientInput = document.getElementById('client-input');
+
     const preview = document.getElementById('rule-preview');
     const btn = document.getElementById('add-sync-btn');
 
@@ -271,7 +239,8 @@ function setupEventListeners() {
     function updatePreview() {
         const inputValue = input.value.trim();
         const isBlock = blockToggle.checked;
-        const isImportant = importanceToggle.checked;
+        const isClientSpecific = clientToggle.checked;
+        const clientValue = clientInput.value.trim();
 
         if (!inputValue) {
             preview.textContent = '||example.com^';
@@ -286,7 +255,13 @@ function setupEventListeners() {
             return;
         }
 
-        const rule = generateRule(hostname, isBlock, isImportant);
+        let rule = generateRule(hostname, isBlock, false); // generateRule handles basic syntax
+
+        // Manual append for Client Logic (since generateRule doesn't know about clients yet)
+        if (isClientSpecific && clientValue) {
+            rule += `$client='${clientValue}'`;
+        }
+
         preview.textContent = rule;
         preview.className = isBlock ? 'rule-preview block' : 'rule-preview allow';
     }
@@ -298,22 +273,40 @@ function setupEventListeners() {
         updatePreview();
     });
 
-    importanceToggle.addEventListener('change', () => {
-        const isImportant = importanceToggle.checked;
-        importanceLabel.className = isImportant ? 'toggle-text important' : 'toggle-text';
+    // Client Toggle Logic
+    clientToggle.addEventListener('change', () => {
+        const isSpecific = clientToggle.checked;
+
+        if (isSpecific) {
+            clientLabel.classList.add('hidden');
+            clientInput.classList.remove('hidden');
+            setTimeout(() => clientInput.focus(), 100);
+        } else {
+            clientInput.classList.add('hidden');
+            clientLabel.classList.remove('hidden');
+            clientInput.value = '';
+        }
         updatePreview();
     });
 
     input.addEventListener('input', updatePreview);
+    clientInput.addEventListener('input', updatePreview);
 
     btn.addEventListener('click', async () => {
         const inputValue = input.value.trim();
-        const targetValue = getTargetValue(); // Use custom dropdown getter
+        const targetValue = getTargetValue();
         const isBlock = blockToggle.checked;
-        const isImportant = importanceToggle.checked;
+        const isClientSpecific = clientToggle.checked;
+        const clientValue = clientInput.value.trim();
 
         if (!inputValue) {
             window.app.showToast('Please enter a domain or URL', 'error');
+            return;
+        }
+
+        if (isClientSpecific && !clientValue) {
+            window.app.showToast('Please enter a Client IP or ID', 'error');
+            clientInput.focus();
             return;
         }
 
@@ -328,7 +321,10 @@ function setupEventListeners() {
             return;
         }
 
-        const rule = generateRule(hostname, isBlock, isImportant);
+        let rule = generateRule(hostname, isBlock, false);
+        if (isClientSpecific && clientValue) {
+            rule += `$client='${clientValue}'`;
+        }
 
         btn.disabled = true;
         btn.textContent = 'Adding...';
@@ -346,6 +342,7 @@ function setupEventListeners() {
 
                 window.app.showToast(message, 'success');
                 input.value = '';
+                // Don't clear client input - might want to add another for same kid
                 updatePreview();
             }
 

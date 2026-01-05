@@ -48,7 +48,7 @@ Your mission control center.
 
 ---
 
-## ️ Advanced Usage
+## ⚡ Features & Usage
 
 ### 📦 Group Management & Sync
 Power users often have multiple servers (e.g., Primary & Backup).
@@ -62,17 +62,22 @@ Power users often have multiple servers (e.g., Primary & Backup).
 
 ![Update Group](screenshots/Group-update.png)
 
+### 🎯 Client-Specific Rules (New in v1.1)
+Apply rules to specific devices without affecting the whole network.
+1.  In **Add Rule**, toggle **"SPECIFIC CLIENT"** ON.
+2.  Enter the Client IP, CIDR, or Client ID (e.g., `192.168.1.50`).
+3.  The rule is saved as `||domain.com^$client='192.168.1.50'`.
+
 ### 🖱️ Context Menu (Web Integration)
-Block ads as you see them.
-1.  Right-click aon any hyper link or select any text URL and right-click on a webpage.
+Block ads as you browse.
+1.  Right-click on any page or link.
 2.  Select **"Add to AdGuard Home"**.
 
 ![Context Menu](screenshots/context-rule.png)
 
 3.  A modal appears *on the page* (no popup needed).
-4.  Choose to **Block** or **Allow** the domain.
+4.  Choose **Block/Allow** and optionally target a **Specific Client**.
 5.  Select the target **Server** or **Group**.
-6.  Conflict on domain validation **Server** or **Group**.
 
 ![Context Menu](screenshots/context-rule-add-domain-conflict.png)
 

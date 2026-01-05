@@ -238,7 +238,7 @@
     /* Put ABOVE */
     left: 0;
     right: 0;
-    background: #1e293b;
+    background: #133d2d;
     border: 1px solid #4caf50;
     border-bottom: none;
     /* No bottom border */
@@ -407,4 +407,63 @@
 /* Utility for body scroll locking */
 .adguard-no-scroll {
     overflow: hidden !important;
+}
+
+/* --- New Client Specific Styles (Ported from add-rule.css) --- */
+
+.adguard-client-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 20px;
+}
+
+.adguard-client-switch-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.adguard-compact-client-input {
+    width: 156px;
+    height: 22px;
+    padding: 2px 6px;
+    font-family: 'Consolas', monospace;
+    /* Consolas for modal consistency */
+    font-size: 11px;
+    border: 1px solid #22c55e !important;
+    border-radius: 4px;
+    background-color: rgba(34, 197, 94, 0.05) !important;
+    color: #ffffff !important;
+    /* Ensure text matches theme */
+    outline: none;
+    transition: width 0.2s, opacity 0.2s;
+}
+
+.adguard-compact-client-input::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+}
+
+.adguard-compact-client-input:focus {
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* Visibility Utility */
+.adguard-hidden {
+    display: none !important;
+}
+
+/* Client Toggle Colors Override */
+.adguard-client-toggle {
+    background-color: #6b7280 !important;
+    /* Gray when OFF */
+}
+
+.adguard-client-toggle:checked {
+    background-color: #22c55e !important;
+    /* Green when ON */
 }

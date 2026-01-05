@@ -47,7 +47,7 @@
     }
 
     // INLINE: generateRule logic from popup/utils/rule-generator.js
-    function generateRule(hostname, isBlock = true, isImportant = false) {
+    function generateRule(hostname, isBlock = true, clientValue = null) {
         if (!hostname || typeof hostname !== 'string') {
             throw new Error('Hostname required');
         }
@@ -61,8 +61,8 @@
             rule = `@@||${clean}^`;
         }
 
-        if (isImportant) {
-            rule += '$important';
+        if (clientValue && typeof clientValue === 'string' && clientValue.trim()) {
+            rule += `$client='${clientValue.trim()}'`;
         }
 
         return rule;
@@ -185,17 +185,25 @@
                     
                     <div id="adguard-form-container">
                         <div id="adguard-form-content">
-                        <!-- Toggles: Block/Allow & Importance -->
+                        <!-- Toggles: Block/Allow & Client Specific -->
                         <div class="adguard-toggle-group">
                             <label class="adguard-toggle-wrapper">
                                 <input type="checkbox" id="adguard-block-toggle" checked>
                                 <span class="adguard-toggle-text block" id="adguard-block-label">BLOCK</span>
                             </label>
 
-                            <label class="adguard-toggle-wrapper">
-                                <span class="adguard-toggle-text important">IMPORTANCE</span>
-                                <input type="checkbox" id="adguard-importance-toggle" class="adguard-importance">
-                            </label>
+                            <div class="adguard-toggle-wrapper adguard-toggle-right adguard-client-toggle-container">
+                                <input 
+                                    type="text" 
+                                    id="adguard-client-input" 
+                                    class="adguard-form-input adguard-compact-client-input adguard-hidden" 
+                                    placeholder="IP / Client ID / Name" 
+                                />
+                                <label class="adguard-client-switch-wrapper">
+                                    <span id="adguard-client-label" class="adguard-toggle-text">CLIENT</span>
+                                    <input type="checkbox" id="adguard-client-toggle" class="adguard-client-toggle">
+                                </label>
+                            </div>
                         </div>
                         
                         <label class="adguard-form-label">Add to:</label>
@@ -266,7 +274,11 @@
     async function initializeModal(url, container) {
         const blockToggle = container.querySelector('#adguard-block-toggle');
         const blockLabel = container.querySelector('#adguard-block-label');
-        const importanceToggle = container.querySelector('#adguard-importance-toggle');
+
+        // Client Specific Logic
+        const clientToggle = container.querySelector('#adguard-client-toggle');
+        const clientLabel = container.querySelector('#adguard-client-label');
+        const clientInput = container.querySelector('#adguard-client-input');
 
         // Custom Dropdown Elements
         const dropdown = container.querySelector('#adguard-custom-dropdown');
@@ -350,20 +362,22 @@
                     rulePreview.className = 'adguard-rule-preview error';
                     return;
                 }
-                // Check if target is selected (optional logic)
 
                 const isBlock = blockToggle.checked;
-                const isImportant = importanceToggle.checked;
-                const rule = generateRule(hostname, isBlock, isImportant);
+                const isClientSpecific = clientToggle.checked;
+                const clientValue = clientInput.value.trim();
+
+                let rule = generateRule(hostname, isBlock, null); // Base rule
+
+                if (isClientSpecific && clientValue) {
+                    rule += `$client='${clientValue}'`;
+                }
 
                 rulePreview.textContent = rule;
                 rulePreview.className = 'adguard-rule-preview ' + (isBlock ? '' : 'allow');
 
                 // Update label text
                 blockLabel.textContent = isBlock ? 'BLOCK' : 'ALLOW';
-                // Also update class for color? CSS handles label color via sibling selector?
-                // No, CSS uses .toggle-text.block (red) / .allow (green).
-                // We need to toggle the class on the span label.
                 if (isBlock) {
                     blockLabel.classList.add('block');
                     blockLabel.classList.remove('allow');
@@ -380,9 +394,24 @@
         }
 
         blockToggle.addEventListener('change', updatePreview);
-        importanceToggle.addEventListener('change', updatePreview);
 
-        // Listen to hidden input changes?? No, we call updatePreview directly on option click.
+        // Client Toggle Logic
+        clientToggle.addEventListener('change', () => {
+            const isSpecific = clientToggle.checked;
+
+            if (isSpecific) {
+                clientLabel.classList.add('adguard-hidden');
+                clientInput.classList.remove('adguard-hidden');
+                setTimeout(() => clientInput.focus(), 100);
+            } else {
+                clientInput.classList.add('adguard-hidden');
+                clientLabel.classList.remove('adguard-hidden');
+                clientInput.value = '';
+            }
+            updatePreview();
+        });
+
+        clientInput.addEventListener('input', updatePreview);
 
         // Use the new close method that handles scroll restoration
         cancelBtn.addEventListener('click', () => {
@@ -391,14 +420,21 @@
         });
 
         // Pass the HIDDEN input value
-        addBtn.addEventListener('click', () => handleAddRule(url, hiddenInput.value, selectedAction, importanceToggle.checked, addBtn, errorContainer, container));
+        addBtn.addEventListener('click', () => handleAddRule(url, hiddenInput.value, selectedAction, clientInput.value, addBtn, errorContainer, container));
 
         updatePreview();
     }
 
-    async function handleAddRule(url, target, action, isImportant, addBtn, errorContainer, container) {
+    async function handleAddRule(url, target, action, clientValue, addBtn, errorContainer, container) {
         if (!target) {
             showError(errorContainer, 'Please select a target');
+            return;
+        }
+
+        const isClientSpecific = document.getElementById('adguard-client-toggle').checked;
+        if (isClientSpecific && !clientValue) {
+            showError(errorContainer, 'Please enter a Client IP or ID');
+            document.getElementById('adguard-client-input').focus();
             return;
         }
 
@@ -409,7 +445,9 @@
             const { hostname, error } = parseInput(url);
             if (error) throw new Error(error);
 
-            const rule = generateRule(hostname, action === 'block', isImportant);
+            // Pass resolved clientValue (only if toggle is ON and value exists)
+            const finalClientValue = isClientSpecific ? clientValue : null;
+            const rule = generateRule(hostname, action === 'block', finalClientValue);
             const [type, id] = target.split(':');
             let serverIds = [];
 
