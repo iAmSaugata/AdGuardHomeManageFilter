@@ -18,14 +18,14 @@ export function renderAbout(container) {
             <div class="header-action-area"></div>
         </div>
         
-        <div class="view-body" style="overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 12px 16px;">
+        <div class="view-body" style="overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 10px 16px; justify-content: space-between;">
             
             <!-- Branding Section (Compacted) -->
-            <div class="about-branding" style="text-align: center; margin-bottom: 16px; animation: fadeIn 0.4s ease-out;">
+            <div class="about-branding" style="text-align: center; margin-bottom: 4px; animation: fadeIn 0.4s ease-out;">
                 <div class="app-logo-wrapper" style="
-                    width: 64px; 
-                    height: 64px; 
-                    margin: 0 auto 10px; 
+                    width: 54px; 
+                    height: 54px; 
+                    margin: 0 auto 6px; 
                     background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.1));
                     border-radius: 18px;
                     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -48,7 +48,7 @@ export function renderAbout(container) {
                 </div>
                 
                 <h2 class="app-name" style="
-                    font-size: 16px; 
+                    font-size: 15px; 
                     font-weight: 800; 
                     margin: 0 0 2px;
                     background: linear-gradient(90deg, #ffffff, #81c784, #4caf50); 
@@ -77,7 +77,7 @@ export function renderAbout(container) {
             <!-- Innovative Author Card -->
             <div class="author-card-wrapper" style="
                 width: 100%;
-                margin-bottom: 16px;
+                margin-bottom: 8px;
                 position: relative;
                 padding: 1px;
                 background: linear-gradient(135deg, rgba(76, 175, 80, 0.5), rgba(33, 150, 243, 0.5), rgba(76, 175, 80, 0.5));
@@ -92,10 +92,10 @@ export function renderAbout(container) {
                 <div class="author-card" style="
                     background: #1c1f26;
                     border-radius: 15px;
-                    padding: 14px;
+                    padding: 10px;
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
                     overflow: hidden;
                     position: relative;
                 ">
@@ -147,6 +147,22 @@ export function renderAbout(container) {
                             background-clip: text;
                             color: transparent;
                         ">Saugata Datta</div>
+                        
+                        <!-- Built with Antigravity -->
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 4px;
+                            margin-top: 5px;
+                            opacity: 0.7;
+                        ">
+                            <span style="font-size: 9px; color: #94a3b8; font-weight: 500;">Coded with Google Antigravity</span>
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" style="color: #4285F4;">
+                                <path d="M16 18l6-6-6-6"></path>
+                                <path d="M8 6l-6 6 6 6"></path>
+                                <path d="M12 21l4-18"></path>
+                            </svg>
+                        </div>
                     </div>
                     
                     <!-- Interactive Action Button -->
@@ -171,11 +187,19 @@ export function renderAbout(container) {
 
             <!-- Vertical Links List (Compacted) -->
             <div class="about-links" style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: auto;">
-                <a href="https://github.com/iAmSaugata" target="_blank" class="about-link-btn" title="View GitHub Profile">
+                <a href="https://technochat.in/the-ultimate-command-center-for-adguard-home-power-users/" target="_blank" class="about-link-btn" title="Get Help">
+                    <div class="icon-box" style="background: rgba(33, 150, 243, 0.1); color: #2196f3;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>
+                    </div>
+                    <span>Get Help</span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" class="arrow" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+
+                <a href="https://github.com/iAmSaugata/AdGuardHomeManageFilter#readme" target="_blank" class="about-link-btn" title="View ReadMe">
                     <div class="icon-box" style="background: rgba(255, 255, 255, 0.05); color: #f0f6fc;">
                         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
                     </div>
-                    <span>GitHub Profile</span>
+                    <span>ReadMe</span>
                     <svg viewBox="0 0 24 24" width="14" height="14" class="arrow" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </a>
                 
@@ -240,7 +264,7 @@ export function renderAbout(container) {
             .about-link-btn {
                 display: flex;
                 align-items: center;
-                padding: 8px 10px;
+                padding: 8px 12px;
                 background: var(--color-bg-secondary);
                 border: 1px solid var(--color-border);
                 border-radius: 10px;

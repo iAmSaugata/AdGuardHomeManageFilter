@@ -41,22 +41,33 @@ All extension data is stored locally in your browser using `chrome.storage.local
 
 This extension requests the following permissions:
 
-### Required Permissions
+### Required Permissions & Justifications
 
-| Permission | Purpose | Why Needed |
-|------------|---------|------------|
-| `storage` | Store server configurations locally | Save your server list and encrypted credentials |
-| `contextMenus` | Add "Add to AdGuard Home" to right-click menu | Quick rule addition from any webpage |
-| `scripting` | Inject modal dialog into web pages | Display rule addition interface |
-| `activeTab` | Read current page URL | Extract URL for context menu feature |
+This section mirrors the justifications provided to the Chrome Web Store team to ensure full transparency about why specific permissions are requested.
 
-### Host Permissions
+#### 1. `activeTab`
+*   **Purpose**: To identify the current website's domain name.
+*   **Why Needed**: Used when you open the popup or context menu. It allows the extension to automatically pre-fill the "Add Rule" form with the domain you are currently visiting, saving you from typing it manually.
 
-| Permission | Purpose | When Requested |
-|------------|---------|----------------|
-| `host_permissions` | Connect to AdGuard Home servers | Automatic access to all HTTP/HTTPS sites to connect to your configured servers |
+#### 2. `contextMenus`
+*   **Purpose**: To add the "Block with AdGuard Home" option to your right-click menu.
+*   **Why Needed**: Provides a quick, friction-free way to block domains or specific elements without leaving your current page or opening the full extension interface.
 
-**Important**: The extension only communicates with AdGuard Home servers YOU explicitly configure. Network requests are made only to fetch/update filtering rules from your servers.
+#### 3. Host Permission (`http://*/*`, `https://*/*`)
+*   **Purpose**: To communicate with your self-hosted AdGuard Home server.
+*   **Why Needed**: Since users host their servers on random private IPs (e.g., `192.168.1.50`) or custom public domains, the extension cannot know the target URL in advance. Broad host permissions are required to:
+    1.  Send API requests (Add/Remove Rules) to YOUR specific server.
+    2.  Inject the "Quick Block" modal into pages you explicitly choose to interact with.
+
+#### 4. `scripting`
+*   **Purpose**: To display the "Quick Block" modal dialog.
+*   **Why Needed**: When you right-click to block a site, the extension must programmatically inject a small piece of UI (HTML/CSS) into the page so you can verify the rule details before submitting.
+
+#### 5. `storage`
+*   **Purpose**: To save your configuration locally.
+*   **Why Needed**: Used to store your server URL, encrypted password, and extension preferences (like Dark Mode) directly in your browser.
+
+**Important**: The extension only communicates with AdGuard Home servers YOU explicitly configure. It does not "phone home" to us or any third party.
 
 ## External Connections
 
