@@ -1,29 +1,34 @@
-node_modules/
-dist/
-coverage/
-.DS_Store
-*.log
+# --- Strict Whitelist Mode ---
+# 1. Ignore EVERYTHING first
+*
+!*/
 
-# IDE settings
+# 2. Allow Folders (and their contents)
+!background/
+!background/**
+!context-menu/
+!context-menu/**
+!icons/
+!icons/**
+!popup/
+!popup/**
+!screenshots/
+!screenshots/**
+
+# 3. Allow Specific Root Files
+!LICENSE
+!manifest.json
+!privacy-policy.md
+!privacy_justifications.md
+!.gitignore
+
+# 4. Explicitly re-ignore junk that might slip in through folder allows
+node_modules/
+tests/
+*.zip
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# Backup and temp files
-*.backup
-*.backup.*
-*-temp.js
-*.temp
-*.old
-
-# OS files
-Thumbs.db
-.DS_Store
-
-# Build Artifacts
-*.zip
-submission_assets/
-
-
-AdGuard_Manager_Blog_Post.doc
