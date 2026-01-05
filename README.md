@@ -68,6 +68,8 @@ Apply rules to specific devices without affecting the whole network.
 2.  Enter the Client IP, CIDR, or Client ID (e.g., `192.168.1.50`).
 3.  The rule is saved as `||domain.com^$client='192.168.1.50'`.
 
+![Client Specific Rule](screenshots/manual-rule-add.png)
+
 ### 🖱️ Context Menu (Web Integration)
 Block ads as you browse.
 1.  Right-click on any page or link.
@@ -78,6 +80,9 @@ Block ads as you browse.
 3.  A modal appears *on the page* (no popup needed).
 4.  Choose **Block/Allow** and optionally target a **Specific Client**.
 5.  Select the target **Server** or **Group**.
+![Context Menu](screenshots/context-rule-add.png)
+
+6.  Domain conflict detection in context rule.
 
 ![Context Menu](screenshots/context-rule-add-domain-conflict.png)
 
