@@ -392,6 +392,14 @@ const messageHandlers = {
         return await apiClient.refreshFilters(server, force);
     },
 
+    async getQueryLog({ serverId, params }) {
+        const server = await storage.getServer(serverId);
+        if (!server) {
+            throw new Error('Server not found');
+        }
+        return await apiClient.getQueryLog(server, params);
+    },
+
     async checkHost({ serverId, name }) {
         const server = await storage.getServer(serverId);
         if (!server) {

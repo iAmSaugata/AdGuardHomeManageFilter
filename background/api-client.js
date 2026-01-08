@@ -542,3 +542,41 @@ export async function setProtectionEnabled(server, enabled) {
 
     Logger.info(`Protection ${enabled ? 'enabled' : 'disabled'} successfully`);
 }
+
+/**
+ * Get query log
+ * GET /control/querylog
+ * @param {Object} server - Server configuration
+ * @param {Object} params - Query parameters (limit, older_than, search, etc.)
+ * @returns {Promise<Object>} Query log data
+ */
+export async function getQueryLog(server, params = {}) {
+    // Note: Query log can be heavy, separate rate limiter or higher limit might be needed
+    // For now, sharing global limiter but it's a dedicated view so should be fine
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = new URL(`${normalizedHost}/control/querylog`);
+
+    // Append query params
+    if (params.limit) url.searchParams.append('limit', params.limit);
+    if (params.older_than) url.searchParams.append('older_than', params.older_than);
+    if (params.search) url.searchParams.append('search', params.search);
+    if (params.response_status) url.searchParams.append('response_status', params.response_status);
+
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    // Don't log full query params to avoid clutter
+    Logger.debug('Fetching query log:', sanitizeServerForLog(server), `limit=${params.limit || 'default'}`);
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url.toString(), {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data;
+}

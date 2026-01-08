@@ -136,3 +136,19 @@ export function showConfirmDialog(title, message, subtitle = '') {
         });
     });
 }
+
+/**
+ * Format large numbers with K/M suffixes
+ * @param {number} num - Number to format
+ * @returns {string} Formatted string (e.g., "1.2K", "14M")
+ */
+export function formatCount(num) {
+    if (!num) return '0';
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return num.toString();
+}

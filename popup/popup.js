@@ -10,6 +10,7 @@ import { renderSettings } from './views/settings.js';
 import { renderGroupForm } from './views/group-form.js';
 import { renderAddRuleSection } from './views/add-rule.js';
 import { renderAbout } from './views/about.js';
+import { renderQueryLog } from './views/query-log.js';
 import { initializeKeyboardHandler, focusFirstElement, storeFocus, restoreFocus } from './shared/keyboard-handler.js';
 import { announceNavigation, announceLoading, initializeAnnouncer } from './shared/announcer.js';
 
@@ -179,6 +180,11 @@ function renderCurrentView() {
         case 'about':
             document.getElementById('add-rule-container').innerHTML = '';
             renderAbout(mainContent);
+            break;
+
+        case 'query-log':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderQueryLog(mainContent, state.viewData);
             break;
 
         default:
