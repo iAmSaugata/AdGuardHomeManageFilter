@@ -2364,3 +2364,154 @@ opacity: 0.3;
     color: var(--color-text-primary);
     font-weight: var(--font-weight-semibold);
 }
+
+/* --- Transparent Stats Capsule --- */
+.stats-capsule-transparent {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(4px);
+    padding: 0 10px;
+    height: 32px;
+    border-radius: 16px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s, border-color 0.2s;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.stats-capsule-transparent:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.capsule-part {
+    display: flex;
+    align-items: center;
+}
+
+.capsule-part.allow {
+    color: var(--color-success);
+}
+
+.capsule-part.block {
+    color: var(--color-danger);
+}
+
+.capsule-separator {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 8px;
+}
+
+.capsule-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.allow-dot {
+    background-color: var(--color-success);
+}
+
+.block-dot {
+    background-color: var(--color-danger);
+}
+
+/* --- New Log List Design (Image 4) --- */
+.log-item-new {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background 0.15s;
+    min-height: 50px;
+}
+
+.log-item-new:hover {
+    background: var(--color-bg-hover);
+}
+
+.log-left-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    margin-right: 12px;
+    flex: 1;
+}
+
+.log-domain-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-meta-row {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+}
+
+.log-meta-item {
+    display: flex;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.log-meta-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
+.log-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.log-status-row {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.log-status-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+}
+
+.log-reason {
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+}
+
+/* Colors for Status Text */
+.text-success {
+    color: var(--color-success);
+}
+
+.text-danger {
+    color: var(--color-danger);
+}
+
+.text-info {
+    color: var(--color-info);
+}

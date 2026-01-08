@@ -381,8 +381,16 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             <button class="btn btn-icon protection-btn ${cached?.protectionEnabled !== undefined ? (cached.protectionEnabled ? 'protection-on' : 'protection-off') : 'protection-loading'}" data-server-id="${server.id}" title="${cached?.protectionEnabled !== undefined ? `Protection ${cached.protectionEnabled ? 'enabled' : 'disabled'}. Click to ${cached.protectionEnabled ? 'disable' : 'enable'}.` : 'Loading status...'}">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
             </button>
-            <div class="stats-capsule" data-server-id="${server.id}" title="Total Queries: ${formatCount((cached?.counts?.total || 0) + (cached?.counts?.disabled || 0))}">
-                <span class="total-part">Queries: ${formatCount((cached?.counts?.total || 0) + (cached?.counts?.disabled || 0))}</span>
+            <div class="stats-capsule-transparent" data-server-id="${server.id}" title="Allow: ${formatCount(cached?.counts?.allow || 0)} | Block: ${formatCount(cached?.counts?.block || 0)}">
+                <span class="capsule-part allow">
+                    <span class="capsule-dot allow-dot"></span>
+                    ${formatCount(cached?.counts?.allow || 0)}
+                </span>
+                <span class="capsule-separator"></span>
+                <span class="capsule-part block">
+                    <span class="capsule-dot block-dot"></span>
+                    ${formatCount(cached?.counts?.block || 0)}
+                </span>
             </div>
           </div>
           <div class="chart-legend">
@@ -477,7 +485,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
   });
 
   // Stats Capsule click handlers
-  document.querySelectorAll('.stats-capsule').forEach(capsule => {
+  document.querySelectorAll('.stats-capsule-transparent').forEach(capsule => {
     capsule.addEventListener('click', (e) => {
       e.stopPropagation();
       const serverId = capsule.dataset.serverId;
@@ -598,9 +606,17 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Loading status...">
                   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
               </button>
-              <div class="stats-capsule" data-server-id="${server.id}" title="Total Queries: ${formatCount((counts?.total || 0) + (counts?.disabled || 0))}">
-                  <span class="total-part">Queries: ${formatCount((counts?.total || 0) + (counts?.disabled || 0))}</span>
-              </div>
+              <div class="stats-capsule-transparent" data-server-id="${server.id}" title="Allow: ${formatCount(counts?.allow || 0)} | Block: ${formatCount(counts?.block || 0)}">
+                <span class="capsule-part allow">
+                    <span class="capsule-dot allow-dot"></span>
+                    ${formatCount(counts?.allow || 0)}
+                </span>
+                <span class="capsule-separator"></span>
+                <span class="capsule-part block">
+                    <span class="capsule-dot block-dot"></span>
+                    ${formatCount(counts?.block || 0)}
+                </span>
+            </div>
             </div>
             <div class="chart-legend">
               <div class="legend-item">

@@ -216,13 +216,34 @@ function renderLogList(logs) {
         // To handle object passing, we'll assign the click listener in JS.
 
         return `
-            <div class="log-item">
-                <div class="log-time">${time}</div>
-                <div class="log-main">
-                    <div class="log-domain" style="color: ${domainColor}">${escapeHtml(domain)}</div>
-                    <div class="log-client">${escapeHtml(client)}</div>
+            <div class="log-item-new">
+                <div class="log-left-col">
+                    <div class="log-domain-name" title="${escapeHtml(domain)}">${escapeHtml(domain)}</div>
+                    <div class="log-meta-row">
+                        <div class="log-meta-item">
+                            <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                            <span>${escapeHtml(client)}</span>
+                        </div>
+                        <div class="log-meta-item">
+                            <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>${time}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="log-status ${statusClass}">${statusText}</div>
+                <div class="log-right-col">
+                    <div class="log-status-row ${status === 'Blocked' || status === 'BlockedByUrl' ? 'text-danger' : 'text-success'}">
+                        <svg class="log-status-icon" viewBox="0 0 24 24" fill="currentColor">
+                             ${status === 'Blocked' || status === 'BlockedByUrl'
+                ? '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>' // Error/Block Icon
+                : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>' // Check/Success Icon
+            }
+                        </svg>
+                        <span>${statusText}</span>
+                    </div>
+                    <div class="log-reason ${status === 'Blocked' || status === 'BlockedByUrl' ? 'text-danger' : 'text-info'}">
+                        ${log.rules && log.rules.length > 0 ? 'Blacklist' : (status.includes('WhiteList') ? 'Whitelist' : 'No rules')}
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
@@ -230,7 +251,8 @@ function renderLogList(logs) {
     container.innerHTML = html;
 
     // Attach Click Handlers
-    const items = container.querySelectorAll('.log-item');
+    // Attach Click Handlers
+    const items = container.querySelectorAll('.log-item-new');
     items.forEach((item, index) => {
         item.addEventListener('click', () => {
             // Stop polling when navigating away
