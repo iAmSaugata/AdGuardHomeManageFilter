@@ -2,7 +2,7 @@
 // Displays realtime DNS queries and allows quick actions
 
 import { escapeHtml, formatCount, classifyRule } from '../utils.js';
-import { renderAddRuleSection, setupEventListeners as setupAddRuleListeners } from './add-rule.js';
+import { renderAddRuleSection } from './add-rule.js';
 import { Logger } from '../utils/logger.js';
 
 let pollingInterval = null;
