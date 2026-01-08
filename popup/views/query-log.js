@@ -2,13 +2,11 @@
 // Displays realtime DNS queries and allows quick actions
 
 import { escapeHtml, formatCount, classifyRule } from '../utils.js';
-import { renderAddRuleSection } from './add-rule.js';
 import { Logger } from '../utils/logger.js';
 
 let pollingInterval = null;
 let isPaused = false;
 let currentServerId = null;
-let lastLogTime = ''; // For "new" badges if needed, or simple dedup logic
 
 export async function renderQueryLog(container, data) {
     if (!data || !data.serverId) {
@@ -44,17 +42,6 @@ export async function renderQueryLog(container, data) {
                      </div>
                 </div>
             </div>
-            
-            <!-- Overlay for Add Rule -->
-            <div id="add-rule-overlay" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--color-bg-primary); z-index: 50; display: flex; flex-direction: column;">
-                 <div style="padding: 10px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; background: var(--color-bg-secondary);">
-                    <h3 style="margin: 0; font-size: 14px;">Add Rule</h3>
-                    <button class="btn btn-sm btn-ghost" id="close-overlay-btn">Close</button>
-                 </div>
-                 <div id="overlay-content" style="flex: 1; overflow-y: auto; padding: 16px;">
-                    <!-- Add Rule Form Injected Here -->
-                 </div>
-            </div>
         </div>
         
         <style>
@@ -72,7 +59,7 @@ export async function renderQueryLog(container, data) {
             }
             .log-time {
                 color: var(--color-text-tertiary);
-                width: 45px;
+                width: 55px;
                 font-size: 10px;
                 flex-shrink: 0;
             }
@@ -82,15 +69,17 @@ export async function renderQueryLog(container, data) {
                 padding: 0 8px;
             }
             .log-domain {
-                color: var(--color-text-primary);
+                color: var(--color-text-primary); /* Default, overridden by JS */
                 font-weight: 600;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                font-size: 12px;
             }
             .log-client {
                 color: var(--color-text-tertiary);
-                font-size: 9px;
+                font-size: 10px;
+                margin-top: 2px;
             }
             .log-status {
                 width: 50px;
@@ -117,19 +106,9 @@ export async function renderQueryLog(container, data) {
         fetchLogs(e.target.value);
     }, 500));
 
-    // Close Overlay
-    document.getElementById('close-overlay-btn').addEventListener('click', () => {
-        document.getElementById('add-rule-overlay').classList.add('hidden');
-        if (wasPlayingBeforeOverlay) {
-            resumePolling();
-        }
-    });
-
     // Start Polling
     startPolling();
 }
-
-let wasPlayingBeforeOverlay = true;
 
 function togglePlayPause() {
     isPaused = !isPaused;
@@ -166,24 +145,18 @@ function startPolling() {
     // Initial fetch
     fetchLogs(document.getElementById('log-search').value);
 
-    // Poll every 3 seconds
+    // Poll every 2 seconds (was 3s)
     pollingInterval = setInterval(() => {
         if (!isPaused) {
             fetchLogs(document.getElementById('log-search').value);
         }
-    }, 3000);
+    }, 2000);
 }
 
 function stopPolling() {
     if (pollingInterval) {
         clearInterval(pollingInterval);
         pollingInterval = null;
-    }
-}
-
-function resumePolling() {
-    if (!isPaused && !pollingInterval) {
-        startPolling();
     }
 }
 
@@ -219,26 +192,34 @@ function renderLogList(logs) {
         const time = new Date(log.time).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const domain = log.question.name;
         const client = log.client;
-        const status = log.status || 'Processed'; // 'Blocked', 'Processed', etc.
-        const rule = log.rules && log.rules.length > 0 ? log.rules[0].text : '';
+        const status = log.status || 'Processed';
 
-        // Status simplification
+        // Status simplification logic
         let statusClass = 'status-Processed';
         let statusText = 'Allow';
+        let domainColor = 'var(--color-accent)'; // Default Green for Allow
 
         if (status === 'Blocked' || status === 'BlockedByUrl') {
             statusClass = 'status-Blocked';
             statusText = 'Block';
+            domainColor = 'var(--color-danger)'; // Red for Block
         } else if (status.includes('WhiteList')) {
             statusClass = 'status-WhiteList';
             statusText = 'Allow';
+            domainColor = 'var(--color-accent)';
         }
 
+        // Store log data in a way we can retrieve it or pass ID (using random ID for now if API doesn't provide one, or just index)
+        // Ideally we pass index because we have the array in memory, but here we just re-render.
+        // We will attach the full log object to the DOM element property later or just pass relevant fields.
+
+        // To handle object passing, we'll assign the click listener in JS.
+
         return `
-            <div class="log-item" data-domain="${escapeHtml(domain)}" data-client="${escapeHtml(client)}" data-status="${statusText}">
+            <div class="log-item">
                 <div class="log-time">${time}</div>
                 <div class="log-main">
-                    <div class="log-domain">${escapeHtml(domain)}</div>
+                    <div class="log-domain" style="color: ${domainColor}">${escapeHtml(domain)}</div>
                     <div class="log-client">${escapeHtml(client)}</div>
                 </div>
                 <div class="log-status ${statusClass}">${statusText}</div>
@@ -249,59 +230,18 @@ function renderLogList(logs) {
     container.innerHTML = html;
 
     // Attach Click Handlers
-    container.querySelectorAll('.log-item').forEach(item => {
+    const items = container.querySelectorAll('.log-item');
+    items.forEach((item, index) => {
         item.addEventListener('click', () => {
-            openAddRuleOverlay(item.dataset.domain, item.dataset.client);
+            // Stop polling when navigating away
+            stopPolling();
+            // Navigate to Detail View with the full log object
+            window.app.navigateTo('log-detail', {
+                log: logs[index],
+                serverId: currentServerId
+            });
         });
     });
-}
-
-function openAddRuleOverlay(domain, client) {
-    // 1. Pause Log
-    wasPlayingBeforeOverlay = !isPaused;
-    isPaused = true;
-    updatePlayPauseButton();
-    stopPolling();
-
-    // 2. Show Overlay
-    const overlay = document.getElementById('add-rule-overlay');
-    const content = document.getElementById('overlay-content');
-    overlay.classList.remove('hidden');
-
-    // 3. Render Add Rule Form into Overlay
-    content.innerHTML = '<div id="overlay-add-rule-container"></div>';
-    const target = document.getElementById('overlay-add-rule-container');
-
-    // We reuse the existing Add Rule render function!
-    renderAddRuleSection(target);
-
-    // 4. Pre-fill data
-    // We need to wait a tick for the DOM to be ready
-    setTimeout(() => {
-        // Find inputs (they might have specific IDs in add-rule.js)
-        // We know add-rule.js uses: #rule-input, #client-toggle, #client-input
-        const ruleInput = target.querySelector('.add-rule-input'); // or ID
-        if (ruleInput) {
-            ruleInput.value = domain;
-            // Trigger input event to update preview if needed
-            ruleInput.dispatchEvent(new Event('input'));
-        }
-
-        // Handle Client
-        const clientToggle = target.querySelector('.client-toggle-input');
-        if (clientToggle) {
-            clientToggle.click(); // Enable client mode
-
-            // Wait for input to appear
-            setTimeout(() => {
-                const clientInput = target.querySelector('.compact-client-input');
-                if (clientInput) {
-                    clientInput.value = client;
-                    clientInput.dispatchEvent(new Event('input'));
-                }
-            }, 50);
-        }
-    }, 100);
 }
 
 // Utility: Debounce
