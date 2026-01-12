@@ -9,7 +9,8 @@ import { addRuleToTarget } from '../services/add-rule-service.js';
 import { escapeHtml } from '../utils.js';
 
 
-export async function renderAddRuleSection(container) {
+export async function renderAddRuleSection(container, options = {}) {
+    const { compact = false } = options;
     const servers = await window.app.sendMessage('getServers');
     const groups = await window.app.sendMessage('getGroups');
 
@@ -19,12 +20,14 @@ export async function renderAddRuleSection(container) {
 
     // Normal rendering when servers exist
     container.innerHTML = `
-        <div class="view-body" style="margin-top: 1px;">
-            <div class="add-rule-card">
+        <div class="view-body" style="margin-top: 1px; ${compact ? 'padding: 0;' : ''}">
+            <div class="${compact ? '' : 'add-rule-card'}" style="${compact ? 'border: none; box-shadow: none; background: transparent;' : ''}">
+                ${compact ? '' : `
                 <div class="add-rule-header">
                     <h2>ADD RULE</h2>
                 </div>
-                <div class="add-rule-body">
+                `}
+                <div class="add-rule-body" style="${compact ? 'padding: 0;' : ''}">
                     <input 
                         type="text" 
                         id="rule-input" 

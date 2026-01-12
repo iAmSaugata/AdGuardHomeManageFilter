@@ -209,44 +209,35 @@ async function checkAndUpdateInBackground(container, cachedSnapshot) {
 
 // Detect rule changes across servers
 async function detectRuleChanges(servers, groups, cachedServerData) {
-  const checkedServers = new Set();
+  Logger.debug('[ServerList] detectRuleChanges called', {
+    serverCount: servers.length,
+    cachedServerIds: Object.keys(cachedServerData)
+  });
 
+  // Check each server for changes
   for (const server of servers) {
-    // Skip if already checked
-    if (checkedServers.has(server.id)) continue;
-
-    // Check if server belongs to a group
-    const parentGroup = groups.find(g => g.serverIds && g.serverIds.includes(server.id));
-
-    if (parentGroup) {
-      // Server in group: only check FIRST server in group
-      const firstInGroup = parentGroup.serverIds[0];
-      if (server.id !== firstInGroup) {
-        continue; // Skip, will be checked by first server
-      }
-
-      // Mark all servers in group as checked
-      parentGroup.serverIds.forEach(id => checkedServers.add(id));
-    } else {
-      checkedServers.add(server.id);
-    }
-
-    // Check this server for changes
     try {
       const rulesResult = await window.app.sendMessage('getServerRules', { serverId: server.id });
       const currentRules = rulesResult.data?.rules || [];
       const cachedRules = cachedServerData[server.id]?.rules || [];
 
+      Logger.debug(`[ServerList] Checking ${server.name}`, {
+        currentCount: currentRules.length,
+        cachedCount: cachedRules.length
+      });
+
       // Compare rule counts (fast check)
       if (currentRules.length !== cachedRules.length) {
+        Logger.info(`[ServerList] Rule count change detected for ${server.name}: ${cachedRules.length} → ${currentRules.length}`);
         return true; // Changes detected
       }
     } catch (error) {
-      Logger.error(`Failed to check server ${server.id}:`, error);
+      Logger.error(`[ServerList] Failed to check server ${server.id}:`, error);
       // Continue checking other servers
     }
   }
 
+  Logger.debug('[ServerList] No rule changes detected');
   return false; // No changes detected
 }
 
@@ -331,15 +322,32 @@ function renderEmptyState(container) {
 }
 
 async function renderServersList(container, servers, groups, cachedServerData = null) {
+  Logger.debug('[ServerList] renderServersList called', {
+    serverCount: servers.length,
+    groupCount: groups.length,
+    hasCachedData: !!cachedServerData,
+    cachedServerIds: cachedServerData ? Object.keys(cachedServerData) : []
+  });
+
   // Render server cards immediately with loading charts
   const initialServerItems = servers.map(server => {
     // Check if we have cached data for this server
     const cached = cachedServerData?.[server.id];
-    const chartHtml = cached?.counts ? createDonutChart(cached.counts) : `
+
+    // Calculate counts from cached rules if available
+    let chartHtml;
+    if (cached?.rules) {
+      const counts = getRuleCounts(cached.rules);
+      chartHtml = createDonutChart(counts);
+      Logger.debug(`[ServerList] Using cached data for ${server.name}`, { ruleCount: cached.rules.length, counts });
+    } else {
+      chartHtml = `
       <div class="chart-loading">
         <span class="chart-loading-text">Loading</span>
       </div>
     `;
+      Logger.debug(`[ServerList] No cached data for ${server.name}, showing loading state`);
+    }
 
     // Find groups this server belongs to (for initial render)
     const serverGroups = groups.filter(g => g.serverIds && g.serverIds.includes(server.id));
@@ -381,17 +389,16 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             <button class="btn btn-icon protection-btn ${cached?.protectionEnabled !== undefined ? (cached.protectionEnabled ? 'protection-on' : 'protection-off') : 'protection-loading'}" data-server-id="${server.id}" title="${cached?.protectionEnabled !== undefined ? `Protection ${cached.protectionEnabled ? 'enabled' : 'disabled'}. Click to ${cached.protectionEnabled ? 'disable' : 'enable'}.` : 'Loading status...'}">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
             </button>
-            <div class="stats-capsule-transparent" data-server-id="${server.id}" title="Allow: ${formatCount(cached?.counts?.allow || 0)} | Block: ${formatCount(cached?.counts?.block || 0)}">
-                <span class="capsule-part allow">
-                    <span class="capsule-dot allow-dot"></span>
-                    ${formatCount(cached?.counts?.allow || 0)}
-                </span>
-                <span class="capsule-separator"></span>
-                <span class="capsule-part block">
-                    <span class="capsule-dot block-dot"></span>
-                    ${formatCount(cached?.counts?.block || 0)}
-                </span>
-            </div>
+            <button class="btn btn-icon live-query-btn" data-server-id="${server.id}" title="View Live Query Log">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+            </button>
           </div>
           <div class="chart-legend">
             <div class="legend-item">
@@ -480,15 +487,15 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
       const groupId = badge.dataset.groupId;
-      window.app.navigateTo('group-form', { mode: 'edit', groupId });
+      window.app.navigateTo('group-settings', { groupId });
     });
   });
 
-  // Stats Capsule click handlers
-  document.querySelectorAll('.stats-capsule-transparent').forEach(capsule => {
-    capsule.addEventListener('click', (e) => {
+  // Live Query Button click handlers (formerly Stats Capsule)
+  document.querySelectorAll('.live-query-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const serverId = capsule.dataset.serverId;
+      const serverId = btn.dataset.serverId;
       window.app.navigateTo('query-log', { serverId });
     });
   });
@@ -540,24 +547,38 @@ async function renderServersList(container, servers, groups, cachedServerData = 
     // Use for...of instead of forEach to properly await async operations
     for (const server of servers) {
       try {
-        // Fetch server info, rules, and protection status in parallel
-        const [serverInfo, rulesResult, protectionResult] = await Promise.all([
+        // Fetch server info, rules, protection, and STATS in parallel
+        const [serverInfo, rulesResult, protectionResult, statsResult] = await Promise.all([
           window.app.sendMessage('getServerInfo', { serverId: server.id }).catch(() => null),
           window.app.sendMessage('getServerRules', { serverId: server.id }),
           window.app.sendMessage('getProtectionStatus', { serverId: server.id }).catch(err => {
             Logger.error(`Failed to get protection status for ${server.name}:`, err);
             return null;
-          })
+          }),
+          window.app.sendMessage('getStats', { serverId: server.id }).catch(() => ({ num_dns_queries: 0, num_blocked_filtering: 0 }))
         ]);
 
         const rules = rulesResult.data?.rules || [];
-        const counts = getRuleCounts(rules);
+        // Rules count is different from Traffic Stats. 
+        // using statsResult for the capsule
+        const trafficStats = {
+          total: statsResult.num_dns_queries || 0,
+          blocked: statsResult.num_blocked_filtering || 0,
+          allowed: (statsResult.num_dns_queries || 0) - (statsResult.num_blocked_filtering || 0)
+        };
+
         const version = serverInfo?.version || 'Unknown';
         const isOnline = serverInfo !== null;
 
         // Store server data for change detection
-        serverDataMap[server.id] = { rules, counts, version, isOnline, protectionEnabled: protectionResult?.enabled };
-        Logger.debug(`${server.name}: ${rules.length} rules, counts:`, counts);
+        serverDataMap[server.id] = { rules, trafficStats, version, isOnline, protectionEnabled: protectionResult?.enabled };
+        Logger.debug(`[ServerList] Stored data for ${server.name}`, {
+          ruleCount: rules.length,
+          trafficStats,
+          version,
+          isOnline,
+          protectionEnabled: protectionResult?.enabled
+        });
 
         // Update protection button immediately if we got status
         if (protectionResult) {
@@ -587,6 +608,8 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         // Update the server card
         const serverCard = document.getElementById(`server-${server.id}`);
         if (serverCard) {
+          // Calculate rule counts for pie chart
+          const counts = getRuleCounts(rules);
           const chartHtml = createDonutChart(counts);
 
           const statusHtml = `
@@ -606,17 +629,16 @@ async function renderServersList(container, servers, groups, cachedServerData = 
               <button class="btn btn-icon protection-btn protection-loading" data-server-id="${server.id}" title="Loading status...">
                   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" /></svg>
               </button>
-              <div class="stats-capsule-transparent" data-server-id="${server.id}" title="Allow: ${formatCount(counts?.allow || 0)} | Block: ${formatCount(counts?.block || 0)}">
-                <span class="capsule-part allow">
-                    <span class="capsule-dot allow-dot"></span>
-                    ${formatCount(counts?.allow || 0)}
-                </span>
-                <span class="capsule-separator"></span>
-                <span class="capsule-part block">
-                    <span class="capsule-dot block-dot"></span>
-                    ${formatCount(counts?.block || 0)}
-                </span>
-            </div>
+              <button class="btn btn-icon live-query-btn" data-server-id="${server.id}" title="View Live Query Log">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="8" y1="6" x2="21" y2="6"></line>
+                      <line x1="8" y1="12" x2="21" y2="12"></line>
+                      <line x1="8" y1="18" x2="21" y2="18"></line>
+                      <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                      <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                      <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+              </button>
             </div>
             <div class="chart-legend">
               <div class="legend-item">
@@ -672,12 +694,21 @@ async function renderServersList(container, servers, groups, cachedServerData = 
             }
           }
 
+          // Re-attach Live Query Button
+          const liveQueryBtn = serverCard.querySelector('.live-query-btn');
+          if (liveQueryBtn) {
+            liveQueryBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              window.app.navigateTo('query-log', { serverId: server.id });
+            });
+          }
+
           // Add group badge click handlers
           serverCard.querySelectorAll('.group-badge-inline').forEach(badge => {
             badge.addEventListener('click', (e) => {
               e.stopPropagation();
               const groupId = badge.dataset.groupId;
-              window.app.navigateTo('group-form', { mode: 'edit', groupId });
+              window.app.navigateTo('group-settings', { groupId });
             });
           });
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AdGuard Home Central Manager",
-  "version": "1.2.1",
+  "version": "1.4.2",
   "description": "The ultimate command center for AdGuard Home. Manage servers, toggle protection, and block ads instantly from your browser.",
   "icons": {
     "16": "icons/icon16.png",

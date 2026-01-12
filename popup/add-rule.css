@@ -40,6 +40,15 @@
     outline: none;
 }
 
+.compact-client-input {
+    width: auto !important;
+    max-width: 110px;
+    padding: 2px 6px;
+    height: 24px;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
 .add-rule-input:focus,
 .add-rule-select:focus {
     border-color: var(--color-accent);

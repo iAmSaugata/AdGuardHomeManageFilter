@@ -8,6 +8,9 @@ import { renderServerForm } from './views/server-form.js';
 import { renderServerDetail } from './views/server-detail.js';
 import { renderSettings } from './views/settings.js';
 import { renderGroupForm } from './views/group-form.js';
+import { renderGroupSettings } from './views/group-settings.js';
+import { renderGroupMergedRules } from './views/group-merged-rules.js';
+import { renderGroupServerSelection } from './views/group-server-selection.js';
 import { renderAddRuleSection } from './views/add-rule.js';
 import { renderAbout } from './views/about.js';
 import { renderQueryLog } from './views/query-log.js';
@@ -176,6 +179,21 @@ function renderCurrentView() {
         case 'group-form':
             document.getElementById('add-rule-container').innerHTML = '';
             renderGroupForm(mainContent, state.viewData);
+            break;
+
+        case 'group-settings':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderGroupSettings(mainContent, state.viewData);
+            break;
+
+        case 'group-merged-rules':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderGroupMergedRules(mainContent, state.viewData);
+            break;
+
+        case 'group-server-selection':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderGroupServerSelection(mainContent, state.viewData);
             break;
 
         case 'about':

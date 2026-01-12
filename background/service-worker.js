@@ -17,6 +17,7 @@ let serviceWorkerStartTime = Date.now();
 chrome.runtime.onStartup.addListener(() => {
     console.log('[SW] Extension startup - service worker initialized');
     serviceWorkerStartTime = Date.now();
+    syncEngine.refreshAllFilteringStatuses(); // Background fetch of filter names
 });
 
 // Log when service worker is about to suspend
@@ -200,6 +201,18 @@ const messageHandlers = {
         await storage.clearCache(serverId);
 
         return result;
+        return result;
+    },
+
+    async getFilterCache({ serverId }) {
+        return await storage.getFilterCache(serverId);
+    },
+
+    async refreshFilteringStatus() {
+        // Trigger generic refresh for all servers (used by popup open)
+        // Fire and forget - don't wait for response
+        syncEngine.refreshAllFilteringStatuses();
+        return { started: true };
     },
 
     async getUserRules({ serverId }) {
@@ -398,6 +411,11 @@ const messageHandlers = {
             throw new Error('Server not found');
         }
         return await apiClient.getQueryLog(server, params);
+    },
+
+    async getStats({ serverId }) {
+        // Use SyncEngine to fetch AND cache the stats
+        return await syncEngine.refreshServerStats(serverId);
     },
 
     async checkHost({ serverId, name }) {

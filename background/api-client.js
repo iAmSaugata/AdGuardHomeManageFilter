@@ -47,8 +47,8 @@ class RateLimiter {
     }
 }
 
-// Create rate limiter: 5 requests per second maximum
-const apiLimiter = new RateLimiter(5, 1000);
+// Create rate limiter: 20 requests per second maximum
+const apiLimiter = new RateLimiter(20, 1000);
 
 // ============================================================================
 // REQUEST DEDUPLICATION (Phase 1 - Task 1.4)
@@ -571,6 +571,34 @@ export async function getQueryLog(server, params = {}) {
 
     const data = await withRetry(async () => {
         return await apiRequest(url.toString(), {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    Logger.debug('Full Query Log Response:', data);
+
+    return data;
+}
+/**
+ * Get server statistics (24h)
+ * GET /control/stats
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Object>} Stats data
+ */
+export async function getStats(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/stats`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching stats:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
             method: 'GET',
             headers: {
                 'Authorization': authHeader

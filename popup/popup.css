@@ -2328,6 +2328,134 @@ opacity: 0.3;
     min-height: 0;
 }
 
+/* Vertical Protection Group (Power Button + Live Query) */
+.protection-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Reset margins for buttons in vertical group to prevent misalignment */
+.protection-group .protection-btn {
+    margin: 0;
+}
+
+/* Live Query Button (Icon Only - Matches Power Button Size) */
+/* Live Query Button (Icon Only - Matches Power Button Size) */
+.live-query-btn {
+    margin-top: 10px;
+    width: 42px;
+    height: 26px;
+    /* Diagonal Gradient Border: Red (Top-Left) to Green (Bottom-Right) */
+    border: 1px solid transparent;
+    background-image: linear-gradient(#2b2b2b, #2b2b2b),
+        linear-gradient(135deg, rgba(244, 67, 54, 0.8) 50%, rgba(76, 175, 80, 0.8) 50%);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+
+    color: #fff;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    /* overflow: hidden; Removed to allow box-shadow to spill out if needed, but usually safe. */
+    animation: pulse-dual-glow 3s infinite ease-in-out;
+}
+
+@keyframes pulse-dual-glow {
+    0% {
+        box-shadow: -2px -2px 4px 0 rgba(244, 67, 54, 0.1),
+            2px 2px 4px 0 rgba(76, 175, 80, 0.1);
+    }
+
+    50% {
+        box-shadow: -2px -2px 8px 1px rgba(244, 67, 54, 0.3),
+            2px 2px 8px 1px rgba(76, 175, 80, 0.3);
+    }
+
+    100% {
+        box-shadow: -2px -2px 4px 0 rgba(244, 67, 54, 0.1),
+            2px 2px 4px 0 rgba(76, 175, 80, 0.1);
+    }
+}
+
+.live-query-btn svg {
+    width: 12px;
+    height: 12px;
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.5));
+}
+
+/* Log Generation Animation */
+@keyframes log-generate {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    10%,
+    40% {
+        opacity: 1;
+    }
+}
+
+/* Animate lines to look like they are generating top-down */
+.live-query-btn svg line {
+    opacity: 0.3;
+    animation: log-generate 1.5s infinite;
+}
+
+/* Row 1: Line 1 (x1=8, y1=6) & Line 4 (x1=3, y1=6) */
+.live-query-btn svg line:nth-child(1),
+.live-query-btn svg line:nth-child(4) {
+    animation-delay: 0s;
+}
+
+/* Row 2: Line 2 (x1=8, y1=12) & Line 5 (x1=3, y1=12) */
+.live-query-btn svg line:nth-child(2),
+.live-query-btn svg line:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+/* Row 3: Line 3 (x1=8, y1=18) & Line 6 (x1=3, y1=18) */
+.live-query-btn svg line:nth-child(3),
+.live-query-btn svg line:nth-child(6) {
+    animation-delay: 1.0s;
+}
+
+@keyframes pulse-dual-glow-reverse {
+    0% {
+        box-shadow: -2px -2px 4px 0 rgba(76, 175, 80, 0.1),
+            2px 2px 4px 0 rgba(244, 67, 54, 0.1);
+    }
+
+    50% {
+        box-shadow: -2px -2px 8px 1px rgba(76, 175, 80, 0.3),
+            2px 2px 8px 1px rgba(244, 67, 54, 0.3);
+    }
+
+    100% {
+        box-shadow: -2px -2px 4px 0 rgba(76, 175, 80, 0.1),
+            2px 2px 4px 0 rgba(244, 67, 54, 0.1);
+    }
+}
+
+.live-query-btn:hover {
+    background-image: linear-gradient(#2b2b2b, #2b2b2b),
+        linear-gradient(135deg, rgba(76, 175, 80, 0.8) 50%, rgba(244, 67, 54, 0.8) 50%);
+    animation: pulse-dual-glow-reverse 3s infinite ease-in-out;
+    transform: translateY(-0.5px);
+}
+
+.live-query-btn:active {
+    transform: translateY(0);
+}
+
 /* Ensure button doesn't add vertical space */
 .chart-legend-container .protection-btn {
     align-self: center;
@@ -2379,6 +2507,8 @@ opacity: 0.3;
     transition: background 0.2s, border-color 0.2s;
     font-size: 11px;
     font-weight: 600;
+    margin-top: 5px;
+    /* Fix overlap with buttons */
 }
 
 .stats-capsule-transparent:hover {
@@ -2479,17 +2609,22 @@ opacity: 0.3;
 .log-right-col {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
+    /* Center Align Icons and Text */
     justify-content: center;
     flex-shrink: 0;
+    min-width: 60px;
+    /* Ensure column is stable */
+    text-align: center;
+    /* Ensure text inside is centered */
 }
 
 .log-status-row {
     display: flex;
     align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 4px;
+    justify-content: center;
+    /* Center in the row */
+    margin-bottom: 2px;
 }
 
 .log-status-icon {
@@ -2503,15 +2638,124 @@ opacity: 0.3;
     color: var(--color-text-tertiary);
 }
 
-/* Colors for Status Text */
-.text-success {
-    color: var(--color-success);
+/* Enforce Status Colors */
+.text-success,
+.log-domain-name.text-success,
+.log-reason.text-success,
+.log-status-row.text-success {
+    color: #42d392 !important;
+    /* Force Bright Green */
 }
 
-.text-danger {
-    color: var(--color-danger);
+.text-danger,
+.log-domain-name.text-danger,
+.log-reason.text-danger,
+.log-status-row.text-danger {
+    color: #ff4d4d !important;
+    /* Force Bright Red */
+}
+
+.text-sky,
+.log-domain-name.text-sky,
+.log-reason.text-sky,
+.log-status-row.text-sky {
+    color: #38bdf8 !important;
+    /* Sky Blue */
+}
+
+.text-white,
+.log-domain-name.text-white,
+.log-reason.text-white,
+.log-status-row.text-white {
+    color: #ffffff !important;
+    /* White */
+}
+
+/* Header Buttons */
+.header-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.2s;
+    background-color: var(--color-bg-secondary);
+    /* Default */
+    color: white;
+}
+
+.header-icon-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* Back Button: Green/Cyan Gradient */
+#back-btn,
+#detail-back-btn,
+#about-back-btn {
+    background: linear-gradient(135deg, #42d392, #647eff) !important;
+}
+
+/* Add Rule Button (Log Detail Header): Green */
+/* Standardized Add Button (Green Gradient) */
+.header-icon-btn.btn-add {
+    background: linear-gradient(145deg, #66BB6A, #4CAF50) !important;
+    border: 1px solid #2E7D32;
+    box-shadow: 0 1px 2px rgba(76, 175, 80, 0.3), inset 0 -0.5px 1px rgba(0, 0, 0, 0.15);
+}
+
+.header-icon-btn.btn-add:hover {
+    background: linear-gradient(145deg, #81C784, #66BB6A) !important;
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4), inset 0 -0.5px 1px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#detail-add-rule-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* Play/Pause Button States - Forced Backgrounds */
+#play-pause-btn.state-playing {
+    background-color: #dc3545 !important;
+    /* Red for Pause action */
+}
+
+#play-pause-btn.state-paused {
+    background-color: #42d392 !important;
+    /* Green for Play action */
 }
 
 .text-info {
     color: var(--color-info);
+}
+
+/* Hide scrollbar for Live Log */
+#log-list-container::-webkit-scrollbar,
+#log-detail-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+#log-list-container,
+#log-detail-scroll-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Animation for Live Log */
+@keyframes slideInLog {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-item-new.slide-in {
+    animation: slideInLog 0.3s ease-out forwards;
 }

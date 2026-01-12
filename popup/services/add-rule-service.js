@@ -120,12 +120,38 @@ export async function addRuleToTarget(targetValue, rule) {
 
     if (type === 'group') {
         serverIds = await getServerIdsForGroup(id);
+        console.log('[AddRule] Target type: group', { groupId: id, serverIds });
     } else if (type === 'server') {
         const groupId = await getGroupForServer(id);
+        console.log('[AddRule] Target type: server', { serverId: id, groupId });
+
         if (groupId) {
-            serverIds = await getServerIdsForGroup(groupId);
+            // Check if Custom Rules sync is enabled for this group
+            const groups = await window.app.sendMessage('getGroups');
+            const group = groups.find(g => g.id === groupId);
+
+            // Only sync across group if customRules sync is enabled (default: true for backward compatibility)
+            const customRulesSyncEnabled = group?.syncSettings?.customRules !== false;
+
+            console.log('[AddRule] Sync settings check', {
+                groupId,
+                groupName: group?.name,
+                syncSettings: group?.syncSettings,
+                customRulesSyncEnabled
+            });
+
+            if (customRulesSyncEnabled) {
+                // Sync enabled: add to all servers in group
+                serverIds = await getServerIdsForGroup(groupId);
+                console.log('[AddRule] Sync ENABLED - targeting all group servers', { serverIds });
+            } else {
+                // Sync disabled: only add to this specific server
+                serverIds = [id];
+                console.log('[AddRule] Sync DISABLED - targeting only selected server', { serverId: id });
+            }
         } else {
             serverIds = [id];
+            console.log('[AddRule] Server not in any group - targeting only this server', { serverId: id });
         }
     } else {
         throw new Error('Invalid target');

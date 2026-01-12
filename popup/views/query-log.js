@@ -1,12 +1,17 @@
 // Live Query Log View
 // Displays realtime DNS queries and allows quick actions
 
-import { escapeHtml, formatCount, classifyRule } from '../utils.js';
-import { Logger } from '../utils/logger.js';
+import { escapeHtml } from '../utils.js';
 
 let pollingInterval = null;
 let isPaused = false;
 let currentServerId = null;
+// Cache to restore view state instantly
+let cachedLogs = [];
+// Track rendered IDs to prevent duplicates (moved to top scope)
+const renderedLogKeys = new Set();
+// Store current search query to preserve it when navigating
+let currentSearchQuery = '';
 
 export async function renderQueryLog(container, data) {
     if (!data || !data.serverId) {
@@ -18,93 +23,242 @@ export async function renderQueryLog(container, data) {
     currentServerId = data.serverId;
     isPaused = false;
 
+    // Reset rendered keys because we are creating a fresh DOM
+    renderedLogKeys.clear();
+
+    const hasCache = cachedLogs.length > 0;
+
+    // Set the base HTML structure
     container.innerHTML = `
         <div class="view-container">
             <div class="view-header">
-                <button class="header-back-btn" id="back-btn">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                    <span>Back</span>
+                <button class="header-icon-btn" id="back-btn" title="Back">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                 </button>
-                <div class="header-search-container" style="flex:1; margin: 0 10px;">
-                    <input type="text" id="log-search" placeholder="Search logs..." class="header-search-input" style="width:100%; height: 28px; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 4px; padding: 0 8px; color: var(--color-text-primary); font-size: 12px;">
-                </div>
-                <button class="header-icon-btn" id="play-pause-btn" title="Pause Live Log">
-                    <svg id="pause-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                    <svg id="play-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="hidden"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <div class="header-title app-title" style="flex:1; text-align: center; font-size: 16px;">LIVE QUERY</div>
+                <button class="header-icon-btn state-playing" id="play-pause-btn" title="Pause Live Log">
+                    <svg id="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                    <svg id="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="white" class="hidden"><path d="M5 3l14 9-14 9V3z"/></svg>
                 </button>
             </div>
 
+            <div class="search-bar-container" style="padding: 12px 16px; border-bottom: 1px solid var(--color-border); background-color: var(--color-bg-secondary);">
+                <div style="position: relative; width: 100%;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--color-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="log-search" placeholder="Search Query" class="header-search-input" value="${escapeHtml(currentSearchQuery)}" style="width:100%; height: 30px; background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 6px; padding: 0 30px 0 30px; color: var(--color-text-primary); font-size: 12px; line-height: 30px;">
+                    <button id="search-clear-btn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; display: none; color: var(--color-text-tertiary);">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+
             <div class="view-body" style="padding: 0; display: flex; flex-direction: column; overflow: hidden;">
-                <div id="log-list-container" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <div id="log-list-container" style="flex: 1; overflow-y: auto; padding: 0 8px 8px 8px;">
                      <!-- Logs go here -->
-                     <div class="debug-loading" style="padding: 20px; text-align: center; color: var(--color-text-secondary);">
-                        <div class="spinner"></div> Connecting to Live Log...
+                     ${hasCache ? '' : `
+                     <div class="debug-loading" style="min-height: 200px;">
+                        <div class="shield-loader">
+                            <div class="pulse-ring"></div>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shield-icon">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <div class="loading-text">Connecting to AdGuard Home...</div>
+                        <div class="loading-subtext">Initializing secure telemetry stream</div>
                      </div>
+                     `}
                 </div>
             </div>
         </div>
         
         <style>
-            .log-item {
+            .log-item-new {
                 display: flex;
                 align-items: center;
-                padding: 8px;
-                border-bottom: 1px solid var(--color-border);
+                padding: 10px 12px;
+                margin: 0;
+                background: transparent;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                border-left: 3px solid transparent;
+                border-right: 3px solid transparent;
                 font-size: 11px;
                 cursor: pointer;
-                transition: background 0.1s;
+                transition: all 0.15s ease;
             }
-            .log-item:hover {
-                background: var(--color-bg-hover);
+            .log-item-new:hover {
+                background: rgba(255,255,255,0.02);
             }
-            .log-time {
-                color: var(--color-text-tertiary);
-                width: 55px;
-                font-size: 10px;
-                flex-shrink: 0;
+            
+            .log-item-new.status-blocked {
+                border-left-color: rgba(255, 77, 77, 0.3);
+                border-right-color: rgba(255, 77, 77, 0.3);
             }
-            .log-main {
-                flex: 1;
-                overflow: hidden;
-                padding: 0 8px;
+            .log-item-new.status-blocked:hover {
+                border-left-color: #ff4d4d;
+                border-right-color: #ff4d4d;
+                background: rgba(255, 77, 77, 0.03);
             }
-            .log-domain {
-                color: var(--color-text-primary); /* Default, overridden by JS */
+            
+            .log-item-new.status-allowed {
+                border-left-color: rgba(66, 211, 146, 0.3);
+                border-right-color: rgba(66, 211, 146, 0.3);
+            }
+            .log-item-new.status-allowed:hover {
+                border-left-color: #42d392;
+                border-right-color: #42d392;
+                background: rgba(66, 211, 146, 0.03);
+            }
+            
+            .log-item-new.status-rewritten {
+                border-left-color: rgba(56, 189, 248, 0.3);
+                border-right-color: rgba(56, 189, 248, 0.3);
+            }
+            .log-item-new.status-rewritten:hover {
+                border-left-color: #38bdf8;
+                border-right-color: #38bdf8;
+                background: rgba(56, 189, 248, 0.03);
+            }
+            
+            .log-item-new.status-processed {
+                border-left-color: rgba(255, 255, 255, 0.1);
+                border-right-color: rgba(255, 255, 255, 0.1);
+            }
+            .log-item-new.status-processed:hover {
+                border-left-color: rgba(255, 255, 255, 0.3);
+                border-right-color: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.02);
+            }
+            
+            .debug-loading {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                min-height: 300px;
+                color: var(--color-text-primary);
+                animation: fade-in 0.5s ease-out;
+            }
+
+            .shield-loader {
+                position: relative;
+                width: 80px;
+                height: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 24px;
+            }
+
+            .shield-icon {
+                width: 48px;
+                height: 48px;
+                color: var(--color-accent);
+                z-index: 2;
+                filter: drop-shadow(0 0 12px rgba(66, 211, 146, 0.5));
+            }
+
+            .pulse-ring {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                border: 2px solid var(--color-accent);
+                opacity: 0;
+                animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            }
+
+            .loading-text {
+                font-size: 16px;
                 font-weight: 600;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                margin-bottom: 8px;
+                letter-spacing: 0.5px;
+            }
+
+            .loading-subtext {
                 font-size: 12px;
+                color: var(--color-text-secondary);
+                opacity: 0.8;
             }
-            .log-client {
-                color: var(--color-text-tertiary);
-                font-size: 10px;
-                margin-top: 2px;
+
+            @keyframes pulse-ring {
+                0% { transform: scale(0.8); opacity: 0.8; }
+                100% { transform: scale(2.2); opacity: 0; }
             }
-            .log-status {
-                width: 50px;
-                text-align: right;
-                flex-shrink: 0;
-                font-weight: 600;
+
+            @keyframes fade-in {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
             }
-            .status-Blocked { color: var(--color-danger); }
-            .status-Processed { color: var(--color-accent); }
-            .status-WhiteList { color: var(--color-info); }
+            
+            @keyframes slide-in {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .slide-in {
+                animation: slide-in 0.2s ease-out;
+            }
         </style>
     `;
 
     // Event Listeners
-    document.getElementById('back-btn').addEventListener('click', () => {
-        stopPolling();
-        window.app.navigateTo('server-list');
-    });
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            stopPolling();
+            window.app.navigateTo('server-list');
+        });
+    }
 
     const playPauseBtn = document.getElementById('play-pause-btn');
-    playPauseBtn.addEventListener('click', togglePlayPause);
+    if (playPauseBtn) {
+        playPauseBtn.addEventListener('click', togglePlayPause);
+    }
 
-    document.getElementById('log-search').addEventListener('input', debounce((e) => {
-        fetchLogs(e.target.value);
-    }, 500));
+    const searchInput = document.getElementById('log-search');
+    const clearBtn = document.getElementById('search-clear-btn');
+
+    if (searchInput) {
+        // Debounce fetchLogs
+        const debouncedFetch = debounce((val) => {
+            fetchLogs(val);
+        }, 500);
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            currentSearchQuery = val; // Store the search query
+            debouncedFetch(val);
+
+            // Toggle Clear Button
+            if (clearBtn) {
+                clearBtn.style.display = val ? 'block' : 'none';
+            }
+        });
+
+        // Initialize Clear Button State
+        if (clearBtn && searchInput.value) {
+            clearBtn.style.display = 'block';
+        }
+    }
+
+    if (clearBtn && searchInput) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            currentSearchQuery = ''; // Clear stored query
+            searchInput.focus();
+            fetchLogs(''); // Immediate fetch on clear
+            clearBtn.style.display = 'none';
+        });
+    }
+
+    // Render Cache Immediately if available
+    if (hasCache) {
+        renderLogList(cachedLogs);
+    }
 
     // Start Polling
     startPolling();
@@ -123,17 +277,26 @@ function togglePlayPause() {
 
 function updatePlayPauseButton() {
     const btn = document.getElementById('play-pause-btn');
+    if (!btn) return;
+
     const playIcon = document.getElementById('play-icon');
     const pauseIcon = document.getElementById('pause-icon');
 
+    // Reset classes
+    btn.classList.remove('state-playing', 'state-paused');
+
     if (isPaused) {
+        // Paused state: Show Play Icon (Green Button)
         btn.title = "Resume Live Log";
-        playIcon.classList.remove('hidden');
-        pauseIcon.classList.add('hidden');
+        btn.classList.add('state-paused'); // Green
+        if (playIcon) playIcon.classList.remove('hidden');
+        if (pauseIcon) pauseIcon.classList.add('hidden');
     } else {
+        // Playing state: Show Pause Icon (Red Button)
         btn.title = "Pause Live Log";
-        playIcon.classList.add('hidden');
-        pauseIcon.classList.remove('hidden');
+        btn.classList.add('state-playing'); // Red
+        if (playIcon) playIcon.classList.add('hidden');
+        if (pauseIcon) pauseIcon.classList.remove('hidden');
     }
 }
 
@@ -143,14 +306,17 @@ function startPolling() {
     updatePlayPauseButton();
 
     // Initial fetch
-    fetchLogs(document.getElementById('log-search').value);
+    const searchInput = document.getElementById('log-search');
+    const query = searchInput ? searchInput.value : '';
+    fetchLogs(query);
 
-    // Poll every 2 seconds (was 3s)
+    // Poll every 2 seconds
     pollingInterval = setInterval(() => {
         if (!isPaused) {
-            fetchLogs(document.getElementById('log-search').value);
+            const currentQuery = document.getElementById('log-search') ? document.getElementById('log-search').value : '';
+            fetchLogs(currentQuery);
         }
-    }, 2000);
+    }, 1000);
 }
 
 function stopPolling() {
@@ -161,21 +327,23 @@ function stopPolling() {
 }
 
 async function fetchLogs(searchQuery) {
+    if (!currentServerId) return;
+
     try {
         const result = await window.app.sendMessage('getQueryLog', {
             serverId: currentServerId,
             params: {
-                limit: 50,
+                limit: 100, // Fetch 100 for context
                 search: searchQuery
             }
         });
 
         if (result && result.data) {
+            cachedLogs = result.data; // Update Cache
             renderLogList(result.data);
         }
     } catch (error) {
         console.error('Failed to fetch logs:', error);
-        // Don't toast on every poll failure, just log
     }
 }
 
@@ -183,90 +351,178 @@ function renderLogList(logs) {
     const container = document.getElementById('log-list-container');
     if (!container) return; // View changed
 
-    if (logs.length === 0) {
-        container.innerHTML = '<div class="empty-state-text" style="padding:20px; text-align:center;">No queries found</div>';
+    // Remove loading state if it exists
+    const loadingState = container.querySelector('.debug-loading');
+    if (loadingState) loadingState.remove();
+
+    if (!logs || logs.length === 0) {
+        if (container.children.length === 0) {
+            container.innerHTML = '<div class="empty-state-text" style="padding:40px; text-align:center; color: var(--color-text-tertiary);">No queries found</div>';
+        }
         return;
     }
 
-    const html = logs.map(log => {
+    // Remove empty state if it exists and we have logs
+    const emptyState = container.querySelector('.empty-state-text');
+    if (emptyState) emptyState.remove();
+
+    // 1. Identify New Logs
+    // We reverse the logs array so we process oldest to newest, 
+    // but since we prepend, we want to process newest to oldest to keep order correct? 
+    // actually logs usually come Newest First from API.
+    // So we iterate them in reverse (Oldest -> Newest) and prepend them? 
+    // No, if logs are [New1, New2, Old1..], we want New1 at top, New2 after.
+    // But since we are PREPENDING, if we prepend New2 then New1, New1 will be on top. Correct.
+    // So we iterate in reverse order of the slice that is new.
+
+    // Let's simplified: New logs are at `logs[0]`, `logs[1]`.
+    // We want to prepend `logs[1]`, then `logs[0]` so `logs[0]` ends up at top.
+
+    const newLogs = [];
+
+    logs.forEach(log => {
+        // Create unique key
+        const key = `${log.time}-${log.question.name}-${log.client}-${log.status}`;
+        if (!renderedLogKeys.has(key)) {
+            newLogs.push({ log, key });
+            renderedLogKeys.add(key);
+        }
+    });
+
+    // If no new logs, do nothing (smooth!)
+    if (newLogs.length === 0) return;
+
+    // Process new logs in reverse order (Oldest New -> Newest New)
+    // so that when we prepend them one by one, the Newest ends up at the very top.
+
+    // Example: API returns [A, B, C]. We have C. New are [A, B].
+    // We prepend B. List: [B, C].
+    // We prepend A. List: [A, B, C]. Correct.
+
+    newLogs.reverse().forEach(({ log, key }) => {
+        const item = document.createElement('div');
+        item.dataset.key = key; // Store key for reference
+
+        // --- RENDER CONTENT (Same as before) ---
         const time = new Date(log.time).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const domain = log.question.name;
-        const client = log.client;
-        const status = log.status || 'Processed';
+        const domain = log.question.name || 'Unknown';
 
-        // Status simplification logic
-        let statusClass = 'status-Processed';
-        let statusText = 'Allow';
-        let domainColor = 'var(--color-accent)'; // Default Green for Allow
-
-        if (status === 'Blocked' || status === 'BlockedByUrl') {
-            statusClass = 'status-Blocked';
-            statusText = 'Block';
-            domainColor = 'var(--color-danger)'; // Red for Block
-        } else if (status.includes('WhiteList')) {
-            statusClass = 'status-WhiteList';
-            statusText = 'Allow';
-            domainColor = 'var(--color-accent)';
+        let clientDisplay = log.client || 'Unknown';
+        if (log.client_info && log.client_info.name && log.client_info.name.length > 0) {
+            clientDisplay = log.client_info.name;
         }
 
-        // Store log data in a way we can retrieve it or pass ID (using random ID for now if API doesn't provide one, or just index)
-        // Ideally we pass index because we have the array in memory, but here we just re-render.
-        // We will attach the full log object to the DOM element property later or just pass relevant fields.
+        const status = log.status || 'Processed';
+        const lowerStatus = status.toLowerCase();
 
-        // To handle object passing, we'll assign the click listener in JS.
+        // Classification
+        let type = 'Processed';
+        const hasExceptionRule = log.rules && log.rules.some(r => r.text && r.text.trim().startsWith('@@'));
 
-        return `
-            <div class="log-item-new">
-                <div class="log-left-col">
-                    <div class="log-domain-name" title="${escapeHtml(domain)}">${escapeHtml(domain)}</div>
-                    <div class="log-meta-row">
-                        <div class="log-meta-item">
-                            <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                            <span>${escapeHtml(client)}</span>
-                        </div>
-                        <div class="log-meta-item">
-                            <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            <span>${time}</span>
-                        </div>
+        if (lowerStatus.includes('rewrite') || (log.reason && log.reason.toLowerCase().includes('rewrite'))) {
+            type = 'Rewritten';
+        } else if (lowerStatus.includes('white') || lowerStatus.includes('allow') || hasExceptionRule) {
+            type = 'Allowed';
+        } else if (
+            lowerStatus.includes('block') ||
+            lowerStatus.includes('safebrowsing') ||
+            lowerStatus.includes('parental') ||
+            lowerStatus.includes('filteredblacklist') ||
+            (log.rules && log.rules.length > 0)
+        ) {
+            type = 'Blocked';
+        }
+
+        // Visuals
+        let statusColorClass = 'text-white';
+        let iconSvg = '';
+
+        if (type === 'Rewritten') {
+            statusColorClass = 'text-sky';
+            iconSvg = `<svg class="log-status-icon text-sky" viewBox="0 0 24 24" fill="none" style="width:20px; height:20px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor" opacity="0.12"/><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>`;
+        } else if (type === 'Allowed') {
+            statusColorClass = 'text-success';
+            iconSvg = `<svg class="log-status-icon text-success" viewBox="0 0 24 24" fill="none" style="width:20px; height:20px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor" opacity="0.12"/><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        } else if (type === 'Blocked') {
+            statusColorClass = 'text-danger';
+            iconSvg = `<svg class="log-status-icon text-danger" viewBox="0 0 24 24" fill="none" style="width:20px; height:20px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor" opacity="0.12"/><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        } else {
+            statusColorClass = 'text-white';
+            iconSvg = `<svg class="log-status-icon text-white" viewBox="0 0 24 24" fill="none" style="width:20px; height:20px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor" opacity="0.12"/><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        }
+
+        let reasonText = 'No rules';
+        if (log.rules && log.rules.length > 0) {
+            reasonText = type === 'Allowed' ? 'Whitelist' : (type === 'Blocked' ? 'Blacklist' : 'Custom');
+        } else if (type === 'Allowed') {
+            reasonText = 'Whitelist';
+        } else if (type === 'Rewritten') {
+            reasonText = 'Rewritten';
+        } else {
+            reasonText = (log.reason === 'NotFilteredNotFound' || !log.reason) ? 'Processed' : log.reason;
+        }
+
+        // Set status class based on type
+        item.className = 'log-item-new slide-in';
+        if (type === 'Blocked') {
+            item.className += ' status-blocked';
+        } else if (type === 'Allowed') {
+            item.className += ' status-allowed';
+        } else if (type === 'Rewritten') {
+            item.className += ' status-rewritten';
+        } else {
+            item.className += ' status-processed';
+        }
+
+        item.innerHTML = `
+            <div class="log-left-col">
+                <div class="log-domain-name ${statusColorClass}" title="${escapeHtml(domain)}">${escapeHtml(domain)}</div>
+                <div class="log-meta-row">
+                    <div class="log-meta-item">
+                        <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <span>${escapeHtml(clientDisplay)}</span>
                     </div>
-                </div>
-                <div class="log-right-col">
-                    <div class="log-status-row ${status === 'Blocked' || status === 'BlockedByUrl' ? 'text-danger' : 'text-success'}">
-                        <svg class="log-status-icon" viewBox="0 0 24 24" fill="currentColor">
-                             ${status === 'Blocked' || status === 'BlockedByUrl'
-                ? '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>' // Error/Block Icon
-                : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>' // Check/Success Icon
-            }
-                        </svg>
-                        <span>${statusText}</span>
-                    </div>
-                    <div class="log-reason ${status === 'Blocked' || status === 'BlockedByUrl' ? 'text-danger' : 'text-info'}">
-                        ${log.rules && log.rules.length > 0 ? 'Blacklist' : (status.includes('WhiteList') ? 'Whitelist' : 'No rules')}
+                    <div class="log-meta-item" style="opacity: 0.5; margin: 0 4px;">|</div>
+                    <div class="log-meta-item">
+                        <svg class="log-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span>${time}</span>
                     </div>
                 </div>
             </div>
+            <div class="log-right-col">
+                <div class="log-status-row ${statusColorClass}">
+                        ${iconSvg}
+                </div>
+                <div class="log-reason ${statusColorClass}" style="opacity: 0.8;">
+                    ${reasonText}
+                </div>
+            </div>
         `;
-    }).join('');
 
-    container.innerHTML = html;
-
-    // Attach Click Handlers
-    // Attach Click Handlers
-    const items = container.querySelectorAll('.log-item-new');
-    items.forEach((item, index) => {
+        // Click Handler
         item.addEventListener('click', () => {
-            // Stop polling when navigating away
             stopPolling();
-            // Navigate to Detail View with the full log object
             window.app.navigateTo('log-detail', {
-                log: logs[index],
+                log: log,
                 serverId: currentServerId
             });
         });
+
+        // Prepend to container
+        container.insertBefore(item, container.firstChild);
     });
+
+    // Cleanup: Remove old logs if > 100
+    while (container.children.length > 100) {
+        const lastChild = container.lastChild;
+        if (lastChild && lastChild.dataset && lastChild.dataset.key) {
+            renderedLogKeys.delete(lastChild.dataset.key);
+        }
+        container.removeChild(lastChild);
+    }
 }
 
-// Utility: Debounce
+// Utilities
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {

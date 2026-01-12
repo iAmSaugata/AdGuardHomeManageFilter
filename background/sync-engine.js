@@ -212,11 +212,30 @@ async function syncGroups(groups, allServers, fetchResults) {
     const settings = await storage.getSettings();
 
     for (const group of groups) {
+        Logger.debug(`[SyncEngine] Processing group: ${group.name}`, {
+            groupId: group.id,
+            syncSettings: group.syncSettings,
+            serverIds: group.serverIds
+        });
+
+        // Check if Custom Rules sync is enabled for this group
+        const customRulesSyncEnabled = group?.syncSettings?.customRules !== false;
+
+        if (!customRulesSyncEnabled) {
+            Logger.info(`[SyncEngine] Skipping group "${group.name}" - Custom Rules sync is DISABLED`);
+            continue; // Skip this group entirely
+        }
+
+        Logger.debug(`[SyncEngine] Custom Rules sync ENABLED for group "${group.name}" - proceeding with consistency check`);
+
         // Filter servers in this group
         const groupServerIds = new Set(group.serverIds || []);
         const groupServers = allServers.filter(s => groupServerIds.has(s.id));
 
-        if (groupServers.length < 2) continue; // Nothing to sync
+        if (groupServers.length < 2) {
+            Logger.debug(`[SyncEngine] Group "${group.name}" has less than 2 servers, skipping`);
+            continue; // Nothing to sync
+        }
 
         // Collect fresh rules from all successfully fetched servers
         let allRules = [];
@@ -285,6 +304,50 @@ async function syncGroups(groups, allServers, fetchResults) {
                     Logger.error(`[SyncEngine] Failed to sync drift for ${server.name}:`, e);
                 }
             }
+        }
+    }
+}
+/**
+ * Refresh stats for a single server and update cache
+ * @param {string} serverId 
+ * @returns {Promise<Object>} Stats data
+ */
+export async function refreshServerStats(serverId) {
+    try {
+        const server = await storage.getServer(serverId);
+        if (!server) throw new Error('Server not found');
+
+        // Fetch stats
+        const stats = await apiClient.getStats(server);
+
+        // Update cache (MERGE with existing rules cache if possible)
+        const currentCache = await storage.getCache(serverId) || {};
+        const cacheData = {
+            ...currentCache,
+            stats: stats,
+            fetchedAt: new Date().toISOString()
+        };
+
+        await storage.setCache(serverId, cacheData);
+        Logger.debug(`[SyncEngine] Stats refreshed for ${server.name}:`, stats);
+
+        return stats;
+    } catch (error) {
+        Logger.error(`[SyncEngine] Failed to refresh stats for ${serverId}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Refresh stats for all servers
+ */
+export async function refreshAllServerStats() {
+    const servers = await storage.getServers();
+    for (const server of servers) {
+        try {
+            await refreshServerStats(server.id);
+        } catch (e) {
+            // Ignore individual failures
         }
     }
 }

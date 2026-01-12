@@ -7,7 +7,8 @@ const STORAGE_KEYS = {
   SERVERS: 'servers',
   GROUPS: 'groups',
   SETTINGS: 'settings',
-  CACHE: 'cache'
+  CACHE: 'cache',
+  FILTER_CACHE: 'filter_cache'
 };
 
 const DEFAULT_SETTINGS = {
@@ -243,6 +244,29 @@ export async function isCacheFresh(serverId) {
 }
 
 // ============================================================================
+// FILTER CACHE (Dedicated cache for filter names)
+// ============================================================================
+
+export async function getFilterCache(serverId) {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.FILTER_CACHE);
+  const cache = result[STORAGE_KEYS.FILTER_CACHE] || {};
+  return cache[serverId] || null;
+}
+
+export async function setFilterCache(serverId, data) {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.FILTER_CACHE);
+  const cache = result[STORAGE_KEYS.FILTER_CACHE] || {};
+
+  cache[serverId] = {
+    ...data,
+    updatedAt: new Date().toISOString()
+  };
+
+  await chrome.storage.local.set({ [STORAGE_KEYS.FILTER_CACHE]: cache });
+  return cache[serverId];
+}
+
+// ============================================================================
 // UI SNAPSHOT CACHE (for instant popup rendering)
 // ============================================================================
 
@@ -291,6 +315,7 @@ export async function setUISnapshot(data) {
         id,
         {
           counts: info?.counts || { allow: 0, block: 0, disabled: 0 },
+          trafficStats: info?.trafficStats || { total: 0, blocked: 0, allowed: 0 },
           version: info?.version || 'Unknown',
           isOnline: info?.isOnline || false,
           fetchedAt: info?.fetchedAt || new Date().toISOString()

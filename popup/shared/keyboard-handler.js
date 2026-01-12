@@ -102,7 +102,7 @@ function handleNewServer(event) {
  * Handle Ctrl/Cmd+G - New Group
  */
 function handleNewGroup(event) {
-    window.app.navigateTo('group-form', { mode: 'add' });
+    window.app.navigateTo('group-server-selection', { mode: 'create' });
     return true;
 }
 

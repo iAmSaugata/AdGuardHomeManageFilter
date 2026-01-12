@@ -27,9 +27,8 @@ export async function renderServerDetail(container, data = {}) {
   const loadingStartTime = performance.now();
   container.innerHTML = `
     <div class="view-header">
-      <button class="header-back-btn" id="back-btn">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        <span>Back</span>
+      <button class="header-icon-btn" id="back-btn" title="Back">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <div class="header-action-area"></div>
     </div>
@@ -153,10 +152,9 @@ function renderServerDetailView(container, server, version, rules, fromCache, wa
 
   container.innerHTML = `
     <div class="view-container">
-      <div class="view-header">
-        <button class="header-back-btn" id="back-btn">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          <span>Back</span>
+    <div class="view-header">
+        <button class="header-icon-btn" id="back-btn" title="Back">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <div class="view-title">${escapeHtml(server.name)}</div>
         <div class="header-action-area">
