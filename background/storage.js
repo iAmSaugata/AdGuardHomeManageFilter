@@ -138,25 +138,38 @@ export async function saveGroup(group) {
   const groups = await getGroups();
   const now = new Date().toISOString();
 
-  const existingIndex = groups.findIndex(g => g.id === group.id);
+  // Ensure sync settings are initialized with defaults
+  const syncSettings = {
+    customRules: group.syncSettings?.customRules !== false, // Default: enabled
+    dnsBlocklists: group.syncSettings?.dnsBlocklists || false, // Default: disabled
+    dnsRewrites: group.syncSettings?.dnsRewrites || false, // Default: disabled
+    homeClients: group.syncSettings?.homeClients || false // Default: disabled
+  };
+
+  const groupToSave = {
+    ...group,
+    syncSettings
+  };
+
+  const existingIndex = groups.findIndex(g => g.id === groupToSave.id);
 
   if (existingIndex >= 0) {
     // Update existing
     groups[existingIndex] = {
-      ...group,
+      ...groupToSave,
       updatedAt: now
     };
   } else {
     // Add new
     groups.push({
-      ...group,
+      ...groupToSave,
       createdAt: now,
       updatedAt: now
     });
   }
 
   await chrome.storage.local.set({ [STORAGE_KEYS.GROUPS]: groups });
-  return group;
+  return groupToSave;
 }
 
 export async function deleteGroup(id) {
@@ -355,6 +368,34 @@ export async function initializeStorage() {
 
   if (!result[STORAGE_KEYS.GROUPS]) {
     updates[STORAGE_KEYS.GROUPS] = [];
+  } else {
+    // Migration: Add new sync settings to existing groups
+    const groups = result[STORAGE_KEYS.GROUPS];
+    let needsUpdate = false;
+
+    const migratedGroups = groups.map(group => {
+      if (!group.syncSettings ||
+        group.syncSettings.dnsBlocklists === undefined ||
+        group.syncSettings.dnsRewrites === undefined ||
+        group.syncSettings.homeClients === undefined) {
+        needsUpdate = true;
+        return {
+          ...group,
+          syncSettings: {
+            customRules: group.syncSettings?.customRules !== false,
+            dnsBlocklists: group.syncSettings?.dnsBlocklists || false,
+            dnsRewrites: group.syncSettings?.dnsRewrites || false,
+            homeClients: group.syncSettings?.homeClients || false
+          }
+        };
+      }
+      return group;
+    });
+
+    if (needsUpdate) {
+      console.log('[Storage Migration] Adding new sync settings to existing groups');
+      updates[STORAGE_KEYS.GROUPS] = migratedGroups;
+    }
   }
 
   if (!result[STORAGE_KEYS.SETTINGS]) {

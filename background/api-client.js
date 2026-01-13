@@ -608,3 +608,352 @@ export async function getStats(server) {
 
     return data;
 }
+
+// ============================================================================
+// SYNC FEATURES: DNS BLOCKLISTS, REWRITES, CLIENTS
+// ============================================================================
+
+/**
+ * Get DNS blocklists (filtering URLs)
+ * GET /control/filtering/status
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Array>} Array of filter objects
+ */
+export async function getBlocklists(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/filtering/status`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching DNS blocklists:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data.filters || [];
+}
+
+/**
+ * Set DNS blocklists (filtering URLs)
+ * Note: AdGuard Home doesn't support bulk set, so we add/remove/update individually
+ * @param {Object} server - Server configuration
+ * @param {Array} blocklists - Array of filter objects to sync
+ * @returns {Promise<void>}
+ */
+export async function setBlocklists(server, blocklists) {
+    Logger.info(`Setting ${blocklists.length} blocklists for ${server.name}`);
+
+    // Get current state
+    const current = await getBlocklists(server);
+
+    // Determine operations
+    const currentMap = new Map(current.map(f => [f.url, f]));
+    const targetMap = new Map(blocklists.map(f => [f.url, f]));
+
+    const toAdd = blocklists.filter(f => !currentMap.has(f.url));
+    const toRemove = current.filter(f => !targetMap.has(f.url));
+    const toUpdate = blocklists.filter(f => {
+        const existing = currentMap.get(f.url);
+        return existing && (existing.enabled !== f.enabled || existing.name !== f.name);
+    });
+
+    Logger.debug(`Blocklist operations: ${toAdd.length} add, ${toRemove.length} remove, ${toUpdate.length} update`);
+
+    // Execute operations
+    for (const filter of toAdd) {
+        await addFilterURL(server, filter.url, filter.name, false);
+    }
+
+    for (const filter of toRemove) {
+        await removeFilterURL(server, filter.url, false);
+    }
+
+    for (const filter of toUpdate) {
+        await setFilterURL(server, filter.url, { enabled: filter.enabled, name: filter.name });
+    }
+}
+
+/**
+ * Set filter URL parameters
+ * POST /control/filtering/set_url
+ * @param {Object} server - Server configuration
+ * @param {string} url - Filter URL
+ * @param {Object} data - Update data (enabled, name)
+ * @returns {Promise<void>}
+ */
+async function setFilterURL(server, url, data) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const endpoint = `${normalizedHost}/control/filtering/set_url`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, data })
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Get DNS rewrites
+ * GET /control/rewrite/list
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Array>} Array of rewrite objects
+ */
+export async function getRewrites(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/rewrite/list`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching DNS rewrites:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data || [];
+}
+
+/**
+ * Set DNS rewrites
+ * Note: We clear all and re-add to ensure consistency
+ * @param {Object} server - Server configuration
+ * @param {Array} rewrites - Array of rewrite objects {domain, answer}
+ * @returns {Promise<void>}
+ */
+export async function setRewrites(server, rewrites) {
+    Logger.info(`Setting ${rewrites.length} DNS rewrites for ${server.name}`);
+
+    // Get current rewrites
+    const current = await getRewrites(server);
+
+    // Remove all current rewrites
+    for (const rewrite of current) {
+        await deleteRewrite(server, rewrite.domain, rewrite.answer);
+    }
+
+    // Add new rewrites
+    for (const rewrite of rewrites) {
+        await addRewrite(server, rewrite.domain, rewrite.answer);
+    }
+}
+
+/**
+ * Add a DNS rewrite
+ * POST /control/rewrite/add
+ * @param {Object} server - Server configuration
+ * @param {string} domain - Domain to rewrite
+ * @param {string} answer - Answer (IP or domain)
+ * @returns {Promise<void>}
+ */
+async function addRewrite(server, domain, answer) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/rewrite/add`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ domain, answer })
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Delete a DNS rewrite
+ * POST /control/rewrite/delete
+ * @param {Object} server - Server configuration
+ * @param {string} domain - Domain to remove
+ * @param {string} answer - Answer to remove
+ * @returns {Promise<void>}
+ */
+async function deleteRewrite(server, domain, answer) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/rewrite/delete`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ domain, answer })
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Get Home Clients
+ * GET /control/clients
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Array>} Array of client objects
+ */
+export async function getClients(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/clients`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching home clients:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data.clients || [];
+}
+
+/**
+ * Set Home Clients
+ * Note: We sync by comparing and adding/removing/updating individually
+ * @param {Object} server - Server configuration
+ * @param {Array} clients - Array of client objects
+ * @returns {Promise<void>}
+ */
+export async function setClients(server, clients) {
+    Logger.info(`Setting ${clients.length} home clients for ${server.name}`);
+
+    // Get current clients
+    const current = await getClients(server);
+
+    // Create maps for comparison (by name)
+    const currentMap = new Map(current.map(c => [c.name, c]));
+    const targetMap = new Map(clients.map(c => [c.name, c]));
+
+    const toAdd = clients.filter(c => !currentMap.has(c.name));
+    const toRemove = current.filter(c => !targetMap.has(c.name));
+    const toUpdate = clients.filter(c => {
+        const existing = currentMap.get(c.name);
+        return existing && JSON.stringify(existing) !== JSON.stringify(c);
+    });
+
+    Logger.debug(`Client operations: ${toAdd.length} add, ${toRemove.length} remove, ${toUpdate.length} update`);
+
+    // Execute operations
+    for (const client of toRemove) {
+        await deleteClient(server, client.name);
+    }
+
+    for (const client of toAdd) {
+        await addClient(server, client);
+    }
+
+    for (const client of toUpdate) {
+        await updateClient(server, client.name, client);
+    }
+}
+
+/**
+ * Add a home client
+ * POST /control/clients/add
+ * @param {Object} server - Server configuration
+ * @param {Object} client - Client object
+ * @returns {Promise<void>}
+ */
+async function addClient(server, client) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/clients/add`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(client)
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Update a home client
+ * POST /control/clients/update
+ * @param {Object} server - Server configuration
+ * @param {string} name - Client name
+ * @param {Object} data - Updated client data
+ * @returns {Promise<void>}
+ */
+async function updateClient(server, name, data) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/clients/update`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, data })
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Delete a home client
+ * POST /control/clients/delete
+ * @param {Object} server - Server configuration
+ * @param {string} name - Client name to delete
+ * @returns {Promise<void>}
+ */
+async function deleteClient(server, name) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/clients/delete`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name })
+        });
+    }, DEFAULT_RETRIES);
+}

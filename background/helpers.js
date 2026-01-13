@@ -554,3 +554,159 @@ export const Logger = {
     }
 };
 
+// ============================================================================
+// DEDUPLICATION FOR SYNC FEATURES
+// ============================================================================
+
+/**
+ * Deduplicate DNS blocklists (filter URLs)
+ * Merge strategy:
+ * - Dedupe by URL (exact match)
+ * - enabled: true if ANY server has it enabled
+ * - rules_count: keep highest count
+ * - last_updated: keep most recent
+ */
+export function dedupBlocklists(blocklists) {
+    if (!Array.isArray(blocklists) || blocklists.length === 0) {
+        return [];
+    }
+
+    const map = new Map();
+
+    for (const filter of blocklists) {
+        if (!filter || !filter.url) continue;
+
+        const key = filter.url.trim();
+
+        if (!map.has(key)) {
+            map.set(key, { ...filter });
+        } else {
+            const existing = map.get(key);
+
+            // Merge: enabled if ANY server has it enabled
+            existing.enabled = existing.enabled || filter.enabled;
+
+            // Keep highest rules count
+            if (filter.rules_count > (existing.rules_count || 0)) {
+                existing.rules_count = filter.rules_count;
+            }
+
+            // Keep most recent update
+            if (filter.last_updated && (!existing.last_updated ||
+                new Date(filter.last_updated) > new Date(existing.last_updated))) {
+                existing.last_updated = filter.last_updated;
+            }
+
+            // Prefer non-empty name
+            if (!existing.name && filter.name) {
+                existing.name = filter.name;
+            }
+        }
+    }
+
+    return Array.from(map.values());
+}
+
+/**
+ * Deduplicate DNS rewrites
+ * Merge strategy:
+ * - Dedupe by domain (exact match, case-insensitive)
+ * - For conflicts (same domain, different answer): first-wins
+ */
+export function dedupRewrites(rewrites) {
+    if (!Array.isArray(rewrites) || rewrites.length === 0) {
+        return [];
+    }
+
+    const map = new Map();
+
+    for (const rewrite of rewrites) {
+        if (!rewrite || !rewrite.domain) continue;
+
+        const key = rewrite.domain.toLowerCase().trim();
+
+        if (!map.has(key)) {
+            map.set(key, { ...rewrite });
+        }
+        // First-wins: keep existing, ignore new
+    }
+
+    return Array.from(map.values());
+}
+
+/**
+ * Deduplicate Home Clients
+ * Merge strategy:
+ * - Dedupe by name (exact match, case-sensitive)
+ * - Merge ids arrays (union of all IPs/MACs)
+ * - Merge settings: most restrictive wins for safety
+ */
+export function dedupClients(clients) {
+    if (!Array.isArray(clients) || clients.length === 0) {
+        return [];
+    }
+
+    const map = new Map();
+
+    for (const client of clients) {
+        if (!client || !client.name) continue;
+
+        const key = client.name.trim();
+
+        if (!map.has(key)) {
+            map.set(key, {
+                ...client,
+                ids: Array.isArray(client.ids) ? [...client.ids] : []
+            });
+        } else {
+            const existing = map.get(key);
+
+            // Merge IDs (union)
+            if (Array.isArray(client.ids)) {
+                const idsSet = new Set([...existing.ids, ...client.ids]);
+                existing.ids = Array.from(idsSet);
+            }
+
+            // Merge settings: most restrictive wins (for safety)
+            if (client.filtering_enabled) {
+                existing.filtering_enabled = true;
+            }
+
+            if (client.parental_enabled) {
+                existing.parental_enabled = true;
+            }
+
+            if (client.safebrowsing_enabled) {
+                existing.safebrowsing_enabled = true;
+            }
+
+            // Merge safesearch
+            if (client.safesearch?.enabled) {
+                existing.safesearch = existing.safesearch || {};
+                existing.safesearch.enabled = true;
+            }
+
+            // Merge blocked services (union)
+            if (client.blocked_services?.ids && Array.isArray(client.blocked_services.ids)) {
+                existing.blocked_services = existing.blocked_services || { ids: [] };
+                const servicesSet = new Set([
+                    ...(existing.blocked_services.ids || []),
+                    ...client.blocked_services.ids
+                ]);
+                existing.blocked_services.ids = Array.from(servicesSet);
+            }
+
+            // Merge tags (union)
+            if (client.tags && Array.isArray(client.tags)) {
+                const tagsSet = new Set([
+                    ...(existing.tags || []),
+                    ...client.tags
+                ]);
+                existing.tags = Array.from(tagsSet);
+            }
+        }
+    }
+
+    return Array.from(map.values());
+}
+
