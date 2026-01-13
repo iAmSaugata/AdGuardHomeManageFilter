@@ -637,6 +637,39 @@ export async function renderGroupSettings(container, data = {}) {
         window.app.navigateTo('group-merged-rules', { groupId });
     });
 
+    // DNS Blocklists card click handler
+    const blocklistsCard = container.querySelector('.sync-pill[data-sync-type="dnsBlocklists"]');
+    blocklistsCard?.addEventListener('click', (e) => {
+        // Don't navigate if clicking on the toggle
+        if (e.target.closest('.sync-toggle')) {
+            return;
+        }
+        // TODO: Create group-blocklists view
+        window.app.showToast('DNS Blocklists view coming soon!', 'info');
+    });
+
+    // DNS Rewrites card click handler
+    const rewritesCard = container.querySelector('.sync-pill[data-sync-type="dnsRewrites"]');
+    rewritesCard?.addEventListener('click', (e) => {
+        // Don't navigate if clicking on the toggle
+        if (e.target.closest('.sync-toggle')) {
+            return;
+        }
+        // TODO: Create group-rewrites view
+        window.app.showToast('DNS Rewrites view coming soon!', 'info');
+    });
+
+    // Home Clients card click handler
+    const clientsCard = container.querySelector('.sync-pill[data-sync-type="homeClients"]');
+    clientsCard?.addEventListener('click', (e) => {
+        // Don't navigate if clicking on the toggle
+        if (e.target.closest('.sync-toggle')) {
+            return;
+        }
+        // TODO: Create group-clients view
+        window.app.showToast('Home Clients view coming soon!', 'info');
+    });
+
     // Cancel button - reset to original state
     cancelBtn?.addEventListener('click', () => {
         console.log('[GroupSettings] Cancel button clicked - resetting changes', {
