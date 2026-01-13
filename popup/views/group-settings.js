@@ -87,8 +87,7 @@ export async function renderGroupSettings(container, data = {}) {
                         <h2>Sync Settings</h2>
                         
                         <div class="server-pill" id="manage-servers-btn">
-                            <span class="server-text">${escapeHtml(serverNames)}</span>
-                            <span class="server-manage">MANAGE</span>
+                            <span class="server-manage">Manage Servers</span>
                         </div>
                     </div>
 
@@ -196,7 +195,7 @@ export async function renderGroupSettings(container, data = {}) {
 
                     <!-- Action Buttons -->
                     <div class="action-buttons">
-                        <button class="btn-cancel" id="cancel-btn">Cancel</button>
+                        <button class="btn-cancel" id="cancel-btn">Close</button>
                         <button class="btn-update" id="update-btn" disabled>Update</button>
                     </div>
                 </div>
@@ -227,19 +226,20 @@ export async function renderGroupSettings(container, data = {}) {
                     .server-pill {
                         display: flex;
                         align-items: center;
-                        gap: 12px;
-                        background: var(--color-bg-secondary);
-                        border: 1px solid var(--color-border);
-                        padding: 8px 14px;
-                        border-radius: 99px;
-                        font-size: 0.8rem;
-                        transition: all 0.3s ease;
+                        justify-content: center;
+                        gap: 8px;
+                        background: rgba(76, 175, 80, 0.1);
+                        border: 1px solid rgba(76, 175, 80, 0.3);
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        transition: all 0.2s ease;
                         cursor: pointer;
                     }
 
                     .server-pill:hover {
-                        border-color: var(--color-text-secondary);
-                        background: var(--color-bg-tertiary);
+                        border-color: var(--color-success);
+                        background: rgba(76, 175, 80, 0.15);
                     }
 
                     .server-text {
@@ -247,11 +247,10 @@ export async function renderGroupSettings(container, data = {}) {
                     }
 
                     .server-manage {
-                        color: var(--color-text-tertiary);
-                        font-size: 0.7rem;
-                        text-transform: uppercase;
-                        font-weight: 700;
-                        letter-spacing: 0.5px;
+                        color: var(--color-success);
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        letter-spacing: 0.3px;
                     }
 
                     .sync-pills-container {
@@ -513,6 +512,17 @@ export async function renderGroupSettings(container, data = {}) {
                     .btn-update:disabled {
                         opacity: 0.5;
                         cursor: not-allowed;
+                    }
+
+                    .btn-cancel {
+                        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                        color: #ffffff;
+                        border: none;
+                    }
+
+                    .btn-cancel:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
                     }
                 </style>
             </div>
