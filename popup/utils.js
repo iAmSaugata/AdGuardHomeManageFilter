@@ -249,9 +249,9 @@ export function dedupRewrites(rewrites) {
         }
     }
 
-    // Log conflicts if any
+    // Log conflicts if any (debug level)
     if (conflicts.length > 0) {
-        console.warn('[Dedup] DNS Rewrite conflicts detected (first-wins applied):', conflicts);
+        console.debug('[Dedup] DNS Rewrite conflicts detected (first-wins applied):', conflicts);
     }
 
     return Array.from(map.values());
