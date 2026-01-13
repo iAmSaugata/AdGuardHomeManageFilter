@@ -102,7 +102,7 @@ export async function renderGroupRewrites(container, data = {}) {
                         <span style="font-size: 10px; color: var(--color-text-secondary); font-weight: 500;">${mergedRewrites.length} total</span>
                     </div>
                     
-                    <div id="rewrites-container" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                    <div id="rewrites-container" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
                         ${mergedRewrites.length === 0 ? `
                             <div style="text-align: center; padding: 30px; color: var(--color-text-secondary);">
                                 <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 10px; opacity: 0.3;">
