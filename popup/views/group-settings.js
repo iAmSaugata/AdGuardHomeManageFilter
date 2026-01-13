@@ -28,33 +28,10 @@ export async function renderGroupSettings(container, data = {}) {
     const groupServers = servers.filter(s => group.serverIds && group.serverIds.includes(s.id));
     const serverNames = groupServers.map(s => s.name).join(', ') || 'No servers';
 
-    // Get merged rules count
-    let ruleCount = 0;
-    if (group.serverIds && group.serverIds.length > 0) {
-        try {
-            const allRules = [];
-            for (const serverId of group.serverIds) {
-                const cache = await window.app.sendMessage('getCache', { serverId });
-                if (cache && cache.rules) {
-                    allRules.push(...cache.rules);
-                }
-            }
-
-            const { normalizeRule, dedupRules } = await import('../shared/utilities.js');
-            const normalized = allRules.map(normalizeRule).filter(r => r);
-            const deduped = dedupRules(normalized);
-            ruleCount = deduped.length;
-        } catch (error) {
-            console.error('Error fetching merged rules:', error);
-            ruleCount = 0;
-        }
-    }
-
     // Initialize sync settings from group data
     // For backward compatibility: existing groups default to Custom Rules ON, others OFF
     // New groups: all OFF by default
-    const isNewGroup = group.syncSettings === undefined; // If syncSettings is undefined, it's a new group or old group without settings
-    // Initialize sync settings with defaults
+    const isNewGroup = group.syncSettings === undefined;
     const syncSettings = {
         customRules: group.syncSettings?.customRules !== undefined ? group.syncSettings.customRules : isNewGroup ? false : true,
         dnsBlocklists: group.syncSettings?.dnsBlocklists ?? false,
@@ -75,25 +52,33 @@ export async function renderGroupSettings(container, data = {}) {
     let rewriteCount = 0;
     let clientCount = 0;
 
-    // Get cached data from all servers in the group to calculate counts
-    const serverData = await Promise.all(
-        (group.serverIds || []).map(async (serverId) => {
-            try {
-                const cache = await window.app.sendMessage('getCache', { serverId });
-                return cache;
-            } catch (e) {
-                return null;
-            }
-        })
-    );
+    if (group.serverIds && group.serverIds.length > 0) {
+        try {
+            const allRules = [];
 
-    // Aggregate counts (deduplicated would be more accurate, but this gives a rough estimate)
-    for (const cache of serverData) {
-        if (cache) {
-            ruleCount = Math.max(ruleCount, cache.rules?.length || 0);
-            blocklistCount = Math.max(blocklistCount, cache.blocklists?.length || 0);
-            rewriteCount = Math.max(rewriteCount, cache.rewrites?.length || 0);
-            clientCount = Math.max(clientCount, cache.clients?.length || 0);
+            // Get cached data from all servers in the group
+            for (const serverId of group.serverIds) {
+                const cache = await window.app.sendMessage('getCache', { serverId });
+                if (cache) {
+                    // Collect rules for deduplication
+                    if (cache.rules) {
+                        allRules.push(...cache.rules);
+                    }
+
+                    // Get max counts for other types (rough estimate)
+                    blocklistCount = Math.max(blocklistCount, cache.blocklists?.length || 0);
+                    rewriteCount = Math.max(rewriteCount, cache.rewrites?.length || 0);
+                    clientCount = Math.max(clientCount, cache.clients?.length || 0);
+                }
+            }
+
+            // Deduplicate rules for accurate count
+            const { normalizeRule, dedupRules } = await import('../shared/utilities.js');
+            const normalized = allRules.map(normalizeRule).filter(r => r);
+            const deduped = dedupRules(normalized);
+            ruleCount = deduped.length;
+        } catch (error) {
+            console.error('Error fetching counts:', error);
         }
     }
 
