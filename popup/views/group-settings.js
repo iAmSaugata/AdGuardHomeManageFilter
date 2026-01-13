@@ -644,8 +644,7 @@ export async function renderGroupSettings(container, data = {}) {
         if (e.target.closest('.sync-toggle')) {
             return;
         }
-        // TODO: Create group-blocklists view
-        window.app.showToast('DNS Blocklists view coming soon!', 'info');
+        window.app.navigateTo('group-blocklists', { groupId });
     });
 
     // DNS Rewrites card click handler
@@ -655,8 +654,7 @@ export async function renderGroupSettings(container, data = {}) {
         if (e.target.closest('.sync-toggle')) {
             return;
         }
-        // TODO: Create group-rewrites view
-        window.app.showToast('DNS Rewrites view coming soon!', 'info');
+        window.app.navigateTo('group-rewrites', { groupId });
     });
 
     // Home Clients card click handler
@@ -666,8 +664,7 @@ export async function renderGroupSettings(container, data = {}) {
         if (e.target.closest('.sync-toggle')) {
             return;
         }
-        // TODO: Create group-clients view
-        window.app.showToast('Home Clients view coming soon!', 'info');
+        window.app.navigateTo('group-clients', { groupId });
     });
 
     // Cancel button - reset to original state
