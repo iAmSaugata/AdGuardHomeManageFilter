@@ -69,6 +69,34 @@ export async function renderGroupSettings(container, data = {}) {
         syncSettings
     });
 
+    // Calculate counts from server data (for display)
+    let ruleCount = 0;
+    let blocklistCount = 0;
+    let rewriteCount = 0;
+    let clientCount = 0;
+
+    // Get cached data from all servers in the group to calculate counts
+    const serverData = await Promise.all(
+        (group.serverIds || []).map(async (serverId) => {
+            try {
+                const cache = await window.app.sendMessage('getCache', { serverId });
+                return cache;
+            } catch (e) {
+                return null;
+            }
+        })
+    );
+
+    // Aggregate counts (deduplicated would be more accurate, but this gives a rough estimate)
+    for (const cache of serverData) {
+        if (cache) {
+            ruleCount = Math.max(ruleCount, cache.rules?.length || 0);
+            blocklistCount = Math.max(blocklistCount, cache.blocklists?.length || 0);
+            rewriteCount = Math.max(rewriteCount, cache.rewrites?.length || 0);
+            clientCount = Math.max(clientCount, cache.clients?.length || 0);
+        }
+    }
+
     container.innerHTML = `
         <div class="view-container">
             <div class="view-header">
@@ -126,8 +154,8 @@ export async function renderGroupSettings(container, data = {}) {
                             </div>
                         </div>
 
-                        <!-- DNS Blocklists - Coming Soon -->
-                        <div class="sync-pill disabled" data-sync-type="dnsBlocklists">
+                        <!-- DNS Blocklists - Active -->
+                        <div class="sync-pill ${syncSettings.dnsBlocklists ? 'active' : 'inactive'}" data-sync-type="dnsBlocklists">
                             <div class="pill-left">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -142,15 +170,19 @@ export async function renderGroupSettings(container, data = {}) {
                                 <div class="pill-text">
                                     <div class="pill-title">DNS Blocklists</div>
                                     <div class="pill-subtitle">Subscribe to external filters</div>
+                                    <div class="pill-count">${blocklistCount} lists</div>
                                 </div>
                             </div>
                             <div class="pill-right">
-                                <span class="pill-badge">Coming Soon</span>
+                                <label class="sync-toggle">
+                                    <input type="checkbox" class="sync-toggle-input" data-sync-type="dnsBlocklists" ${syncSettings.dnsBlocklists ? 'checked' : ''}>
+                                    <span class="sync-toggle-slider"></span>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- DNS Rewrites - Coming Soon -->
-                        <div class="sync-pill disabled" data-sync-type="dnsRewrites">
+                        <!-- DNS Rewrites - Active -->
+                        <div class="sync-pill ${syncSettings.dnsRewrites ? 'active' : 'inactive'}" data-sync-type="dnsRewrites">
                             <div class="pill-left">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -163,15 +195,19 @@ export async function renderGroupSettings(container, data = {}) {
                                 <div class="pill-text">
                                     <div class="pill-title">DNS Rewrites</div>
                                     <div class="pill-subtitle">Redirect domains locally</div>
+                                    <div class="pill-count">${rewriteCount} rewrites</div>
                                 </div>
                             </div>
                             <div class="pill-right">
-                                <span class="pill-badge">Coming Soon</span>
+                                <label class="sync-toggle">
+                                    <input type="checkbox" class="sync-toggle-input" data-sync-type="dnsRewrites" ${syncSettings.dnsRewrites ? 'checked' : ''}>
+                                    <span class="sync-toggle-slider"></span>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- Home Clients - Coming Soon -->
-                        <div class="sync-pill disabled" data-sync-type="homeClients">
+                        <!-- Home Clients - Active -->
+                        <div class="sync-pill ${syncSettings.homeClients ? 'active' : 'inactive'}" data-sync-type="homeClients">
                             <div class="pill-left">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -185,10 +221,14 @@ export async function renderGroupSettings(container, data = {}) {
                                 <div class="pill-text">
                                     <div class="pill-title">Home Clients</div>
                                     <div class="pill-subtitle">Manage devices on your network</div>
+                                    <div class="pill-count">${clientCount} clients</div>
                                 </div>
                             </div>
                             <div class="pill-right">
-                                <span class="pill-badge">Coming Soon</span>
+                                <label class="sync-toggle">
+                                    <input type="checkbox" class="sync-toggle-input" data-sync-type="homeClients" ${syncSettings.homeClients ? 'checked' : ''}>
+                                    <span class="sync-toggle-slider"></span>
+                                </label>
                             </div>
                         </div>
                     </div>
