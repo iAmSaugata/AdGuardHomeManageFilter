@@ -1,3 +1,6 @@
+**Download Link :** https://chromewebstore.google.com/detail/adguard-home-central-mana/giebhpbpfgmeloaniakgkhbcdcondhne?utm_source=chatgpt.com
+
+
 # 🛡️ AdGuard Home Central Manager
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -147,3 +150,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
   <br>
   <sub>Not affiliated with AdGuard Software Ltd.</sub>
 </div>
+
