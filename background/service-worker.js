@@ -424,6 +424,14 @@ const messageHandlers = {
             throw new Error('Server not found');
         }
         return await apiClient.checkHost(server, name);
+    },
+
+    async getQueryLogConfig({ server }) {
+        return await apiClient.getQueryLogConfig(server);
+    },
+
+    async getStatsConfig({ server }) {
+        return await apiClient.getStatsConfig(server);
     }
 };
 

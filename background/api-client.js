@@ -957,3 +957,117 @@ async function deleteClient(server, name) {
         });
     }, DEFAULT_RETRIES);
 }
+
+// ============================================================================
+// QUERY LOG & STATS CONFIG: IGNORED DOMAINS
+// ============================================================================
+
+/**
+ * Get Query Log configuration (includes ignored domains)
+ * GET /control/querylog/config
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Object>} Query log config object
+ */
+export async function getQueryLogConfig(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/querylog/config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching query log config:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data;
+}
+
+/**
+ * Set Query Log configuration (includes ignored domains)
+ * PUT /control/querylog/config
+ * @param {Object} server - Server configuration
+ * @param {Object} config - Query log config object
+ * @returns {Promise<void>}
+ */
+export async function setQueryLogConfig(server, config) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/querylog/config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Setting query log config:', sanitizeServerForLog(server));
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+    }, DEFAULT_RETRIES);
+}
+
+/**
+ * Get Statistics configuration (includes ignored domains)
+ * GET /control/stats/config
+ * @param {Object} server - Server configuration
+ * @returns {Promise<Object>} Stats config object
+ */
+export async function getStatsConfig(server) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/stats/config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Fetching stats config:', sanitizeServerForLog(server));
+
+    const data = await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+    }, DEFAULT_RETRIES);
+
+    return data;
+}
+
+/**
+ * Set Statistics configuration (includes ignored domains)
+ * PUT /control/stats/config
+ * @param {Object} server - Server configuration
+ * @param {Object} config - Stats config object
+ * @returns {Promise<void>}
+ */
+export async function setStatsConfig(server, config) {
+    await apiLimiter.acquire();
+
+    const normalizedHost = normalizeHost(server.host);
+    const url = `${normalizedHost}/control/stats/config`;
+    const authHeader = createAuthHeader(server.username, server.password);
+
+    Logger.debug('Setting stats config:', sanitizeServerForLog(server));
+
+    await withRetry(async () => {
+        return await apiRequest(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+    }, DEFAULT_RETRIES);
+}

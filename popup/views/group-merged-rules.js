@@ -138,9 +138,8 @@ export async function renderGroupMergedRules(container, data = {}) {
         }
 
         return `
-                                <div style="padding: 6px 8px; margin-bottom: 2px; background: var(--color-bg-primary); border-radius: 4px; display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="color: ${bulletColor}; font-size: 14px; line-height: 1; margin-top: 1px;">●</span>
-                                    <span style="font-family: 'Courier New', monospace; font-size: 10px; color: ${textColor}; word-break: break-all; flex: 1;">${escapeHtml(rule)}</span>
+                                <div style="background: rgba(255, 255, 255, 0.02); border-radius: 6px; padding: 10px 12px; margin-bottom: 4px; border-left: 3px solid ${bulletColor}; transition: all 0.2s ease;">
+                                    <span style="font-family: 'Courier New', monospace; font-size: 11px; color: ${textColor}; word-break: break-all; line-height: 1.4;">${escapeHtml(rule)}</span>
                                 </div>
                             `;
     }).join('')}
@@ -155,21 +154,27 @@ export async function renderGroupMergedRules(container, data = {}) {
 
                 <style>
                     #rules-preview::-webkit-scrollbar {
-                        width: 6px;
+                        width: 8px;
                     }
                     
                     #rules-preview::-webkit-scrollbar-track {
-                        background: var(--color-bg-primary);
-                        border-radius: 3px;
+                        background: rgba(0, 0, 0, 0.2);
+                        border-radius: 4px;
                     }
                     
                     #rules-preview::-webkit-scrollbar-thumb {
-                        background: var(--color-border);
-                        border-radius: 3px;
+                        background: linear-gradient(180deg, #4caf50, #45a049);
+                        border-radius: 4px;
+                        transition: background 0.3s;
                     }
                     
                     #rules-preview::-webkit-scrollbar-thumb:hover {
-                        background: var(--color-text-tertiary);
+                        background: linear-gradient(180deg, #45a049, #3d8b40);
+                    }
+                    
+                    .icon-btn:hover {
+                        opacity: 1 !important;
+                        transform: scale(1.1);
                     }
                 </style>
             </div>

@@ -5,14 +5,14 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: 6px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     display: grid;
     grid-template-columns: 1fr auto auto;
     gap: 6px;
     align-items: center;
     cursor: pointer;
     transition: all var(--transition-base);
-    min-height: 84px;
+    min-height: 70px;
 }
 
 .server-card:hover {
@@ -46,6 +46,8 @@
 
 .server-name-text {
     line-height: 1.2;
+    font-size: 11px;
+    font-weight: 700;
 }
 
 .server-icon-large {
@@ -114,8 +116,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0;
-    height: 84px;
+    gap: 4px;
+    height: 70px;
     position: relative;
     align-self: center;
     margin-top: 0;
@@ -125,33 +127,43 @@
 
 /* Protection Button - Power Toggle */
 .protection-btn {
-    width: 28px !important;
-    height: 28px !important;
+    width: 34px !important;
+    height: 34px !important;
     padding: 0 !important;
-    border-radius: 6px;
+    border-radius: 8px;
     border: none !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition: transform 0.15s ease, opacity 0.2s ease, background-color 0.2s ease;
     cursor: pointer;
     background-color: var(--color-bg-tertiary);
-    margin-top: auto;
+    flex-shrink: 0;
 }
 
 .protection-btn svg {
-    width: 60%;
-    height: 60%;
-    fill: #000000;
+    width: 55%;
+    height: 55%;
+    fill: rgba(255,255,255,0.6);
     display: block;
 }
 
 .protection-btn.protection-on {
     background-color: var(--color-accent) !important;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.45);
+}
+
+.protection-btn.protection-on svg {
+    fill: #fff;
 }
 
 .protection-btn.protection-off {
     background-color: var(--color-danger) !important;
+    box-shadow: 0 0 8px rgba(229, 57, 53, 0.4);
+}
+
+.protection-btn.protection-off svg {
+    fill: #fff;
 }
 
 .protection-btn:hover {
@@ -189,17 +201,15 @@
 .chart-legend-container {
     display: flex;
     align-items: center;
-    gap: 16px;
-    /* Increased gap between Power and Legend (was space-2/8px) */
+    gap: 12px;
     margin-left: auto;
-    margin-right: 12px;
-    /* Push away from Right edge/Gear icon to move "little left" */
+    margin-right: 4px;
 }
 
 .donut-chart-container {
     position: relative;
-    width: 84px;
-    height: 84px;
+    width: 70px;
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,8 +217,8 @@
 }
 
 .donut-chart {
-    width: 84px;
-    height: 84px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     position: relative;
     cursor: help;

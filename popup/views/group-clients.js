@@ -136,31 +136,21 @@ export async function renderGroupClients(container, data = {}) {
         const tags = Array.isArray(client.tags) ? client.tags : [];
 
         return `
-                                <div style="background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px; transition: all 0.2s ease;">
-                                    <div style="display: flex; align-items: start; gap: 8px;">
-                                        <div style="flex: 1; min-width: 0;">
-                                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#9c27b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                                    <circle cx="12" cy="7" r="4"/>
-                                                </svg>
-                                                <span style="font-size: 11px; font-weight: 600; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(client.name)}</span>
-                                            </div>
-                                            
-                                            ${ids.length > 0 ? `
-                                                <div style="font-size: 9px; color: var(--color-text-secondary); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                    ${ids.map(id => escapeHtml(id)).join(', ')}
-                                                </div>
-                                            ` : ''}
-                                            
-                                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                                ${client.filtering_enabled ? '<span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(66, 211, 146, 0.1); color: #42d392; font-weight: 600;">FILTERING</span>' : ''}
-                                                ${client.parental_enabled ? '<span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(255, 152, 0, 0.1); color: #ff9800; font-weight: 600;">PARENTAL</span>' : ''}
-                                                ${client.safebrowsing_enabled ? '<span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(100, 181, 246, 0.1); color: #64b5f6; font-weight: 600;">SAFE BROWSING</span>' : ''}
-                                                ${client.safesearch?.enabled ? '<span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(156, 39, 176, 0.1); color: #9c27b0; font-weight: 600;">SAFE SEARCH</span>' : ''}
-                                                ${tags.length > 0 ? tags.map(tag => `<span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: rgba(136, 136, 136, 0.1); color: #888; font-weight: 600;">${escapeHtml(tag)}</span>`).join('') : ''}
-                                            </div>
+                                <div style="background: rgba(255, 255, 255, 0.02); border-radius: 6px; padding: 12px; border-left: 3px solid #9c27b0; transition: all 0.2s ease;">
+                                    <div style="font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">${escapeHtml(client.name)}</div>
+                                    
+                                    ${ids.length > 0 ? `
+                                        <div style="font-size: 10px; color: var(--color-text-secondary); margin-bottom: 6px;">
+                                            ${ids.map(id => escapeHtml(id)).join(', ')}
                                         </div>
+                                    ` : ''}
+                                    
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        ${client.filtering_enabled ? '<span style="font-size: 9px; padding: 3px 8px; border-radius: 12px; background: rgba(66, 211, 146, 0.15); color: #42d392; font-weight: 600;">FILTERING</span>' : ''}
+                                        ${client.parental_enabled ? '<span style="font-size: 9px; padding: 3px 8px; border-radius: 12px; background: rgba(255, 152, 0, 0.15); color: #ff9800; font-weight: 600;">PARENTAL</span>' : ''}
+                                        ${client.safebrowsing_enabled ? '<span style="font-size: 9px; padding: 3px 8px; border-radius: 12px; background: rgba(100, 181, 246, 0.15); color: #64b5f6; font-weight: 600;">SAFE BROWSING</span>' : ''}
+                                        ${client.safesearch?.enabled ? '<span style="font-size: 9px; padding: 3px 8px; border-radius: 12px; background: rgba(156, 39, 176, 0.15); color: #9c27b0; font-weight: 600;">SAFE SEARCH</span>' : ''}
+                                        ${tags.length > 0 ? tags.map(tag => `<span style="font-size: 9px; padding: 3px 8px; border-radius: 12px; background: rgba(136, 136, 136, 0.15); color: #888; font-weight: 600;">${escapeHtml(tag)}</span>`).join('') : ''}
                                     </div>
                                 </div>
                             `;
@@ -172,21 +162,27 @@ export async function renderGroupClients(container, data = {}) {
 
         <style>
             #clients-container::-webkit-scrollbar {
-                width: 6px;
+                width: 8px;
             }
 
             #clients-container::-webkit-scrollbar-track {
-                background: var(--color-bg-primary);
-                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
             }
 
             #clients-container::-webkit-scrollbar-thumb {
-                background: var(--color-border);
-                border-radius: 3px;
+                background: linear-gradient(180deg, #4caf50, #45a049);
+                border-radius: 4px;
+                transition: background 0.3s;
             }
 
             #clients-container::-webkit-scrollbar-thumb:hover {
-                background: var(--color-text-tertiary);
+                background: linear-gradient(180deg, #45a049, #3d8b40);
+            }
+            
+            .icon-btn:hover {
+                opacity: 1 !important;
+                transform: scale(1.1);
             }
         </style>
     `;

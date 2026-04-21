@@ -144,20 +144,15 @@ export async function renderGroupBlocklists(container, data = {}) {
         const statusText = filter.enabled ? 'ENABLED' : 'DISABLED';
 
         return `
-                                <div style="background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px; transition: all 0.2s ease;">
-                                    <div style="display: flex; align-items: start; gap: 8px;">
-                                        <div style="flex: 1; min-width: 0;">
-                                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                                <div style="width: 6px; height: 6px; border-radius: 50%; background: ${statusColor};"></div>
-                                                <span style="font-size: 11px; font-weight: 600; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(filter.name || 'Unnamed Filter')}</span>
-                                            </div>
-                                            <div style="font-size: 9px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px;">${escapeHtml(filter.url)}</div>
-                                            <div style="display: flex; align-items: center; gap: 8px;">
-                                                <span style="font-size: 8px; padding: 2px 6px; border-radius: 3px; background: ${filter.enabled ? 'rgba(66, 211, 146, 0.1)' : 'rgba(136, 136, 136, 0.1)'}; color: ${statusColor}; font-weight: 600;">${statusText}</span>
-                                                <span style="font-size: 8px; color: var(--color-text-tertiary);">${(filter.rules_count || 0).toLocaleString()} rules</span>
-                                                ${filter.last_updated ? `<span style="font-size: 8px; color: var(--color-text-tertiary);">Updated: ${new Date(filter.last_updated).toLocaleDateString()}</span>` : ''}
-                                            </div>
-                                        </div>
+                                <div style="background: rgba(255, 255, 255, 0.02); border-radius: 6px; padding: 12px; transition: all 0.2s ease; border-left: 3px solid ${statusColor};">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <span style="font-size: 12px; font-weight: 600; color: var(--color-text-primary);">${escapeHtml(filter.name || 'Unnamed Filter')}</span>
+                                        <span style="font-size: 9px; padding: 2px 8px; border-radius: 12px; background: ${filter.enabled ? 'rgba(66, 211, 146, 0.15)' : 'rgba(136, 136, 136, 0.15)'}; color: ${statusColor}; font-weight: 600; text-transform: uppercase;">${statusText}</span>
+                                    </div>
+                                    <div style="font-size: 10px; color: var(--color-text-secondary); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(filter.url)}</div>
+                                    <div style="display: flex; align-items: center; gap: 12px; font-size: 9px; color: var(--color-text-tertiary);">
+                                        <span>📊 ${(filter.rules_count || 0).toLocaleString()} rules</span>
+                                        ${filter.last_updated ? `<span>🕒 ${new Date(filter.last_updated).toLocaleDateString()}</span>` : ''}
                                     </div>
                                 </div>
                             `;
@@ -169,21 +164,27 @@ export async function renderGroupBlocklists(container, data = {}) {
 
         <style>
             #blocklists-container::-webkit-scrollbar {
-                width: 6px;
+                width: 8px;
             }
 
             #blocklists-container::-webkit-scrollbar-track {
-                background: var(--color-bg-primary);
-                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
             }
 
             #blocklists-container::-webkit-scrollbar-thumb {
-                background: var(--color-border);
-                border-radius: 3px;
+                background: linear-gradient(180deg, #4caf50, #45a049);
+                border-radius: 4px;
+                transition: background 0.3s;
             }
 
             #blocklists-container::-webkit-scrollbar-thumb:hover {
-                background: var(--color-text-tertiary);
+                background: linear-gradient(180deg, #45a049, #3d8b40);
+            }
+            
+            .icon-btn:hover {
+                opacity: 1 !important;
+                transform: scale(1.1);
             }
         </style>
     `;

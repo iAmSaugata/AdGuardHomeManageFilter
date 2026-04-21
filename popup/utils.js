@@ -80,7 +80,7 @@ export function getRuleCounts(rules) {
  * @param {string} subtitle - Optional subtitle
  * @returns {Promise<boolean>} True if confirmed, false if cancelled
  */
-export function showConfirmDialog(title, message, subtitle = '') {
+export function showConfirmDialog(title, message, subtitle = '', cancelLabel = 'Cancel', confirmLabel = 'Delete') {
     return new Promise((resolve) => {
         // Create overlay
         const overlay = document.createElement('div');
@@ -98,8 +98,8 @@ export function showConfirmDialog(title, message, subtitle = '') {
                 ${subtitle ? `<p class="confirm-subtitle">${escapeHtml(subtitle)}</p>` : ''}
             </div>
             <div class="confirm-actions">
-                <button class="btn btn-secondary btn-block" id="confirm-cancel">Cancel</button>
-                <button class="btn btn-danger btn-block" id="confirm-ok">Delete</button>
+                <button class="btn btn-secondary btn-block" id="confirm-cancel">${escapeHtml(cancelLabel)}</button>
+                <button class="btn btn-danger btn-block" id="confirm-ok">${escapeHtml(confirmLabel)}</button>
             </div>
         `;
 
@@ -394,4 +394,26 @@ export function normalizeClient(client) {
         upstreams: client.upstreams || [],
         tags: Array.isArray(client.tags) ? client.tags : []
     };
+}
+
+/**
+ * Deduplicate ignored domains (for query log or stats)
+ * @param {Array<string>} domains - Array of domain strings
+ * @returns {Array<string>} Deduplicated array of domains
+ */
+export function deduplicateIgnoredDomains(domains) {
+    if (!Array.isArray(domains)) return [];
+
+    // Normalize and deduplicate
+    const uniqueDomains = new Set();
+
+    for (const domain of domains) {
+        if (typeof domain === 'string' && domain.trim()) {
+            // Normalize: lowercase and trim
+            uniqueDomains.add(domain.trim().toLowerCase());
+        }
+    }
+
+    // Return sorted array for consistency
+    return Array.from(uniqueDomains).sort();
 }

@@ -13,6 +13,8 @@ import { renderGroupMergedRules } from './views/group-merged-rules.js';
 import { renderGroupBlocklists } from './views/group-blocklists.js';
 import { renderGroupRewrites } from './views/group-rewrites.js';
 import { renderGroupClients } from './views/group-clients.js';
+import { renderGroupQueryLogIgnored } from './views/group-querylog-ignored.js';
+import { renderGroupStatsIgnored } from './views/group-stats-ignored.js';
 import { renderGroupServerSelection } from './views/group-server-selection.js';
 import { renderAddRuleSection } from './views/add-rule.js';
 import { renderAbout } from './views/about.js';
@@ -207,6 +209,16 @@ function renderCurrentView() {
         case 'group-clients':
             document.getElementById('add-rule-container').innerHTML = '';
             renderGroupClients(mainContent, state.viewData);
+            break;
+
+        case 'group-querylog-ignored':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderGroupQueryLogIgnored(mainContent, state.viewData);
+            break;
+
+        case 'group-stats-ignored':
+            document.getElementById('add-rule-container').innerHTML = '';
+            renderGroupStatsIgnored(mainContent, state.viewData);
             break;
 
         case 'group-server-selection':

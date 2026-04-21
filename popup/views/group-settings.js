@@ -1,7 +1,7 @@
 // Group Settings View
 // Modern dashboard design with vertical pill sync cards and toggle controls
 
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, showConfirmDialog } from '../utils.js';
 
 export async function renderGroupSettings(container, data = {}) {
     const { groupId } = data;
@@ -51,32 +51,90 @@ export async function renderGroupSettings(container, data = {}) {
     let blocklistCount = 0;
     let rewriteCount = 0;
     let clientCount = 0;
+    let queryLogIgnoredCount = 0;
+    let statsIgnoredCount = 0;
 
     if (group.serverIds && group.serverIds.length > 0) {
         try {
             const allRules = [];
+            const allBlocklists = [];
+            const allRewrites = [];
+            const allClients = [];
 
             // Get cached data from all servers in the group
             for (const serverId of group.serverIds) {
                 const cache = await window.app.sendMessage('getCache', { serverId });
                 if (cache) {
-                    // Collect rules for deduplication
+                    // Collect data for deduplication
                     if (cache.rules) {
                         allRules.push(...cache.rules);
                     }
-
-                    // Get max counts for other types (rough estimate)
-                    blocklistCount = Math.max(blocklistCount, cache.blocklists?.length || 0);
-                    rewriteCount = Math.max(rewriteCount, cache.rewrites?.length || 0);
-                    clientCount = Math.max(clientCount, cache.clients?.length || 0);
+                    if (cache.blocklists) {
+                        allBlocklists.push(...cache.blocklists);
+                    }
+                    if (cache.rewrites) {
+                        allRewrites.push(...cache.rewrites);
+                    }
+                    if (cache.clients) {
+                        allClients.push(...cache.clients);
+                    }
                 }
             }
 
-            // Deduplicate rules for accurate count
+            // Deduplicate all data types for accurate counts
             const { normalizeRule, dedupRules } = await import('../shared/utilities.js');
+            const { dedupBlocklists, dedupRewrites, dedupClients, deduplicateIgnoredDomains } = await import('../utils.js');
+
+            // Rules
             const normalized = allRules.map(normalizeRule).filter(r => r);
-            const deduped = dedupRules(normalized);
-            ruleCount = deduped.length;
+            const dedupedRules = dedupRules(normalized);
+            ruleCount = dedupedRules.length;
+
+            // Blocklists
+            const dedupedBlocklists = dedupBlocklists(allBlocklists);
+            blocklistCount = dedupedBlocklists.length;
+
+            // Rewrites
+            const dedupedRewrites = dedupRewrites(allRewrites);
+            rewriteCount = dedupedRewrites.length;
+
+            // Clients
+            const dedupedClients = dedupClients(allClients);
+            clientCount = dedupedClients.length;
+
+            // Fetch ignored domains from first server (they should be synced)
+            if (group.serverIds.length > 0) {
+                try {
+                    const firstServerId = group.serverIds[0];
+                    const server = await window.app.sendMessage('getServer', { id: firstServerId });
+
+                    if (server) {
+                        // Query Log Ignored
+                        try {
+                            const queryLogConfig = await window.app.sendMessage('getQueryLogConfig', { server });
+                            if (queryLogConfig?.ignored) {
+                                const dedupedQueryLog = deduplicateIgnoredDomains(queryLogConfig.ignored);
+                                queryLogIgnoredCount = dedupedQueryLog.length;
+                            }
+                        } catch (e) {
+                            console.debug('Failed to fetch query log config:', e);
+                        }
+
+                        // Stats Ignored
+                        try {
+                            const statsConfig = await window.app.sendMessage('getStatsConfig', { server });
+                            if (statsConfig?.ignored) {
+                                const dedupedStats = deduplicateIgnoredDomains(statsConfig.ignored);
+                                statsIgnoredCount = dedupedStats.length;
+                            }
+                        } catch (e) {
+                            console.debug('Failed to fetch stats config:', e);
+                        }
+                    }
+                } catch (e) {
+                    console.debug('Failed to fetch ignored domains counts:', e);
+                }
+            }
         } catch (error) {
             console.error('Error fetching counts:', error);
         }
@@ -92,7 +150,7 @@ export async function renderGroupSettings(container, data = {}) {
                 <div class="header-action-area"></div>
             </div>
 
-            <div class="view-body">
+            <div class="view-body" style="padding-bottom: 12px !important;">
                 <!-- Modern Dashboard Container -->
                 <div class="dashboard-container">
                     <!-- Header Section with Server Pill -->
@@ -118,30 +176,28 @@ export async function renderGroupSettings(container, data = {}) {
 
                         <!-- Custom Rules - Active -->
                         <div class="sync-pill ${syncSettings.customRules ? 'active' : 'inactive'}" data-sync-type="customRules">
-                            <div class="pill-left">
+                            <div class="pill-top">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M12 2.5L4.5 5.5V11.5C4.5 16.2 8 19.5 12 21.5C16 19.5 19.5 16.2 19.5 11.5V5.5L12 2.5Z" stroke-width="1.8" stroke-linejoin="round"/>
                                         <path d="M8.8 12.5L11 14.7L15.2 10.5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </div>
-                                <div class="pill-text">
-                                    <div class="pill-title">Custom Rules</div>
-                                    <div class="pill-subtitle">Manage local block/allow entries</div>
-                                    <div class="pill-count">${ruleCount} rules</div>
-                                </div>
-                            </div>
-                            <div class="pill-right">
                                 <label class="sync-toggle">
                                     <input type="checkbox" class="sync-toggle-input" data-sync-type="customRules" ${syncSettings.customRules ? 'checked' : ''}>
                                     <span class="sync-toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="pill-text">
+                                <div class="pill-title">Custom Rules</div>
+                                <div class="pill-subtitle">Manage local block/allow entries</div>
+                                <div class="pill-count">${ruleCount} rules</div>
+                            </div>
                         </div>
 
                         <!-- DNS Blocklists - Active -->
                         <div class="sync-pill ${syncSettings.dnsBlocklists ? 'active' : 'inactive'}" data-sync-type="dnsBlocklists">
-                            <div class="pill-left">
+                            <div class="pill-top">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 7C21 8.65685 16.9706 10 12 10C7.02944 10 3 8.65685 3 7C3 5.34315 7.02944 4 12 4C16.9706 4 21 5.34315 21 7Z" />
@@ -152,23 +208,21 @@ export async function renderGroupSettings(container, data = {}) {
                                         <path d="M15.5 15.5L21.5 21.5" />
                                     </svg>
                                 </div>
-                                <div class="pill-text">
-                                    <div class="pill-title">DNS Blocklists</div>
-                                    <div class="pill-subtitle">Subscribe to external filters</div>
-                                    <div class="pill-count">${blocklistCount} lists</div>
-                                </div>
-                            </div>
-                            <div class="pill-right">
                                 <label class="sync-toggle">
                                     <input type="checkbox" class="sync-toggle-input" data-sync-type="dnsBlocklists" ${syncSettings.dnsBlocklists ? 'checked' : ''}>
                                     <span class="sync-toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="pill-text">
+                                <div class="pill-title">DNS Blocklists</div>
+                                <div class="pill-subtitle">Subscribe to external filters</div>
+                                <div class="pill-count">${blocklistCount} lists</div>
+                            </div>
                         </div>
 
                         <!-- DNS Rewrites - Active -->
                         <div class="sync-pill ${syncSettings.dnsRewrites ? 'active' : 'inactive'}" data-sync-type="dnsRewrites">
-                            <div class="pill-left">
+                            <div class="pill-top">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path d="M5 12C5 8.7 7.7 6 11 6H16" stroke-width="1.8" stroke-linecap="round"/>
@@ -177,23 +231,21 @@ export async function renderGroupSettings(container, data = {}) {
                                         <path d="M10 20L8 18L10 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </div>
-                                <div class="pill-text">
-                                    <div class="pill-title">DNS Rewrites</div>
-                                    <div class="pill-subtitle">Redirect domains locally</div>
-                                    <div class="pill-count">${rewriteCount} rewrites</div>
-                                </div>
-                            </div>
-                            <div class="pill-right">
                                 <label class="sync-toggle">
                                     <input type="checkbox" class="sync-toggle-input" data-sync-type="dnsRewrites" ${syncSettings.dnsRewrites ? 'checked' : ''}>
                                     <span class="sync-toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="pill-text">
+                                <div class="pill-title">DNS Rewrites</div>
+                                <div class="pill-subtitle">Redirect domains locally</div>
+                                <div class="pill-count">${rewriteCount} rewrites</div>
+                            </div>
                         </div>
 
                         <!-- Home Clients - Active -->
                         <div class="sync-pill ${syncSettings.homeClients ? 'active' : 'inactive'}" data-sync-type="homeClients">
-                            <div class="pill-left">
+                            <div class="pill-top">
                                 <div class="pill-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1.8 9.2L12 1.8L22.2 9.2" stroke-width="2.2"/>
@@ -203,17 +255,61 @@ export async function renderGroupSettings(container, data = {}) {
                                         <circle cx="12" cy="18.2" r="1.3" fill="currentColor" stroke="none"/>
                                     </svg>
                                 </div>
-                                <div class="pill-text">
-                                    <div class="pill-title">Home Clients</div>
-                                    <div class="pill-subtitle">Manage devices on your network</div>
-                                    <div class="pill-count">${clientCount} clients</div>
-                                </div>
-                            </div>
-                            <div class="pill-right">
                                 <label class="sync-toggle">
                                     <input type="checkbox" class="sync-toggle-input" data-sync-type="homeClients" ${syncSettings.homeClients ? 'checked' : ''}>
                                     <span class="sync-toggle-slider"></span>
                                 </label>
+                            </div>
+                            <div class="pill-text">
+                                <div class="pill-title">Home Clients</div>
+                                <div class="pill-subtitle">Manage devices on your network</div>
+                                <div class="pill-count">${clientCount} clients</div>
+                            </div>
+                        </div>
+
+                        <!-- Query Log Ignored - Active -->
+                        <div class="sync-pill ${syncSettings.queryLogIgnored ? 'active' : 'inactive'}" data-sync-type="queryLogIgnored">
+                            <div class="pill-top">
+                                <div class="pill-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/>
+                                        <polyline points="14 2 14 8 20 8" stroke-width="2"/>
+                                        <line x1="16" y1="13" x2="8" y2="13" stroke-width="2"/>
+                                        <line x1="16" y1="17" x2="8" y2="17" stroke-width="2"/>
+                                        <polyline points="10 9 9 9 8 9" stroke-width="2"/>
+                                    </svg>
+                                </div>
+                                <label class="sync-toggle">
+                                    <input type="checkbox" class="sync-toggle-input" data-sync-type="queryLogIgnored" ${syncSettings.queryLogIgnored ? 'checked' : ''}>
+                                    <span class="sync-toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="pill-text">
+                                <div class="pill-title">Logs Config</div>
+                                <div class="pill-subtitle">Domains ignored in query logs</div>
+                                <div class="pill-count">${queryLogIgnoredCount} domains</div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Ignored - Active -->
+                        <div class="sync-pill ${syncSettings.statsIgnored ? 'active' : 'inactive'}" data-sync-type="statsIgnored">
+                            <div class="pill-top">
+                                <div class="pill-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="20" x2="18" y2="10" stroke-width="2"/>
+                                        <line x1="12" y1="20" x2="12" y2="4" stroke-width="2"/>
+                                        <line x1="6" y1="20" x2="6" y2="14" stroke-width="2"/>
+                                    </svg>
+                                </div>
+                                <label class="sync-toggle">
+                                    <input type="checkbox" class="sync-toggle-input" data-sync-type="statsIgnored" ${syncSettings.statsIgnored ? 'checked' : ''}>
+                                    <span class="sync-toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="pill-text">
+                                <div class="pill-title">Stats Config</div>
+                                <div class="pill-subtitle">Domains ignored in statistics</div>
+                                <div class="pill-count">${statsIgnoredCount} domains</div>
                             </div>
                         </div>
                     </div>
@@ -223,13 +319,17 @@ export async function renderGroupSettings(container, data = {}) {
                         <button class="btn-cancel" id="cancel-btn">Close</button>
                         <button class="btn-update" id="update-btn" disabled>Update</button>
                     </div>
+                    
+                    <!-- Spacer to push buttons away from edge -->
+                    <div style="height: 24px;"></div>
                 </div>
 
                 <style>
                     .dashboard-container {
                         display: flex;
                         flex-direction: column;
-                        gap: 10px;
+                        gap: 6px;
+                        padding-bottom: 12px;
                     }
 
                     .header-section {
@@ -279,36 +379,39 @@ export async function renderGroupSettings(container, data = {}) {
                     }
 
                     .sync-pills-container {
-                        display: flex;
-                        flex-direction: column;
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
                         gap: 6px;
                     }
 
                     .preview-banner {
                         display: flex;
                         align-items: center;
-                        gap: 10px;
-                        padding: 10px 14px;
+                        gap: 5px;
+                        padding: 5px 7px;
                         background: rgba(255, 152, 0, 0.1);
                         border: 1px solid rgba(255, 152, 0, 0.3);
-                        border-radius: 8px;
-                        font-size: 0.75rem;
+                        border-radius: 6px;
+                        font-size: 0.65rem;
                         color: #ffa726;
-                        margin-bottom: 4px;
+                        margin-bottom: 8px;
+                        grid-column: 1 / -1; /* Span all columns */
                     }
 
                     .preview-banner svg {
                         flex-shrink: 0;
                         color: #ffa726;
+                        width: 14px;
+                        height: 14px;
                     }
 
                     .sync-pill {
                         display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        padding: 10px 12px;
-                        border-radius: 9px;
+                        flex-direction: column;
+                        padding: 8px;
+                        border-radius: 8px;
                         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                        cursor: pointer;
                     }
 
                     .sync-pill.active,
@@ -319,20 +422,27 @@ export async function renderGroupSettings(container, data = {}) {
                     .sync-pill.active:hover,
                     .sync-pill.inactive:hover {
                         transform: translateY(-2px);
-                        box-shadow: 0 6px 20px rgba(61, 184, 126, 0.35);
+                        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+                    }
+
+                    .pill-top {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 6px;
                     }
 
                     .pill-left {
                         display: flex;
                         align-items: center;
-                        gap: 14px;
-                        flex: 1;
+                        gap: 0;
+                        flex: 0;
                     }
 
                     .pill-icon {
-                        width: 46px;
-                        height: 46px;
-                        border-radius: 10px;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 6px;
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -340,31 +450,32 @@ export async function renderGroupSettings(container, data = {}) {
                     }
                     
                     .pill-icon svg {
-                        width: 26px;
-                        height: 26px;
+                        width: 20px;
+                        height: 20px;
                     }
 
                     .pill-text {
                         display: flex;
                         flex-direction: column;
                         gap: 2px;
+                        text-align: left;
                     }
 
                     .pill-title {
-                        font-size: 0.88rem;
+                        font-size: 0.85rem;
                         font-weight: 600;
-                        line-height: 1.2;
+                        line-height: 1.1;
                     }
 
                     .pill-subtitle {
                         font-size: 0.7rem;
-                        line-height: 1.3;
+                        line-height: 1.2;
                     }
 
                     .pill-count {
-                        font-size: 0.72rem;
+                        font-size: 0.7rem;
                         font-weight: 600;
-                        margin-top: 3px;
+                        margin-top: 1px;
                         opacity: 0.9;
                     }
 
@@ -385,8 +496,8 @@ export async function renderGroupSettings(container, data = {}) {
                     .sync-toggle {
                         position: relative;
                         display: inline-block;
-                        width: 50px;
-                        height: 26px;
+                        width: 40px;
+                        height: 22px;
                     }
 
                     .sync-toggle-input {
@@ -404,14 +515,14 @@ export async function renderGroupSettings(container, data = {}) {
                         bottom: 0;
                         background-color: #f44336;
                         transition: 0.3s;
-                        border-radius: 26px;
+                        border-radius: 22px;
                     }
 
                     .sync-toggle-slider:before {
                         position: absolute;
                         content: "";
-                        height: 20px;
-                        width: 20px;
+                        height: 16px;
+                        width: 16px;
                         left: 3px;
                         bottom: 3px;
                         background-color: white;
@@ -424,14 +535,14 @@ export async function renderGroupSettings(container, data = {}) {
                     }
 
                     .sync-toggle-input:checked + .sync-toggle-slider:before {
-                        transform: translateX(24px);
+                        transform: translateX(18px);
                     }
 
-                    /* Active Pill */
+                    /* Active Pill - Deep Green */
                     .sync-pill.active {
-                        background: linear-gradient(135deg, #3db87e 0%, #2a8a5f 100%);
-                        border: 1px solid rgba(61, 184, 126, 0.4);
-                        box-shadow: 0 4px 16px rgba(61, 184, 126, 0.25);
+                        background: #0a7c0a;
+                        border: 1px solid rgba(10, 124, 10, 0.4);
+                        box-shadow: 0 4px 16px rgba(10, 124, 10, 0.25);
                     }
 
                     .sync-pill.active .pill-icon {
@@ -447,11 +558,20 @@ export async function renderGroupSettings(container, data = {}) {
                         color: rgba(255, 255, 255, 0.85);
                     }
 
-                    /* Inactive Pill (Red) */
+                    /* Inactive Pills - Individual Colors */
                     .sync-pill.inactive {
-                        background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-                        border: 1px solid rgba(211, 47, 47, 0.4);
-                        box-shadow: 0 4px 16px rgba(211, 47, 47, 0.25);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+                    }
+
+                    /* All Cards - Solid Deep Blood Red */
+                    .sync-pill.inactive[data-sync-type="customRules"],
+                    .sync-pill.inactive[data-sync-type="dnsBlocklists"],
+                    .sync-pill.inactive[data-sync-type="dnsRewrites"],
+                    .sync-pill.inactive[data-sync-type="homeClients"],
+                    .sync-pill.inactive[data-sync-type="queryLogIgnored"],
+                    .sync-pill.inactive[data-sync-type="statsIgnored"] {
+                        background: #8b0000;
                     }
 
                     .sync-pill.inactive .pill-icon {
@@ -497,7 +617,8 @@ export async function renderGroupSettings(container, data = {}) {
                     .action-buttons {
                         display: flex;
                         gap: 10px;
-                        margin-top: 8px;
+                        margin-top: 12px;
+                        padding: 0 20px 20px 20px;
                     }
 
                     .btn-cancel,
@@ -513,14 +634,14 @@ export async function renderGroupSettings(container, data = {}) {
                     }
 
                     .btn-cancel {
-                        background: var(--color-bg-secondary);
-                        color: var(--color-text-primary);
-                        border: 1px solid var(--color-border);
+                        background: #dc3545;
+                        color: #ffffff;
+                        border: none;
                     }
 
                     .btn-cancel:hover {
-                        background: var(--color-bg-tertiary);
-                        border-color: var(--color-text-secondary);
+                        background: #c82333;
+                        border: none;
                     }
 
                     .btn-update {
@@ -538,17 +659,6 @@ export async function renderGroupSettings(container, data = {}) {
                         opacity: 0.5;
                         cursor: not-allowed;
                     }
-
-                    .btn-cancel {
-                        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-                        color: #ffffff;
-                        border: none;
-                    }
-
-                    .btn-cancel:hover {
-                        transform: translateY(-1px);
-                        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
-                    }
                 </style>
             </div>
         </div>
@@ -565,11 +675,20 @@ export async function renderGroupSettings(container, data = {}) {
     const updateBtn = container.querySelector('#update-btn');
     const toggles = container.querySelectorAll('.sync-toggle-input');
 
-    backBtn?.addEventListener('click', (e) => {
-        if (hasChanges && !confirm('You have unsaved changes. Are you sure you want to leave?')) {
-            e.stopPropagation();
-            e.preventDefault();
-            return;
+    backBtn?.addEventListener('click', async (e) => {
+        if (hasChanges) {
+            const confirmed = await showConfirmDialog(
+                'Unsaved Changes',
+                'You have unsaved changes. Are you sure you want to leave?',
+                'Your changes will be lost if you leave without updating.',
+                'Cancel',
+                'Leave'
+            );
+            if (!confirmed) {
+                e.stopPropagation();
+                e.preventDefault();
+                return;
+            }
         }
         window.app.navigateTo('settings');
     });
@@ -618,9 +737,9 @@ export async function renderGroupSettings(container, data = {}) {
     // Helper function to update preview banner visibility
     const updatePreviewBanner = () => {
         const previewBanner = container.querySelector('#preview-banner');
-        const anyDisabled = !pendingChanges.customRules || !pendingChanges.dnsBlocklists || !pendingChanges.dnsRewrites || !pendingChanges.homeClients;
+        // Always show the banner to remind users to click Update
         if (previewBanner) {
-            previewBanner.style.display = anyDisabled ? 'flex' : 'none';
+            previewBanner.style.display = 'flex';
         }
     };
 
@@ -665,6 +784,26 @@ export async function renderGroupSettings(container, data = {}) {
             return;
         }
         window.app.navigateTo('group-clients', { groupId });
+    });
+
+    // Query Log Ignored card click handler
+    const queryLogCard = container.querySelector('.sync-pill[data-sync-type="queryLogIgnored"]');
+    queryLogCard?.addEventListener('click', (e) => {
+        // Don't navigate if clicking on the toggle
+        if (e.target.closest('.sync-toggle')) {
+            return;
+        }
+        window.app.navigateTo('group-querylog-ignored', { groupId });
+    });
+
+    // Stats Ignored card click handler
+    const statsCard = container.querySelector('.sync-pill[data-sync-type="statsIgnored"]');
+    statsCard?.addEventListener('click', (e) => {
+        // Don't navigate if clicking on the toggle
+        if (e.target.closest('.sync-toggle')) {
+            return;
+        }
+        window.app.navigateTo('group-stats-ignored', { groupId });
     });
 
     // Cancel button - reset to original state
@@ -714,16 +853,13 @@ export async function renderGroupSettings(container, data = {}) {
                 newSyncSettings: pendingChanges
             });
 
-            // Check if Custom Rules sync was just enabled
-            const wasDisabled = syncSettings.customRules === false;
-            const nowEnabled = pendingChanges.customRules !== false;
-            const syncJustEnabled = wasDisabled && nowEnabled;
+            // Check if any sync type was just enabled
+            const customRulesEnabled = syncSettings.customRules === false && pendingChanges.customRules === true;
+            const blocklistsEnabled = syncSettings.dnsBlocklists === false && pendingChanges.dnsBlocklists === true;
+            const rewritesEnabled = syncSettings.dnsRewrites === false && pendingChanges.dnsRewrites === true;
+            const clientsEnabled = syncSettings.homeClients === false && pendingChanges.homeClients === true;
 
-            console.log('[GroupSettings] Sync state change', {
-                wasDisabled,
-                nowEnabled,
-                syncJustEnabled
-            });
+            const anySyncEnabled = customRulesEnabled || blocklistsEnabled || rewritesEnabled || clientsEnabled;
 
             // Update group with new sync settings
             const updatedGroup = {
@@ -741,29 +877,29 @@ export async function renderGroupSettings(container, data = {}) {
             hasChanges = false;
             updateBtn.disabled = true;
 
-            // If sync was just enabled, trigger immediate merge
-            if (syncJustEnabled) {
-                console.log('[GroupSettings] Custom Rules sync was just ENABLED - triggering immediate merge');
-                window.app.showToast('Merging rules across group members...', 'info');
+            // If any sync was just enabled, show informative merge notification
+            if (anySyncEnabled) {
+                let mergeMessage = 'Merging ';
+                const enabledTypes = [];
+                if (customRulesEnabled) enabledTypes.push('rules');
+                if (blocklistsEnabled) enabledTypes.push('blocklists');
+                if (rewritesEnabled) enabledTypes.push('rewrites');
+                if (clientsEnabled) enabledTypes.push('clients');
+
+                mergeMessage += enabledTypes.join(', ') + ' across group members...';
+
+                console.log('[GroupSettings] Sync enabled - triggering merge:', enabledTypes);
+                window.app.showToast(mergeMessage, 'info');
 
                 try {
                     // Trigger background sync for all servers in the group
                     await window.app.sendMessage('refreshAllServers', { force: true });
-                    console.log('[GroupSettings] Immediate sync triggered successfully');
+                    console.log('[GroupSettings] Sync triggered successfully');
 
-                    window.app.showToast('Rules merged successfully', 'success');
-
-                    // Navigate back to server list with force refresh to show updated counts
-                    // This bypasses the stale UI snapshot and fetches fresh data
-                    setTimeout(() => {
-                        console.log('[GroupSettings] Navigating back to server list with force refresh');
-                        // Store a flag to force fresh fetch
-                        sessionStorage.setItem('forceRefresh', 'true');
-                        window.app.navigateTo('servers');
-                    }, 800); // Delay to let sync complete and toast show
+                    window.app.showToast('Sync completed successfully', 'success');
 
                 } catch (syncError) {
-                    console.error('[GroupSettings] Failed to trigger immediate sync:', syncError);
+                    console.error('[GroupSettings] Failed to trigger sync:', syncError);
                     window.app.showToast('Sync settings saved, but merge failed. Please refresh manually.', 'warning');
                 }
             }

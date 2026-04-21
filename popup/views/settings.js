@@ -196,7 +196,7 @@ async function loadGroups() {
                 <div class="list-item-content">
                     <div class="list-item-title">${escapeHtml(group.name)}</div>
                     <div class="text-xs text-tertiary">
-                        ${group.serverIds.length} servers • ${group.rules.length} rules
+                        ${(group.serverIds || []).length} servers • ${(group.rules || []).length} rules
                     </div>
                 </div>
                 <div class="flex gap-2">

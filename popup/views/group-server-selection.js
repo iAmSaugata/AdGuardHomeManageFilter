@@ -521,18 +521,22 @@ export async function renderGroupServerSelection(container, data = {}) {
 
             if (isEdit) {
                 // Update existing group
-                await window.app.sendMessage('updateGroup', {
-                    id: groupId,
-                    name,
-                    serverIds: selectedServerIds
+                const result = await window.app.sendMessage('saveGroup', {
+                    group: {
+                        id: groupId,
+                        name,
+                        serverIds: selectedServerIds
+                    }
                 });
                 window.app.showToast('Group updated successfully', 'success');
                 window.app.navigateTo('group-settings', { groupId });
             } else {
                 // Create new group
-                const result = await window.app.sendMessage('createGroup', {
-                    name,
-                    serverIds: selectedServerIds
+                const result = await window.app.sendMessage('saveGroup', {
+                    group: {
+                        name,
+                        serverIds: selectedServerIds
+                    }
                 });
                 window.app.showToast('Group created successfully', 'success');
                 window.app.navigateTo('group-settings', { groupId: result.id });

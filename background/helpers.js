@@ -610,8 +610,8 @@ export function dedupBlocklists(blocklists) {
 /**
  * Deduplicate DNS rewrites
  * Merge strategy:
- * - Dedupe by domain (exact match, case-insensitive)
- * - For conflicts (same domain, different answer): first-wins
+ * - Dedupe by domain AND answer (exact match, case-insensitive)
+ * - Same domain can have multiple different answers (e.g., A, AAAA, CNAME)
  */
 export function dedupRewrites(rewrites) {
     if (!Array.isArray(rewrites) || rewrites.length === 0) {
@@ -621,9 +621,10 @@ export function dedupRewrites(rewrites) {
     const map = new Map();
 
     for (const rewrite of rewrites) {
-        if (!rewrite || !rewrite.domain) continue;
+        if (!rewrite || !rewrite.domain || !rewrite.answer) continue;
 
-        const key = rewrite.domain.toLowerCase().trim();
+        // Key is domain + answer combination to allow same domain with different answers
+        const key = `${rewrite.domain.toLowerCase().trim()}|${rewrite.answer.toLowerCase().trim()}`;
 
         if (!map.has(key)) {
             map.set(key, { ...rewrite });
@@ -710,3 +711,24 @@ export function dedupClients(clients) {
     return Array.from(map.values());
 }
 
+/**
+ * Deduplicate ignored domains (for query log or stats)
+ * @param {Array<string>} domains - Array of domain strings
+ * @returns {Array<string>} Deduplicated array of domains
+ */
+export function deduplicateIgnoredDomains(domains) {
+    if (!Array.isArray(domains)) return [];
+
+    // Normalize and deduplicate
+    const uniqueDomains = new Set();
+
+    for (const domain of domains) {
+        if (typeof domain === 'string' && domain.trim()) {
+            // Normalize: lowercase and trim
+            uniqueDomains.add(domain.trim().toLowerCase());
+        }
+    }
+
+    // Return sorted array for consistency
+    return Array.from(uniqueDomains).sort();
+}

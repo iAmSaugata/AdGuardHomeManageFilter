@@ -140,10 +140,12 @@ export async function saveGroup(group) {
 
   // Ensure sync settings are initialized with defaults
   const syncSettings = {
-    customRules: group.syncSettings?.customRules !== false, // Default: enabled
+    customRules: group.syncSettings?.customRules || false, // Default: disabled
     dnsBlocklists: group.syncSettings?.dnsBlocklists || false, // Default: disabled
     dnsRewrites: group.syncSettings?.dnsRewrites || false, // Default: disabled
-    homeClients: group.syncSettings?.homeClients || false // Default: disabled
+    homeClients: group.syncSettings?.homeClients || false, // Default: disabled
+    queryLogIgnored: group.syncSettings?.queryLogIgnored || false, // Default: disabled
+    statsIgnored: group.syncSettings?.statsIgnored || false // Default: disabled
   };
 
   const groupToSave = {
@@ -374,18 +376,25 @@ export async function initializeStorage() {
     let needsUpdate = false;
 
     const migratedGroups = groups.map(group => {
-      if (!group.syncSettings ||
+      // Force migration: Reset customRules to false if it was auto-enabled
+      // This fixes groups created with the old default
+      const needsMigration = !group.syncSettings ||
         group.syncSettings.dnsBlocklists === undefined ||
         group.syncSettings.dnsRewrites === undefined ||
-        group.syncSettings.homeClients === undefined) {
+        group.syncSettings.homeClients === undefined ||
+        (group.syncSettings.customRules === true && !group.syncSettings._explicitlyEnabled);
+
+      if (needsMigration) {
         needsUpdate = true;
         return {
           ...group,
           syncSettings: {
-            customRules: group.syncSettings?.customRules !== false,
+            customRules: false, // Force reset to disabled
             dnsBlocklists: group.syncSettings?.dnsBlocklists || false,
             dnsRewrites: group.syncSettings?.dnsRewrites || false,
-            homeClients: group.syncSettings?.homeClients || false
+            homeClients: group.syncSettings?.homeClients || false,
+            queryLogIgnored: group.syncSettings?.queryLogIgnored || false,
+            statsIgnored: group.syncSettings?.statsIgnored || false
           }
         };
       }
@@ -393,7 +402,7 @@ export async function initializeStorage() {
     });
 
     if (needsUpdate) {
-      console.log('[Storage Migration] Adding new sync settings to existing groups');
+      console.log('[Storage Migration] Resetting sync settings for existing groups');
       updates[STORAGE_KEYS.GROUPS] = migratedGroups;
     }
   }

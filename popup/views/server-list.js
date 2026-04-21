@@ -379,7 +379,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
         `<span class="status-dot-overlay ${cached.isOnline ? 'online' : 'offline'}"></span>` :
         ''}
             </span>
-            <span class="server-name-text" title="${escapeHtml(server.name)}">${escapeHtml(server.name.substring(0, 7))}</span>
+            <span class="server-name-text" title="${escapeHtml(server.name)}">${escapeHtml(server.name.substring(0, 7).toUpperCase())}</span>
             ${groupBadgesHtml}
             <span class="server-version-capsule">${escapeHtml(cached?.version || 'v...')}</span>
           </div>
@@ -580,14 +580,12 @@ async function renderServersList(container, servers, groups, cachedServerData = 
           protectionEnabled: protectionResult?.enabled
         });
 
-        // Update protection button immediately if we got status
+        // Update protection button with fresh status from API/cache
         if (protectionResult) {
-          // Render protection button with cached status if available
           const protectionBtn = document.querySelector(`.protection-btn[data-server-id="${server.id}"]`);
-          if (protectionBtn && cachedServerData?.[server.id]?.protectionEnabled !== undefined) {
-            protectionBtn.classList.remove('protection-loading', 'protection-on', 'protection-off');
-            protectionBtn.classList.add(cachedServerData[server.id].protectionEnabled ? 'protection-on' : 'protection-off');
-            protectionBtn.title = `Protection ${cachedServerData[server.id].protectionEnabled ? 'enabled' : 'disabled'}. Click to ${cachedServerData[server.id].protectionEnabled ? 'disable' : 'enable'}.`;
+          if (protectionBtn) {
+            updateProtectionButtonState(protectionBtn, protectionResult.enabled);
+            Logger.debug(`${server.name} protection updated: ${protectionResult.enabled ? 'ON' : 'OFF'}${protectionResult.fromCache ? ' (cached)' : ''}`);
           }
         } else {
           Logger.warn(`${server.name}: No protection status received`);
@@ -619,7 +617,7 @@ async function renderServersList(container, servers, groups, cachedServerData = 
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
                 <span class="status-dot-overlay ${isOnline ? 'online' : 'offline'}"></span>
               </span>
-              <span class="server-name-text">${escapeHtml(server.name)}</span>
+              <span class="server-name-text" title="${escapeHtml(server.name)}">${escapeHtml(server.name.substring(0, 7).toUpperCase())}</span>
               ${groupBadgesHtml}
               <span class="server-version-capsule">${escapeHtml(version)}</span>
             </div>
@@ -809,11 +807,10 @@ function setupProtectionButton(btn, serverId) {
           const affectedBtn = document.querySelector(`.protection-btn[data-server-id="${affectedServer.id}"]`);
           if (affectedBtn) {
             if (affectedServer.error) {
-              // Error for this specific server
+              // Error for this specific server — revert to opposite
               affectedBtn.classList.remove('protection-loading');
               affectedBtn.classList.add('protection-off');
-              const icon = affectedBtn.querySelector('.protection-icon');
-              if (icon) icon.textContent = 'OFF';
+              affectedBtn.disabled = false;
               window.app.showToast(`Error for ${affectedServer.id}: ${affectedServer.error}`, 'error');
             } else {
               updateProtectionButtonState(affectedBtn, newState);
@@ -839,7 +836,6 @@ function setupProtectionButton(btn, serverId) {
 function updateProtectionButtonState(btn, isEnabled) {
   btn.classList.remove('protection-loading', 'protection-on', 'protection-off');
   btn.classList.add(isEnabled ? 'protection-on' : 'protection-off');
-  const icon = btn.querySelector('.protection-icon');
-  if (icon) icon.textContent = isEnabled ? 'ON' : 'OFF';
+  btn.title = `Protection ${isEnabled ? 'enabled' : 'disabled'}. Click to ${isEnabled ? 'disable' : 'enable'}.`;
   btn.disabled = false;
 }

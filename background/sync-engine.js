@@ -3,7 +3,7 @@
 
 import * as storage from './storage.js';
 import * as apiClient from './api-client.js';
-import { dedupRules, normalizeRule, Logger, getRuleCounts, dedupBlocklists, dedupRewrites, dedupClients } from './helpers.js';
+import { dedupRules, normalizeRule, Logger, getRuleCounts, dedupBlocklists, dedupRewrites, dedupClients, deduplicateIgnoredDomains } from './helpers.js';
 
 // ============================================================================
 // SYNC PRIMITIVES
@@ -266,9 +266,11 @@ async function syncGroups(groups, allServers, fetchResults) {
         const blocklistsSyncEnabled = group?.syncSettings?.dnsBlocklists === true;
         const rewritesSyncEnabled = group?.syncSettings?.dnsRewrites === true;
         const clientsSyncEnabled = group?.syncSettings?.homeClients === true;
+        const queryLogIgnoredEnabled = group?.syncSettings?.queryLogIgnored === true;
+        const statsIgnoredEnabled = group?.syncSettings?.statsIgnored === true;
 
         // Skip group if no sync types are enabled
-        if (!customRulesSyncEnabled && !blocklistsSyncEnabled && !rewritesSyncEnabled && !clientsSyncEnabled) {
+        if (!customRulesSyncEnabled && !blocklistsSyncEnabled && !rewritesSyncEnabled && !clientsSyncEnabled && !queryLogIgnoredEnabled && !statsIgnoredEnabled) {
             Logger.info(`[SyncEngine] Skipping group "${group.name}" - All sync types are DISABLED`);
             continue;
         }
@@ -277,7 +279,9 @@ async function syncGroups(groups, allServers, fetchResults) {
             customRules: customRulesSyncEnabled,
             dnsBlocklists: blocklistsSyncEnabled,
             dnsRewrites: rewritesSyncEnabled,
-            homeClients: clientsSyncEnabled
+            homeClients: clientsSyncEnabled,
+            queryLogIgnored: queryLogIgnoredEnabled,
+            statsIgnored: statsIgnoredEnabled
         });
 
         // Sync Custom Rules (if enabled)
@@ -367,6 +371,16 @@ async function syncGroups(groups, allServers, fetchResults) {
         // Sync Home Clients (if enabled)
         if (clientsSyncEnabled) {
             await syncClients(group, groupServers, fetchResults);
+        }
+
+        // Sync Query Log Ignored Domains (if enabled)
+        if (queryLogIgnoredEnabled) {
+            await syncQueryLogIgnored(group, groupServers, fetchResults);
+        }
+
+        // Sync Stats Ignored Domains (if enabled)
+        if (statsIgnoredEnabled) {
+            await syncStatsIgnored(group, groupServers, fetchResults);
         }
     }
 }
@@ -549,6 +563,126 @@ async function syncClients(group, groupServers, fetchResults) {
                 Logger.info(`[SyncEngine] ✅ Auto-Repaired ${server.name} with ${mergedClients.length} clients`);
             } catch (e) {
                 Logger.error(`[SyncEngine] Failed to sync clients for ${server.name}:`, e);
+            }
+        }
+    }
+}
+
+/**
+ * Sync Query Log Ignored Domains across group servers
+ * @param {Object} group - Group configuration
+ * @param {Array} groupServers - Servers in the group
+ * @param {Object} fetchResults - Fetch results map
+ */
+async function syncQueryLogIgnored(group, groupServers, fetchResults) {
+    Logger.info(`[SyncEngine] Syncing Query Log Ignored Domains for group "${group.name}"`);
+
+    // Collect all ignored domains from group servers
+    let allIgnored = [];
+    let participatingServers = [];
+
+    for (const server of groupServers) {
+        try {
+            const serverWithAuth = await storage.getServer(server.id);
+            const config = await apiClient.getQueryLogConfig(serverWithAuth);
+
+            if (config?.ignored) {
+                allIgnored.push(...config.ignored);
+                participatingServers.push({ server, currentIgnored: config.ignored, fullConfig: config });
+            }
+        } catch (e) {
+            Logger.debug(`[SyncEngine] Failed to fetch querylog config from ${server.name}:`, e.message);
+        }
+    }
+
+    if (participatingServers.length === 0) {
+        Logger.debug(`[SyncEngine] No servers with querylog config for group "${group.name}"`);
+        return;
+    }
+
+    // Deduplicate
+    const mergedIgnored = deduplicateIgnoredDomains(allIgnored);
+    Logger.debug(`[SyncEngine] Merged ${allIgnored.length} ignored domains into ${mergedIgnored.length} unique entries`);
+
+    // Check for drift and update
+    for (const participant of participatingServers) {
+        const { server, currentIgnored, fullConfig } = participant;
+        const currentDeduped = deduplicateIgnoredDomains(currentIgnored);
+
+        const currentStr = JSON.stringify(currentDeduped);
+        const mergedStr = JSON.stringify(mergedIgnored);
+
+        if (currentStr !== mergedStr) {
+            Logger.info(`[SyncEngine] Query Log Ignored drift detected for ${server.name}. Auto-Repairing...`);
+
+            try {
+                const serverWithAuth = await storage.getServer(server.id);
+                const updatedConfig = { ...fullConfig, ignored: mergedIgnored };
+                await apiClient.setQueryLogConfig(serverWithAuth, updatedConfig);
+
+                Logger.info(`[SyncEngine] ✅ Auto-Repaired ${server.name} with ${mergedIgnored.length} ignored domains`);
+            } catch (e) {
+                Logger.error(`[SyncEngine] ❌ Failed to repair ${server.name}:`, e.message);
+            }
+        }
+    }
+}
+
+/**
+ * Sync Statistics Ignored Domains across group servers
+ * @param {Object} group - Group configuration
+ * @param {Array} groupServers - Servers in the group
+ * @param {Object} fetchResults - Fetch results map
+ */
+async function syncStatsIgnored(group, groupServers, fetchResults) {
+    Logger.info(`[SyncEngine] Syncing Statistics Ignored Domains for group "${group.name}"`);
+
+    // Collect all ignored domains from group servers
+    let allIgnored = [];
+    let participatingServers = [];
+
+    for (const server of groupServers) {
+        try {
+            const serverWithAuth = await storage.getServer(server.id);
+            const config = await apiClient.getStatsConfig(serverWithAuth);
+
+            if (config?.ignored) {
+                allIgnored.push(...config.ignored);
+                participatingServers.push({ server, currentIgnored: config.ignored, fullConfig: config });
+            }
+        } catch (e) {
+            Logger.debug(`[SyncEngine] Failed to fetch stats config from ${server.name}:`, e.message);
+        }
+    }
+
+    if (participatingServers.length === 0) {
+        Logger.debug(`[SyncEngine] No servers with stats config for group "${group.name}"`);
+        return;
+    }
+
+    // Deduplicate
+    const mergedIgnored = deduplicateIgnoredDomains(allIgnored);
+    Logger.debug(`[SyncEngine] Merged ${allIgnored.length} ignored domains into ${mergedIgnored.length} unique entries`);
+
+    // Check for drift and update
+    for (const participant of participatingServers) {
+        const { server, currentIgnored, fullConfig } = participant;
+        const currentDeduped = deduplicateIgnoredDomains(currentIgnored);
+
+        const currentStr = JSON.stringify(currentDeduped);
+        const mergedStr = JSON.stringify(mergedIgnored);
+
+        if (currentStr !== mergedStr) {
+            Logger.info(`[SyncEngine] Stats Ignored drift detected for ${server.name}. Auto-Repairing...`);
+
+            try {
+                const serverWithAuth = await storage.getServer(server.id);
+                const updatedConfig = { ...fullConfig, ignored: mergedIgnored };
+                await apiClient.setStatsConfig(serverWithAuth, updatedConfig);
+
+                Logger.info(`[SyncEngine] ✅ Auto-Repaired ${server.name} with ${mergedIgnored.length} ignored domains`);
+            } catch (e) {
+                Logger.error(`[SyncEngine] ❌ Failed to repair ${server.name}:`, e.message);
             }
         }
     }

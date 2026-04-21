@@ -115,18 +115,14 @@ export async function renderGroupRewrites(container, data = {}) {
                                 <div style="font-size: 10px; opacity: 0.7;">Add DNS rewrites to your servers to see them here</div>
                             </div>
                         ` : mergedRewrites.map(rewrite => `
-                            <div style="background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px; transition: all 0.2s ease;">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div style="flex: 1; min-width: 0;">
-                                        <div style="font-size: 11px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rewrite.domain)}</div>
-                                        <div style="display: flex; align-items: center; gap: 6px;">
-                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#64b5f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M5 12h14"/>
-                                                <path d="M12 5l7 7-7 7"/>
-                                            </svg>
-                                            <span style="font-size: 10px; color: #64b5f6; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(rewrite.answer)}</span>
-                                        </div>
-                                    </div>
+                            <div style="background: rgba(255, 255, 255, 0.02); border-radius: 6px; padding: 12px; border-left: 3px solid #64b5f6; transition: all 0.2s ease;">
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">${escapeHtml(rewrite.domain)}</div>
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #64b5f6;">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
+                                        <path d="M12 5l7 7-7 7"/>
+                                    </svg>
+                                    <span style="font-weight: 500;">${escapeHtml(rewrite.answer)}</span>
                                 </div>
                             </div>
                         `).join('')}
@@ -137,21 +133,27 @@ export async function renderGroupRewrites(container, data = {}) {
 
         <style>
             #rewrites-container::-webkit-scrollbar {
-                width: 6px;
+                width: 8px;
             }
 
             #rewrites-container::-webkit-scrollbar-track {
-                background: var(--color-bg-primary);
-                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
             }
 
             #rewrites-container::-webkit-scrollbar-thumb {
-                background: var(--color-border);
-                border-radius: 3px;
+                background: linear-gradient(180deg, #4caf50, #45a049);
+                border-radius: 4px;
+                transition: background 0.3s;
             }
 
             #rewrites-container::-webkit-scrollbar-thumb:hover {
-                background: var(--color-text-tertiary);
+                background: linear-gradient(180deg, #45a049, #3d8b40);
+            }
+            
+            .icon-btn:hover {
+                opacity: 1 !important;
+                transform: scale(1.1);
             }
         </style>
     `;
